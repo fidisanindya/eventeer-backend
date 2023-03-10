@@ -34,7 +34,6 @@ class JwtMiddleware
             // Decode JWT Token with Public Key
             $payload = JWT::decode($jwt, new Key($publicKey, env('JWT_ALGO')));
 
-            dd($payload);
             $request->attributes->add(['user_id' => $payload->sub]);
             
             return $next($request);

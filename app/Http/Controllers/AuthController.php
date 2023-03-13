@@ -8,6 +8,7 @@ use Firebase\JWT\JWT;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
+
 class AuthController extends Controller
 {
     public function login(Request $request, JwtAuth $jwtAuth){
@@ -21,14 +22,15 @@ class AuthController extends Controller
             // Create JWT Token
             $token = $jwtAuth->createJwtToken($user);
             
-            return response()->json([
+            $user->token = $token;
+
+            $response = [
+                'code' => app('Illuminate\Http\Response')->status(),
                 'status' => 'success',
-                'user' => $user,
-                'authorization' => [
-                    'token' => $token,
-                    'type' => 'bearer',
-                ]
-            ]);
+                'result' => $user,
+            ];
+
+            return response($response, 200);
 
         }
 

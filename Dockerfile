@@ -18,5 +18,5 @@ RUN rm -Rf /var/www/html/docker /var/www/html/public/uploads
 
 USER nobody
 
-RUN composer install --optimize-autoloader --no-interaction --no-progress
+RUN composer update --optimize-autoloader --no-interaction --no-progress
 

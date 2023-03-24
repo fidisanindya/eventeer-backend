@@ -4,7 +4,7 @@ LABEL "maintainer"="M Arnas Risqianto <arnas@digitalamoeba.id>"
 
 
 USER root
-RUN apk add --no-cache php81-tokenizer php81-xmlwriter php81-redis php81-pdo php81-pdo_mysql
+RUN apk add --no-cache php81-tokenizer php81-xmlwriter php81-redis php81-pdo php81-pdo_mysql 
 RUN rm -rf /var/cache/apk/*
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
@@ -18,5 +18,5 @@ RUN rm -Rf /var/www/html/docker /var/www/html/public/uploads
 
 USER nobody
 
-RUN composer update --optimize-autoloader --no-interaction --no-progress
+RUN composer update --optimize-autoloader --no-interaction --no-progress --ignore-platform-req=ext-fileinfo
 

@@ -27,7 +27,7 @@ build:development:
   environment:
     name: development
   only:
-    - feature/bintang/cicd
+    - development
 
 .deploy: &deploy
   stage: deploy
@@ -54,4 +54,4 @@ deploy:development:
   environment:
     name: development
   only:
-    - feature/bintang/cicd
+    - development

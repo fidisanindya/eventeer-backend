@@ -6,10 +6,11 @@ use App\Models\User;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\Jobs\EmailQueue as JobsEmailQueue;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Mail;
-use App\Models\EmailQueue as ModelEmailQueue;
+use App\Models\EmailQueue;
+use App\Jobs\ForgotQueue;
+use App\Mail\ForgotPasswordMail;
 
 class ForgotController extends Controller
 {
@@ -29,22 +30,22 @@ class ForgotController extends Controller
             $token = md5(Str::random(12));
 
             $details = [
-                'title'     => 'Reset Password Akun Eventeer',
                 'email'     => $checkEmail->email,
                 'full_name' => $checkEmail->full_name,
                 'token'     => $token,
             ];
             
-            JobsEmailQueue::dispatch($details);
+            ForgotQueue::dispatch($details);
             
+            $html = (new ForgotPasswordMail($details))->render();
             $logQueue = [
                 'to'            => $checkEmail->email,
                 'cc'            => '',
                 'bcc'           => '',
-                'message'       => null,
+                'message'       => $html,
                 'status'        => 'sent',
                 'date'          => date('Y-m-d H:i:s'),
-                'headers'       => null,
+                'headers'       => '',
                 'attachment'    => '0',
                 'subject'       => 'Reset Password',
                 'is_broadcast'  => 0,
@@ -52,7 +53,7 @@ class ForgotController extends Controller
                 'id_broadcast'  => 0,
             ];
 
-            ModelEmailQueue::create($logQueue);
+            EmailQueue::create($logQueue);
 
             User::where('id_user', $checkEmail->id_user)
                 ->update([

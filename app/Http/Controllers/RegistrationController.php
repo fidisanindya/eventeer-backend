@@ -15,6 +15,7 @@ use Firebase\JWT\Key;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Image;
 
 class RegistrationController extends Controller
 {
@@ -206,7 +207,13 @@ class RegistrationController extends Controller
         ]);
 
         if($request->profile_picture){
+            $image = Image::make($request->profile_picture)->resize(1200, null, function ($constraint) {
+                $constraint->aspectRatio();
+            });
+
             $filename = $request->id_user . '_profile_picture.' . $request->profile_picture->getClientOriginalExtension();
+
+            $image->save(public_path($filename));
 
             $credentials = new Credentials($_ENV['AWS_ACCESS_KEY_ID'], $_ENV['AWS_SECRET_ACCESS_KEY']);
 
@@ -222,7 +229,7 @@ class RegistrationController extends Controller
             $s3->putObject([
                 'Bucket' => config('filesystems.disks.s3.bucket'),
                 'Key' => $key,
-                'Body' => file_get_contents($request->profile_picture),
+                'Body' => file_get_contents(public_path($filename)),
                 'ACL'    => 'public-read',
             ]);
 
@@ -235,6 +242,8 @@ class RegistrationController extends Controller
                     'gender' => $request->gender,
                     'profile_picture' => $imageUrl
                 ]);
+
+                unlink($filename);
     
                 $user = User::where('id_user', $request->id_user)->first();
     
@@ -356,6 +365,10 @@ class RegistrationController extends Controller
         ]);
 
         $user = User::where('id_user', $request->id_user)->first();
+
+        $registration_step = UserProfile::select('value')->where([['id_user', '=', $request->id_user], ['key_name', '=' , 'registration_step']])->first();
+
+        $user->registration_step = $registration_step->value;
 
         if($user){
             return response()->json([

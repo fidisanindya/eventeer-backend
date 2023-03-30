@@ -38,6 +38,7 @@ Route::prefix('registration')->group(function () {
     Route::post('/email-verification', [RegistrationController::class, 'verification_email'])->name('VerificationEmail');
     Route::post('/resend-link', [RegistrationController::class, 'resend_verification_link'])->name('ResendLink');
     Route::get('/get-interest', [RegistrationController::class, 'get_interest'])->name('GetInterest');
+    Route::post('/store-interest', [RegistrationController::class, 'store_interest'])->name('StoreInterest');
     Route::post('/select-interest', [RegistrationController::class, 'choose_interest'])->name('ChooseInterest');
     Route::get('/get-location', [RegistrationController::class, 'get_location'])->name('GetLocation');
     Route::post('/setup-profile', [RegistrationController::class, 'submit_profile'])->name('SubmitProfile');

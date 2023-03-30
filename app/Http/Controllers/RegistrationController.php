@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\VerificationQueue;
 use App\Mail\EmailVerification;
 use App\Models\City;
 use App\Models\Interest;
@@ -16,6 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Image;
+use App\Models\EmailQueue;
 
 class RegistrationController extends Controller
 {
@@ -48,8 +50,30 @@ class RegistrationController extends Controller
             ]);
 
             $user = User::where('email', $request->email)->first();
+            $details = [
+                'email'             => $user->email,
+                'activation_code'   => $user->activation_code,
+            ];
 
-            Mail::to($request->email)->send(new EmailVerification($user));
+            VerificationQueue::dispatch($details);
+
+            $html = (new EmailVerification($details))->render();
+            $logQueue = [
+                'to'            => $user->email,
+                'cc'            => '',
+                'bcc'           => '',
+                'message'       => $html,
+                'status'        => 'sent',
+                'date'          => date('Y-m-d H:i:s'),
+                'headers'       => '',
+                'attachment'    => '0',
+                'subject'       => 'Email Verification',
+                'is_broadcast'  => 0,
+                'id_event'      => null,
+                'id_broadcast'  => 0,
+            ];
+
+            EmailQueue::create($logQueue);
 
             UserProfile::create([
                 'id_user' => $user->id_user,

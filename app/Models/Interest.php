@@ -9,5 +9,11 @@ class Interest extends Model
 {
     use HasFactory;
 
+    protected $fillable = [
+        'interest_name',
+        'created_by',
+        'icon'
+    ];
+
     protected $table = 'module_interest';
 }

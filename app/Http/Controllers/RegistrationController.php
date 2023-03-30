@@ -407,4 +407,47 @@ class RegistrationController extends Controller
             'status' => 'user not found',
         ], 401); 
     }
+
+    public function store_interest(Request $request){
+        $request->validate([
+            'interest_name' => 'required',
+            'icon' => 'image',
+        ]);
+
+        $filename = $request->interest_name . '_icon.' . $request->icon->getClientOriginalExtension();
+
+        $credentials = new Credentials($_ENV['AWS_ACCESS_KEY_ID'], $_ENV['AWS_SECRET_ACCESS_KEY']);
+
+        $s3 = new S3Client([
+            'version' => 'latest',
+            'region' => 'auto',
+            'endpoint' => "https://" . config('filesystems.disks.s3.account') . "." . "r2.cloudflarestorage.com",
+            'credentials' => $credentials
+        ]);
+
+        $key = "userfiles/images/profile_picture/" . $filename;
+        
+        $s3->putObject([
+            'Bucket' => config('filesystems.disks.s3.bucket'),
+            'Key' => $key,
+            'Body' => file_get_contents($request->icon),
+            'ACL'    => 'public-read',
+        ]);
+
+        $iconUrl = config('filesystems.disks.s3.bucketurl') . "/" . $key;
+
+        Interest::create([
+            'interest_name' => $request->interest_name,
+            'created_by' => 1,
+            'icon' => $iconUrl
+        ]);
+
+        $data = Interest::where([['interest_name', '=', $request->interest_name], ['created_by', '=', 1]])->first();
+
+        return response()->json([
+            'code' => 200,
+            'status' => 'success',
+            'result' => $data
+        ], 200);
+    }
 }

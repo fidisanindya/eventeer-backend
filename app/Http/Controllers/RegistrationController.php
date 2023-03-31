@@ -367,20 +367,44 @@ class RegistrationController extends Controller
 
         $profession = Profession::where('job_title', $request->profession)->first();
 
-        UserProfile::create([
-            'id_user' => $request->id_user,
-            'key_name' => 'id_job',
-            'value' => $profession->id_job,
-        ]);
+        if($profession != null){
+            UserProfile::create([
+                'id_user' => $request->id_user,
+                'key_name' => 'id_job',
+                'value' => $profession->id_job,
+            ]);
+    
+            UserProfile::where([['id_user', '=', $request->id_user], ['key_name', '=', 'registration_step']])->update([
+                'value' => 5,
+            ]);
+    
+            return response()->json([
+                'code' => 200,
+                'status' => 'success add profession and company',
+            ], 200);
+        }else{
+            Profession::create([
+                'job_title' => $request->profession,
+                'created_by' => $request->id_user
+            ]);
 
-        UserProfile::where([['id_user', '=', $request->id_user], ['key_name', '=', 'registration_step']])->update([
-            'value' => 5,
-        ]);
+            $newProfession = Profession::select('id_job')->where('job_title', $request->profession)->first();
 
-        return response()->json([
-            'code' => 200,
-            'status' => 'success add profession and company',
-        ], 200);
+            UserProfile::create([
+                'id_user' => $request->id_user,
+                'key_name' => 'id_job',
+                'value' => $newProfession->id_job,
+            ]);
+    
+            UserProfile::where([['id_user', '=', $request->id_user], ['key_name', '=', 'registration_step']])->update([
+                'value' => 5,
+            ]);
+    
+            return response()->json([
+                'code' => 200,
+                'status' => 'success add profession and company',
+            ], 200);
+        }
     }
 
     public function get_profile_user(Request $request){

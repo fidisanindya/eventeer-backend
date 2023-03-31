@@ -9,5 +9,10 @@ class Profession extends Model
 {
     use HasFactory;
 
+    protected $fillable = [
+        'job_title',
+        'created_by'
+    ];
+
     protected $table = 'module_job';
 }

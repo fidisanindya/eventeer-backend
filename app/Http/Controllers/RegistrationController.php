@@ -194,11 +194,26 @@ class RegistrationController extends Controller
         foreach($request->interest_name  as $int){
             $interest = Interest::select('id_interest')->where('interest_name', $int)->first();
 
-            UserProfile::create([
-                'id_user' => $request->id_user,
-                'key_name' => 'id_interest',
-                'value' => $interest->id_interest
-            ]);
+            if($interest != null){
+                UserProfile::create([
+                    'id_user' => $request->id_user,
+                    'key_name' => 'id_interest',
+                    'value' => $interest->id_interest
+                ]);
+            }else{
+                Interest::create([
+                    'interest_name' => $int,
+                    'created_by' => $request->id_user,
+                ]);
+
+                $newInterest = Interest::select('id_interest')->where('interest_name', $int)->first();
+                
+                UserProfile::create([
+                    'id_user' => $request->id_user,
+                    'key_name' => 'id_interest',
+                    'value' => $newInterest->id_interest
+                ]);
+            }
         }
 
         UserProfile::where([['id_user', '=', $request->id_user], ['key_name', '=', 'registration_step']])->update([
@@ -390,11 +405,11 @@ class RegistrationController extends Controller
 
         $user = User::where('id_user', $request->id_user)->first();
 
-        $registration_step = UserProfile::select('value')->where([['id_user', '=', $request->id_user], ['key_name', '=' , 'registration_step']])->first();
-
-        $user->registration_step = $registration_step->value;
-
         if($user){
+            $registration_step = UserProfile::select('value')->where([['id_user', '=', $request->id_user], ['key_name', '=' , 'registration_step']])->first();
+
+            $user->registration_step = $registration_step->value;
+
             return response()->json([
                 'code' => 200,
                 'status' => 'success',
@@ -411,35 +426,20 @@ class RegistrationController extends Controller
     public function store_interest(Request $request){
         $request->validate([
             'interest_name' => 'required',
-            'icon' => 'image',
         ]);
 
-        $filename = $request->interest_name . '_icon.' . $request->icon->getClientOriginalExtension();
+        $token = $request->header('Authorization');
 
-        $credentials = new Credentials($_ENV['AWS_ACCESS_KEY_ID'], $_ENV['AWS_SECRET_ACCESS_KEY']);
+        $publicKey = file_get_contents(base_path('public.pem'));
 
-        $s3 = new S3Client([
-            'version' => 'latest',
-            'region' => 'auto',
-            'endpoint' => "https://" . config('filesystems.disks.s3.account') . "." . "r2.cloudflarestorage.com",
-            'credentials' => $credentials
-        ]);
+        $jwt = str_replace('Bearer ', '', $token);
+        $payload = JWT::decode($jwt, new Key($publicKey, env('JWT_ALGO')));
 
-        $key = "userfiles/images/profile_picture/" . $filename;
-        
-        $s3->putObject([
-            'Bucket' => config('filesystems.disks.s3.bucket'),
-            'Key' => $key,
-            'Body' => file_get_contents($request->icon),
-            'ACL'    => 'public-read',
-        ]);
-
-        $iconUrl = config('filesystems.disks.s3.bucketurl') . "/" . $key;
+        $id = $payload->data->id_user;
 
         Interest::create([
             'interest_name' => $request->interest_name,
-            'created_by' => 1,
-            'icon' => $iconUrl
+            'created_by' => 1
         ]);
 
         $data = Interest::where([['interest_name', '=', $request->interest_name], ['created_by', '=', 1]])->first();

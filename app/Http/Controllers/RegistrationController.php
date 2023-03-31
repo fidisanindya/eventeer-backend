@@ -51,9 +51,20 @@ class RegistrationController extends Controller
 
             $user = User::where('email', $request->email)->first();
             $details = [
-                'email'             => $user->email,
-                'activation_code'   => $user->activation_code,
+                'email'     => $user->email,
             ];
+
+            if($request->hit_from == 'web') {
+                $details['link_to'] = env('LINK_EMAIL_WEB').'/register?email='.$user->email.'&activation_code='.$activation_code;
+            } elseif ($request->hit_from == 'mobile'){
+                $details['link_to'] = env('LINK_EMAIL_MOBILE').'/register?email='.$user->email.'&activation_code='.$activation_code;
+            } else {
+                return response()->json([
+                    'code'      => 404,
+                    'status'    => 'failed',
+                    'result'    => 'hit_from body request not available',
+                ], 404);
+            } 
 
             VerificationQueue::dispatch($details);
 

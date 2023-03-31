@@ -15,9 +15,9 @@
   <footer style="min-width: 100%; background-color: #E6EFFE; margin: 0 auto; text-align: center; font-size: 14px; line-height: 16px; font-weight: 400; color: #192434; padding: 26px 0">
     <img src="{{ $message->embed(public_path().'/assets/images/template_email/Logo.png') }}" alt="Logo Eventeer">
     <div style="margin: 10px auto">
-      <a href=""><img src="{{ $message->embed(public_path().'/assets/images/template_email/Twitter.png') }}" alt="Twitter" style="margin-right: 27px;" width="14px"></a>
-      <a href=""><img src="{{ $message->embed(public_path().'/assets/images/template_email/Facebook.png') }}" alt="Facebook" style="margin-right: 27px;" width="14px"></a>
-      <a href=""><img src="{{ $message->embed(public_path().'/assets/images/template_email/Instagram.png') }}" alt="Instagram" width="14px"></a>
+      <a href="https://twitter.com/TelkomIndonesia"><img src="{{ $message->embed(public_path().'/assets/images/template_email/Twitter.png') }}" alt="Twitter" style="margin-right: 27px;" width="14px"></a>
+      <a href="https://www.facebook.com/digitalamoeba/"><img src="{{ $message->embed(public_path().'/assets/images/template_email/Facebook.png') }}" alt="Facebook" style="margin-right: 27px;" width="14px"></a>
+      <a href="https://www.instagram.com/digitalamoeba/"><img src="{{ $message->embed(public_path().'/assets/images/template_email/Instagram.png') }}" alt="Instagram" width="14px"></a>
       <p>
         Digital Amoeba Space <br>
         Jalan Gegerkalong Hilir, Gegerkalong, Sukarasa, Kec. Sukasari <br>

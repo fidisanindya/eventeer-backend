@@ -21,10 +21,11 @@ class ForgotController extends Controller
 
     public function post_send_forgot_email(Request $request){
         $email = $request->validate([
-            'email' => 'required|email:dns',
+            'email'     => 'required|email:dns',
+            'hit_from'  => 'required',
         ]);
-        
-        $checkEmail = User::where('email', $email)->first();
+
+        $checkEmail = User::where('email', $email['email'])->first();
 
         if($checkEmail != null){
             $token = md5(Str::random(12));
@@ -32,8 +33,19 @@ class ForgotController extends Controller
             $details = [
                 'email'     => $checkEmail->email,
                 'full_name' => $checkEmail->full_name,
-                'token'     => $token,
             ];
+
+            if($email['hit_from'] == 'web'){
+                $details['link_to'] = env('LINK_EMAIL_WEB').'/forgot-password/reset-password?token='.$token;
+            } else if($email['hit_from'] == 'mobile') {
+                $details['link_to'] = env('LINK_EMAIL_MOBILE').'/forgot-password/reset-password?token='.$token;
+            } else {
+                return response()->json([
+                    'code'      => 404,
+                    'status'    => 'failed',
+                    'result'    => 'hit_from body request not available',
+                ], 404);
+            }
             
             ForgotQueue::dispatch($details);
             
@@ -124,7 +136,11 @@ class ForgotController extends Controller
             $password = bcrypt($validatedData['password']);
     
             User::where('id_user', $dataUser->id_user)
-                ->update(['password' => $password]);
+                ->update([
+                    'password' => $password,
+                    'forgotten_password' => null,
+                    'forgotten_password_time'   => null,
+                ]);
 
             return response()->json([
                 'code'      => 200,

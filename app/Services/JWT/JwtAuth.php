@@ -2,11 +2,8 @@
 
 namespace App\Services\Jwt;
 
-use App\Services\Auth\JwtBuilder;
 use App\Models\User;
-use Carbon\CarbonInterface;
 use Firebase\JWT\JWT;
-use Illuminate\Support\Facades\Auth;
 
 class JwtAuth
 {

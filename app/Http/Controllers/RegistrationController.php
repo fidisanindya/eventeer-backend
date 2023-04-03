@@ -137,40 +137,28 @@ class RegistrationController extends Controller
 
     public function verification_email(Request $request){
         $request->validate([
-            'email' => 'required|email',
             'activation_code' => 'required'
         ]);
 
-        $user = User::where('email', $request->email)->first();
+        $user = User::where('activation_code', $request->activation_code)->first();
 
-        if($user->activation_code == $request->activation_code){
-            $query = User::where('email', $request->email)->update([
+        if($user){
+            User::where('activation_code', $request->activation_code)->update([
                 'email_status' => 'verified',
+                'activation_code' => null
+            ]);
+                
+            $userRes = User::where('email', $user->email)->first();
+                
+            UserProfile::where([['id_user', '=', $userRes->id_user], ['key_name', '=', 'registration_step']])->update([
+                'value' => 2,
             ]);
 
-            if($query){
-                User::where('email', $request->email)->update([
-                    'activation_code' => null
-                ]);
-                
-                $userRes = User::where('email', $request->email)->first();
-                
-                UserProfile::where([['id_user', '=', $userRes->id_user], ['key_name', '=', 'registration_step']])->update([
-                    'value' => 2,
-                ]);
-
-                return response()->json([
-                    'code' => 200,
-                    'status' => 'Verification Succesfull',
-                    'result' => $userRes
-                ], 200);
-
-            }else{
-                return response()->json([
-                    'code' => 401,
-                    'status' => 'Verification Failed',
-                ], 401);
-            }
+            return response()->json([
+                'code' => 200,
+                'status' => 'Verification Succesfull',
+                'result' => $userRes
+            ], 200);
         }
 
         return response()->json([

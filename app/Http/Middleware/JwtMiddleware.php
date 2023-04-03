@@ -26,7 +26,7 @@ class JwtMiddleware
                 throw new Exception('Authorization header not found');
             }
 
-            $publicKey = file_get_contents(base_path('public.pem'));
+            $publicKey = env('JWT_PUBLIC_KEY');;
 
             // Delete Character "Bearer "
             $jwt = str_replace('Bearer ', '', $token);

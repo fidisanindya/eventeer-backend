@@ -105,3 +105,7 @@ REDIS_PORT=6379
 ```
 6. Buka terminal baru yang mengarah ke folder laravel berada, dan jalankan perintah `php artisan queue:listen`
 7. Pastikan redis-server.exe, dan `php artisan queue:listen` tetap berjalan saat melakukan email queue
+
+## Tambahan .env
+1. Untuk link redirect di send email `LINK_EMAIL_WEB="http://localhost:3000"`, dan `LINK_EMAIL_MOBILE="http://localhost:3000"`
+2. Untuk Send Email attempt `EMAIL_ATTEMPT_TRY=3`, dan `EMAIL_ATTEMPT_TIMEOUT=21600 #dalam detik`

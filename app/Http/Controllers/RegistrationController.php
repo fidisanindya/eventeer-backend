@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\UploadImage;
 use Image;
 use Carbon\Carbon;
 use App\Models\City;
@@ -20,10 +21,13 @@ use App\Models\EmailVerifActivity;
 use Aws\Credentials\Credentials;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use App\Services\JwtAuth;
+use Illuminate\Http\File;
+use Illuminate\Support\Facades\Storage;
 
 class RegistrationController extends Controller
 {
-    public function registration(Request $request){
+    public function registration(Request $request, JwtAuth $jwtAuth){
         $request->validate([
             'email' => 'required|email',
             'password' => 'required',
@@ -99,6 +103,10 @@ class RegistrationController extends Controller
                 'value' => 1,
             ]);
 
+            $token = $jwtAuth->createJwtToken($user);
+
+            $user->token = $token;
+            
             return response()->json([
                 'code' => 200,
                 'status' => 'Registration Successfull',
@@ -323,25 +331,13 @@ class RegistrationController extends Controller
 
             $filename = $request->id_user . '_profile_picture.' . $request->profile_picture->getClientOriginalExtension();
 
-            $image->save(public_path($filename));
+            $data = $image->encode($request->profile_picture->getClientOriginalExtension())->__toString();
 
-            $credentials = new Credentials($_ENV['AWS_ACCESS_KEY_ID'], $_ENV['AWS_SECRET_ACCESS_KEY']);
+            Storage::put('public/picture_queue/' . $filename, $data);
 
-            $s3 = new S3Client([
-                'version' => 'latest',
-                'region' => 'auto',
-                'endpoint' => "https://" . config('filesystems.disks.s3.account') . "." . "r2.cloudflarestorage.com",
-                'credentials' => $credentials
-            ]);
+            UploadImage::dispatch($filename);
 
             $key = "userfiles/images/profile_picture/" . $filename;
-            
-            $s3->putObject([
-                'Bucket' => config('filesystems.disks.s3.bucket'),
-                'Key' => $key,
-                'Body' => file_get_contents(public_path($filename)),
-                'ACL'    => 'public-read',
-            ]);
 
             $imageUrl = config('filesystems.disks.s3.bucketurl') . "/" . $key;
 
@@ -352,8 +348,6 @@ class RegistrationController extends Controller
                     'gender' => $request->gender,
                     'profile_picture' => $imageUrl
                 ]);
-
-                unlink($filename);
     
                 $user = User::where('id_user', $request->id_user)->first();
     

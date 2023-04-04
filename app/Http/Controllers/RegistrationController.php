@@ -209,40 +209,28 @@ class RegistrationController extends Controller
 
     public function verification_email(Request $request){
         $request->validate([
-            'email' => 'required|email',
             'activation_code' => 'required'
         ]);
 
-        $user = User::where('email', $request->email)->first();
+        $user = User::where('activation_code', $request->activation_code)->first();
 
-        if($user->activation_code == $request->activation_code){
-            $query = User::where('email', $request->email)->update([
+        if($user){
+            User::where('activation_code', $request->activation_code)->update([
                 'email_status' => 'verified',
+                'activation_code' => null
+            ]);
+                
+            $userRes = User::where('email', $user->email)->first();
+                
+            UserProfile::where([['id_user', '=', $userRes->id_user], ['key_name', '=', 'registration_step']])->update([
+                'value' => 2,
             ]);
 
-            if($query){
-                User::where('email', $request->email)->update([
-                    'activation_code' => null
-                ]);
-                
-                $userRes = User::where('email', $request->email)->first();
-                
-                UserProfile::where([['id_user', '=', $userRes->id_user], ['key_name', '=', 'registration_step']])->update([
-                    'value' => 2,
-                ]);
-
-                return response()->json([
-                    'code' => 200,
-                    'status' => 'Verification Succesfull',
-                    'result' => $userRes
-                ], 200);
-
-            }else{
-                return response()->json([
-                    'code' => 401,
-                    'status' => 'Verification Failed',
-                ], 401);
-            }
+            return response()->json([
+                'code' => 200,
+                'status' => 'Verification Succesfull',
+                'result' => $userRes
+            ], 200);
         }
 
         return response()->json([
@@ -277,11 +265,26 @@ class RegistrationController extends Controller
         foreach($request->interest_name  as $int){
             $interest = Interest::select('id_interest')->where('interest_name', $int)->first();
 
-            UserProfile::create([
-                'id_user' => $request->id_user,
-                'key_name' => 'id_interest',
-                'value' => $interest->id_interest
-            ]);
+            if($interest != null){
+                UserProfile::create([
+                    'id_user' => $request->id_user,
+                    'key_name' => 'id_interest',
+                    'value' => $interest->id_interest
+                ]);
+            }else{
+                Interest::create([
+                    'interest_name' => $int,
+                    'created_by' => $request->id_user,
+                ]);
+
+                $newInterest = Interest::select('id_interest')->where('interest_name', $int)->first();
+                
+                UserProfile::create([
+                    'id_user' => $request->id_user,
+                    'key_name' => 'id_interest',
+                    'value' => $newInterest->id_interest
+                ]);
+            }
         }
 
         UserProfile::where([['id_user', '=', $request->id_user], ['key_name', '=', 'registration_step']])->update([
@@ -424,20 +427,44 @@ class RegistrationController extends Controller
 
         $profession = Profession::where('job_title', $request->profession)->first();
 
-        UserProfile::create([
-            'id_user' => $request->id_user,
-            'key_name' => 'id_job',
-            'value' => $profession->id_job,
-        ]);
+        if($profession != null){
+            UserProfile::create([
+                'id_user' => $request->id_user,
+                'key_name' => 'id_job',
+                'value' => $profession->id_job,
+            ]);
+    
+            UserProfile::where([['id_user', '=', $request->id_user], ['key_name', '=', 'registration_step']])->update([
+                'value' => 5,
+            ]);
+    
+            return response()->json([
+                'code' => 200,
+                'status' => 'success add profession and company',
+            ], 200);
+        }else{
+            Profession::create([
+                'job_title' => $request->profession,
+                'created_by' => $request->id_user
+            ]);
 
-        UserProfile::where([['id_user', '=', $request->id_user], ['key_name', '=', 'registration_step']])->update([
-            'value' => 5,
-        ]);
+            $newProfession = Profession::select('id_job')->where('job_title', $request->profession)->first();
 
-        return response()->json([
-            'code' => 200,
-            'status' => 'success add profession and company',
-        ], 200);
+            UserProfile::create([
+                'id_user' => $request->id_user,
+                'key_name' => 'id_job',
+                'value' => $newProfession->id_job,
+            ]);
+    
+            UserProfile::where([['id_user', '=', $request->id_user], ['key_name', '=', 'registration_step']])->update([
+                'value' => 5,
+            ]);
+    
+            return response()->json([
+                'code' => 200,
+                'status' => 'success add profession and company',
+            ], 200);
+        }
     }
 
     public function get_profile_user(Request $request){
@@ -473,11 +500,11 @@ class RegistrationController extends Controller
 
         $user = User::where('id_user', $request->id_user)->first();
 
-        $registration_step = UserProfile::select('value')->where([['id_user', '=', $request->id_user], ['key_name', '=' , 'registration_step']])->first();
-
-        $user->registration_step = $registration_step->value;
-
         if($user){
+            $registration_step = UserProfile::select('value')->where([['id_user', '=', $request->id_user], ['key_name', '=' , 'registration_step']])->first();
+
+            $user->registration_step = $registration_step->value;
+
             return response()->json([
                 'code' => 200,
                 'status' => 'success',
@@ -494,35 +521,20 @@ class RegistrationController extends Controller
     public function store_interest(Request $request){
         $request->validate([
             'interest_name' => 'required',
-            'icon' => 'image',
         ]);
 
-        $filename = $request->interest_name . '_icon.' . $request->icon->getClientOriginalExtension();
+        $token = $request->header('Authorization');
 
-        $credentials = new Credentials($_ENV['AWS_ACCESS_KEY_ID'], $_ENV['AWS_SECRET_ACCESS_KEY']);
+        $publicKey = file_get_contents(base_path('public.pem'));
 
-        $s3 = new S3Client([
-            'version' => 'latest',
-            'region' => 'auto',
-            'endpoint' => "https://" . config('filesystems.disks.s3.account') . "." . "r2.cloudflarestorage.com",
-            'credentials' => $credentials
-        ]);
+        $jwt = str_replace('Bearer ', '', $token);
+        $payload = JWT::decode($jwt, new Key($publicKey, env('JWT_ALGO')));
 
-        $key = "userfiles/images/profile_picture/" . $filename;
-        
-        $s3->putObject([
-            'Bucket' => config('filesystems.disks.s3.bucket'),
-            'Key' => $key,
-            'Body' => file_get_contents($request->icon),
-            'ACL'    => 'public-read',
-        ]);
-
-        $iconUrl = config('filesystems.disks.s3.bucketurl') . "/" . $key;
+        $id = $payload->data->id_user;
 
         Interest::create([
             'interest_name' => $request->interest_name,
-            'created_by' => 1,
-            'icon' => $iconUrl
+            'created_by' => 1
         ]);
 
         $data = Interest::where([['interest_name', '=', $request->interest_name], ['created_by', '=', 1]])->first();

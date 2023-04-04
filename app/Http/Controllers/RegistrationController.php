@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Image;
 use App\Models\EmailQueue;
-use App\Services\Jwt\JwtAuth;
+use App\Services\JwtAuth;
 use Illuminate\Http\File;
 use Illuminate\Support\Facades\Storage;
 

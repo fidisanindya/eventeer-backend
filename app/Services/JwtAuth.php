@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\Jwt;
+namespace App\Services;
 
 use App\Models\User;
 use Firebase\JWT\JWT;

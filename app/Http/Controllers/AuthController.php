@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\LoginActivity;
 use App\Models\User;
-use App\Services\Jwt\JwtAuth;
+use App\Services\JwtAuth;
 use DateTime;
 use Firebase\JWT\JWT;
 use Illuminate\Http\Request;

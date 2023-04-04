@@ -16,7 +16,7 @@ class JwtAuth
                 "aud" => env('APP_URL'),
                 "iat" => time(),
                 "nbf" => time() - 10,
-                "exp" => time() + (60 * 60 * 24), // 1 Days
+                "exp" => time() + (60 * 60 * 24), // 1 hari
                 "sub" => $user->id,
                 "data" => $user
             ];

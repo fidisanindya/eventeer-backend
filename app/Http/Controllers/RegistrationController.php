@@ -19,12 +19,13 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Image;
 use App\Models\EmailQueue;
+use App\Services\Jwt\JwtAuth;
 use Illuminate\Http\File;
 use Illuminate\Support\Facades\Storage;
 
 class RegistrationController extends Controller
 {
-    public function registration(Request $request){
+    public function registration(Request $request, JwtAuth $jwtAuth){
         $request->validate([
             'email' => 'required|email',
             'password' => 'required',
@@ -95,6 +96,10 @@ class RegistrationController extends Controller
                 'value' => 1,
             ]);
 
+            $token = $jwtAuth->createJwtToken($user);
+
+            $user->token = $token;
+            
             return response()->json([
                 'code' => 200,
                 'status' => 'Registration Successfull',

@@ -9,7 +9,7 @@ class JwtAuth
 {
     public function createJwtToken(User $user)
     {
-        $privateKey = file_get_contents(base_path('private.pem'));
+        $privateKey = env('JWT_PRIVATE_KEY');
         
         $authTokenPayload = [
                 "iss" => env('APP_URL'),

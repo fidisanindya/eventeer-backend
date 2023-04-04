@@ -2,15 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
 use App\Models\User;
+use App\Jobs\ForgotQueue;
+use App\Models\EmailQueue;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\Mail;
-use App\Models\EmailQueue;
-use App\Jobs\ForgotQueue;
 use App\Mail\ForgotPasswordMail;
+use App\Http\Controllers\Controller;
+use App\Models\ForgotActivity;
+use Illuminate\Support\Facades\Validator;
 
 class ForgotController extends Controller
 {
@@ -20,13 +21,51 @@ class ForgotController extends Controller
     }
 
     public function post_send_forgot_email(Request $request){
-        $email = $request->validate([
-            'email'     => 'required|email:dns',
+        // Validate input
+        $validator = Validator::make($request->all(), [
+            'email'     => 'required|email',
             'hit_from'  => 'required',
         ]);
 
-        $checkEmail = User::where('email', $email['email'])->first();
+        if ($validator->fails()) {
+            return response()->json([
+                'code'      => 422,
+                'status'    => 'failed',
+                'result'    => $validator->messages(),
+            ], 422);
+        }
 
+        $checkEmail = User::where('email', $request->email)->first();
+
+        // Send Email Attempt
+        if ($checkEmail){
+            $lastAttempt = ForgotActivity::where('email', $checkEmail->email)->latest()->first();
+            
+            if ($lastAttempt != null){
+                if (strtotime(Carbon::now()->toDateTimeString()) - strtotime($lastAttempt->created_at) > env('EMAIL_ATTEMPT_TIMEOUT')){
+                    // After 6 hours, reset the attempt
+                    ForgotActivity::where('email', $checkEmail->email)->delete();
+                }
+            }
+
+            $attempt = ForgotActivity::where('email', $checkEmail->email)->count();
+
+            if($attempt >= env('EMAIL_ATTEMPT_TRY')) {
+                return response()->json([
+                    'code'      => 429,
+                    'status'    => 'failed',
+                    'result'    => 'Too many attempts',
+                ], 429);
+            } else {
+                // Create new log attempt
+                ForgotActivity::create([
+                    'id_user'   => $checkEmail->id_user,
+                    'email'     => $checkEmail->email,
+                ]);
+            }
+        }
+
+        // Send Email
         if($checkEmail != null){
             $token = md5(Str::random(12));
 
@@ -35,9 +74,9 @@ class ForgotController extends Controller
                 'full_name' => $checkEmail->full_name,
             ];
 
-            if($email['hit_from'] == 'web'){
+            if($request->hit_from == 'web'){
                 $details['link_to'] = env('LINK_EMAIL_WEB').'/forgot-password/reset-password?token='.$token;
-            } else if($email['hit_from'] == 'mobile') {
+            } else if($request->hit_from == 'mobile') {
                 $details['link_to'] = env('LINK_EMAIL_MOBILE').'/forgot-password/reset-password?token='.$token;
             } else {
                 return response()->json([
@@ -73,14 +112,13 @@ class ForgotController extends Controller
                     'forgotten_password_time'   => strtotime(Carbon::now()->toDateTimeString()),
                 ]);
 
-            $result = [];
-            $result['message'] = 'Email sent successfully';
-            $result['email'] = $checkEmail->email;
-
             return response()->json([
                 'code'      => 200,
                 'status'    => 'success',
-                'result'    => $result,
+                'result'    => [
+                    'message'   => 'Email sent successfully',
+                    'email' => $checkEmail->email
+                ],
             ], 200);
         }else{
             return response()->json([
@@ -92,11 +130,19 @@ class ForgotController extends Controller
     }
 
     public function post_check_code(Request $request){
-        $token = $request->validate([
+        $validator = Validator::make($request->all(), [
             'token' => 'required'
         ]);
 
-        $dataUser = User::where('forgotten_password', $token['token'])->first();
+        if ($validator->fails()) {
+            return response()->json([
+                'code'      => 422,
+                'status'    => 'failed',
+                'result'    => $validator->messages(),
+            ], 422);
+        }
+
+        $dataUser = User::where('forgotten_password', $request->token)->first();
 
         if ($dataUser != null) {
             $generatedTime = $dataUser->forgotten_password_time;
@@ -105,14 +151,14 @@ class ForgotController extends Controller
                 return response()->json([
                     'code'      => 200,
                     'status'    => 'success',
-                    'result'    => $dataUser,
+                    'result'    => 'Token Valid',
                 ], 200);
             } else {
                 return response()->json([
-                    'code'      => 401,
+                    'code'      => 403,
                     'status'    => 'failed',
                     'result'    => 'Token Timeout',
-                ], 401);
+                ], 403);
             }
         } else {
             return response()->json([
@@ -124,16 +170,24 @@ class ForgotController extends Controller
     }
 
     public function post_reset_password(Request $request){
-        $validatedData = $request->validate([
+        $validator = Validator::make($request->all(), [
             'token'             => 'required',
             'password'          => 'required|min:8|same:confirm_password',
             'confirm_password'  => 'required|min:8',
         ]);
 
-        $dataUser = User::where('forgotten_password', $validatedData['token'])->first();
+        if ($validator->fails()) {
+            return response()->json([
+                'code'      => 422,
+                'status'    => 'failed',
+                'result'    => $validator->messages(),
+            ], 422);
+        }
+
+        $dataUser = User::where('forgotten_password', $request->token)->first();
 
         if ($dataUser != null) {
-            $password = bcrypt($validatedData['password']);
+            $password = bcrypt($request->password);
     
             User::where('id_user', $dataUser->id_user)
                 ->update([
@@ -145,10 +199,7 @@ class ForgotController extends Controller
             return response()->json([
                 'code'      => 200,
                 'status'    => 'success',
-                'result'    => [
-                    'message'   => 'Password updated successfully',
-                    'user'      => $dataUser,
-                ],
+                'result'    => 'Password updated successfully',
             ], 200);
         } else {
             return response()->json([

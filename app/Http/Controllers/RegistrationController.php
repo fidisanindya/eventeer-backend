@@ -479,7 +479,7 @@ class RegistrationController extends Controller
 
     public function get_user(Request $request){
         $request->validate([
-            'id_user' => 'required|string',
+            'id_user' => 'required',
         ]);
 
         $user = User::where('id_user', $request->id_user)->first();

@@ -33,4 +33,16 @@ class SettingController extends Controller
             ],
         ], 200);
     }
+
+    public function get_translate_landing_page(){
+        $translate = Setting::where('setting_name', 'landing_page')->where('key_name', 'translate')->first();
+
+        return response()->json([
+            'code'      => 200,
+            'status'    => 'success',
+            'result'    => [
+                'translate_testimonial'   => json_decode($translate->value),
+            ],
+        ], 200);
+    }
 }

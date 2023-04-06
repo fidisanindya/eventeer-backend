@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ForgotController;
+use App\Http\Controllers\GoogleController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\SettingController;
 use Illuminate\Http\Request;
@@ -26,16 +27,23 @@ Route::get('/', function () {
     return view('welcome');
 })->middleware('jwt.auth');  // testing JWT Authentication
 
-Route::post('/auth', [AuthController::class, 'login']);
+//Authentication
+Route::prefix('auth')->group(function () {
+    Route::post('', [AuthController::class, 'login']); 
+    Route::get('/google', [GoogleController::class, 'redirectToGoogle']); 
+    Route::get('/google/callback', [GoogleController::class, 'handleGoogleCallback']); 
+});
 
 Route::prefix('settings')->group(function () {
     Route::get('/landing_page_data', [SettingController::class, 'get_landing_page_data']);
 });
+
 Route::prefix('forgot')->group(function () {
     Route::post('/send_forgot_email', [ForgotController::class, 'post_send_forgot_email']);
     Route::post('/check_code', [ForgotController::class, 'post_check_code']);
     Route::post('/reset_password', [ForgotController::class, 'post_reset_password']);
 });
+
 Route::prefix('registration')->group(function () {
     Route::post('', [RegistrationController::class, 'registration'])->name('Registration');
     Route::post('/email-verification', [RegistrationController::class, 'verification_email'])->name('VerificationEmail')->middleware('jwt.auth');

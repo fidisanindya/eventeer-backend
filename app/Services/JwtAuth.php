@@ -7,7 +7,7 @@ use Firebase\JWT\JWT;
 
 class JwtAuth
 {
-    public function createJwtToken(User $user)
+    public function createJwtToken($user)
     {
         $privateKey = env('JWT_PRIVATE_KEY');
         

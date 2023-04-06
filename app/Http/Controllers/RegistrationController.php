@@ -477,7 +477,7 @@ class RegistrationController extends Controller
         ], 401); 
     }
 
-    public function get_profile_user_id(Request $request){
+    public function get_user(Request $request){
         $request->validate([
             'id_user' => 'required|string',
         ]);

@@ -55,7 +55,7 @@ Route::prefix('registration')->group(function () {
     Route::post('/setup-profile', [RegistrationController::class, 'submit_profile'])->name('SubmitProfile')->middleware('jwt.auth');
     Route::get('/get-profession', [RegistrationController::class, 'get_profession'])->name('GetProfession')->middleware('jwt.auth');
     Route::post('/submit-profession', [RegistrationController::class, 'submit_profession'])->name('SubmitProfession')->middleware('jwt.auth');
-    Route::get('/get-user-profile-id', [RegistrationController::class, 'get_profile_user_id'])->name('GetProfileUserID');
-    Route::get('/get-user-id', [RegistrationController::class, 'get_profile_user_id'])->name('GetProfileUserID');
+    Route::get('/get-user-profile-id', [RegistrationController::class, 'get_user']);
+    Route::get('/get-user-id', [RegistrationController::class, 'get_user']);
     Route::get('/get-user-profile', [RegistrationController::class, 'get_profile_user'])->name('GetProfileUser')->middleware('jwt.auth');
 });

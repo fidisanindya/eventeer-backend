@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\UserProfile;
 use App\Services\JwtAuth;
 use Exception;
 use Illuminate\Support\Str;
@@ -45,7 +46,7 @@ class GoogleController extends Controller
         }else{
             User::create([
                 'email' => $user->email,
-                'id_social' => $user->id,
+                'sso_id' => $user->id,
                 'email_status' => 'verified',
                 'password' => Hash::make(Str::random(15)),
                 'full_name' => $user->name,
@@ -55,9 +56,18 @@ class GoogleController extends Controller
 
             $newUser = User::where('email', $user->email)->first();
 
+            UserProfile::create([
+                'id_user' => $newUser->id_user,
+                'key_name' => 'registration_step',
+                'value' => 2,
+            ]);
+
+            $registrationStep = UserProfile::select('value')->where([['id_user', '=', $newUser->id_user], ['key_name', '=', 'registration_step']])->first();
+
             $token = $jwtAuth->createJwtToken($newUser);
         
             $newUser->token = $token;
+            $newUser->registration_step = $registrationStep->value;
 
             return response()->json([
                 'code' => 200,

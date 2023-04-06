@@ -31,7 +31,6 @@ class RegistrationController extends Controller
         $request->validate([
             'email' => 'required|email',
             'password' => 'required',
-            'confirm_password' => 'required',
         ]);
 
         $checkEmail = User::where('email', $request->email)->first();
@@ -44,82 +43,73 @@ class RegistrationController extends Controller
             ],409);
         }
 
-        if($request->password == $request->confirm_password){
-            $passwordHash = Hash::make($request->password);
+        $passwordHash = Hash::make($request->password);
 
-            $activation_code = hash('SHA1', time());
+        $activation_code = hash('SHA1', time());
 
-            User::create([
-                'email' => $request->email,
-                'password' => $passwordHash,
-                'activation_code' => $activation_code
-            ]);
+        User::create([
+            'email' => $request->email,
+            'password' => $passwordHash,
+            'activation_code' => $activation_code
+        ]);
 
-            $user = User::where('email', $request->email)->first();
-            // Create new log attempt
-            EmailVerifActivity::create([
-                'id_user'   => $user->id_user,
-                'email'     => $user->email,
-            ]);
-            $details = [
-                'email'     => $user->email,
-            ];
+        $user = User::where('email', $request->email)->first();
+        // Create new log attempt
+        EmailVerifActivity::create([
+            'id_user'   => $user->id_user,
+            'email'     => $user->email,
+        ]);
+        $details = [
+            'email'     => $user->email,
+        ];
 
-            if($request->hit_from == 'web') {
-                $details['link_to'] = env('LINK_EMAIL_WEB').'/register?activation_code='.$activation_code;
-            } elseif ($request->hit_from == 'mobile'){
-                $details['link_to'] = env('LINK_EMAIL_MOBILE').'/register?activation_code='.$activation_code;
-            } else {
-                return response()->json([
-                    'code'      => 404,
-                    'status'    => 'failed',
-                    'result'    => 'hit_from body request not available',
-                ], 404);
-            } 
-
-            VerificationQueue::dispatch($details);
-
-            $html = (new EmailVerification($details))->render();
-            $logQueue = [
-                'to'            => $user->email,
-                'cc'            => '',
-                'bcc'           => '',
-                'message'       => $html,
-                'status'        => 'sent',
-                'date'          => date('Y-m-d H:i:s'),
-                'headers'       => '',
-                'attachment'    => '0',
-                'subject'       => 'Email Verification',
-                'is_broadcast'  => 0,
-                'id_event'      => null,
-                'id_broadcast'  => 0,
-            ];
-
-            EmailQueue::create($logQueue);
-
-            UserProfile::create([
-                'id_user' => $user->id_user,
-                'key_name' => 'registration_step',
-                'value' => 1,
-            ]);
-
-            $token = $jwtAuth->createJwtToken($user);
-
-            $user->token = $token;
-            
+        if($request->hit_from == 'web') {
+            $details['link_to'] = env('LINK_EMAIL_WEB').'/register?activation_code='.$activation_code;
+        } elseif ($request->hit_from == 'mobile'){
+            $details['link_to'] = env('LINK_EMAIL_MOBILE').'/register?activation_code='.$activation_code;
+        } else {
             return response()->json([
-                'code' => 200,
-                'status' => 'Registration Successfull',
-                'result' => $user
-            ],200);
+                'code'      => 404,
+                'status'    => 'failed',
+                'result'    => 'hit_from body request not available',
+            ], 404);
+        } 
 
-        }
+        VerificationQueue::dispatch($details);
+
+        $html = (new EmailVerification($details))->render();
+        $logQueue = [
+            'to'            => $user->email,
+            'cc'            => '',
+            'bcc'           => '',
+            'message'       => $html,
+            'status'        => 'sent',
+            'date'          => date('Y-m-d H:i:s'),
+            'headers'       => '',
+            'attachment'    => '0',
+            'subject'       => 'Email Verification',
+            'is_broadcast'  => 0,
+            'id_event'      => null,
+            'id_broadcast'  => 0,
+        ];
+
+        EmailQueue::create($logQueue);
+
+        UserProfile::create([
+            'id_user' => $user->id_user,
+            'key_name' => 'registration_step',
+            'value' => 1,
+        ]);
+
+        $token = $jwtAuth->createJwtToken($user);
+
+        $user->token = $token;
         
         return response()->json([
-            'code' => 401,
-            'status' => 'Confirm password not match',
-            'result' => null
-        ], 401);
+            'code' => 200,
+            'status' => 'Registration Successfull',
+            'result' => $user
+        ],200);
     }
 
     public function resend_verification_link(Request $request){

@@ -477,15 +477,13 @@ class RegistrationController extends Controller
         ], 401); 
     }
 
-    public function get_user(Request $request){
-        $request->validate([
-            'id_user' => 'required',
-        ]);
+    public function get_user(){
+        $id_user = $_GET['id_user'];
 
-        $user = User::where('id_user', $request->id_user)->first();
+        $user = User::where('id_user', $id_user)->first();
 
         if($user){
-            $registration_step = UserProfile::select('value')->where([['id_user', '=', $request->id_user], ['key_name', '=' , 'registration_step']])->first();
+            $registration_step = UserProfile::select('value')->where([['id_user', '=', $id_user], ['key_name', '=' , 'registration_step']])->first();
 
             $user->registration_step = $registration_step->value;
 

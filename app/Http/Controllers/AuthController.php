@@ -63,25 +63,25 @@ class AuthController extends Controller
                     'message' => 'Too many attempts',
                 ], 401);
             }
-        }
-        
-        if (Hash::check($credentials['password'], $user->password)) {
-            // Create JWT Token
-            $this->saveLoginActivity($request, $user, true);
-            $token = $jwtAuth->createJwtToken($user);
-            
-            $user->token = $token;
 
-            $response = [
-                'code' => app('Illuminate\Http\Response')->status(),
-                'status' => 'success',
-                'result' => $user,
-            ];
-
-            return response($response, 200);
-
-        }else if ($user) {
-            $this->saveLoginActivity($request, $user, false);
+            if (Hash::check($credentials['password'], $user->password)) {
+                // Create JWT Token
+                $this->saveLoginActivity($request, $user, true);
+                $token = $jwtAuth->createJwtToken($user);
+                
+                $user->token = $token;
+    
+                $response = [
+                    'code' => app('Illuminate\Http\Response')->status(),
+                    'status' => 'success',
+                    'result' => $user,
+                ];
+    
+                return response($response, 200);
+    
+            }else if ($user) {
+                $this->saveLoginActivity($request, $user, false);
+            }
         }
 
         return response()->json([

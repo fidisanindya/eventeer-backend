@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ForgotController;
+use App\Http\Controllers\GoogleController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\SettingController;
 use Illuminate\Http\Request;
@@ -29,17 +30,21 @@ Route::get('/', function () {
 Route::prefix('auth')->group(function () {
     Route::post('/', [AuthController::class, 'login']);
     Route::post('/sso_login', [AuthController::class, 'sso_login_post']);
+    Route::get('/google', [GoogleController::class, 'redirectToGoogle']); 
+    Route::get('/google/callback', [GoogleController::class, 'handleGoogleCallback']); 
 });
 
 Route::prefix('settings')->group(function () {
     Route::get('/landing_page_data', [SettingController::class, 'get_landing_page_data']);
     Route::get('/translate_landing_page', [SettingController::class, 'get_translate_landing_page']);
 });
+
 Route::prefix('forgot')->group(function () {
     Route::post('/send_forgot_email', [ForgotController::class, 'post_send_forgot_email']);
     Route::post('/check_code', [ForgotController::class, 'post_check_code']);
     Route::post('/reset_password', [ForgotController::class, 'post_reset_password']);
 });
+
 Route::prefix('registration')->group(function () {
     Route::post('', [RegistrationController::class, 'registration'])->name('Registration');
     Route::post('/email-verification', [RegistrationController::class, 'verification_email'])->name('VerificationEmail')->middleware('jwt.auth');
@@ -51,6 +56,7 @@ Route::prefix('registration')->group(function () {
     Route::post('/setup-profile', [RegistrationController::class, 'submit_profile'])->name('SubmitProfile')->middleware('jwt.auth');
     Route::get('/get-profession', [RegistrationController::class, 'get_profession'])->name('GetProfession')->middleware('jwt.auth');
     Route::post('/submit-profession', [RegistrationController::class, 'submit_profession'])->name('SubmitProfession')->middleware('jwt.auth');
-    Route::get('/get-user-profile-id', [RegistrationController::class, 'get_profile_user_id'])->name('GetProfileUserID');
+    Route::get('/get-user-profile-id/{id}', [RegistrationController::class, 'get_user']);
+    // Route::get('/get-user-id', [RegistrationController::class, 'get_user']);
     Route::get('/get-user-profile', [RegistrationController::class, 'get_profile_user'])->name('GetProfileUser')->middleware('jwt.auth');
 });

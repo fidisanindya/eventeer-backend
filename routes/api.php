@@ -26,10 +26,14 @@ Route::get('/', function () {
     return view('welcome');
 })->middleware('jwt.auth');  // testing JWT Authentication
 
-Route::post('/auth', [AuthController::class, 'login']);
+Route::prefix('auth')->group(function () {
+    Route::post('/', [AuthController::class, 'login']);
+    Route::post('/sso_login', [AuthController::class, 'sso_login_post']);
+});
 
 Route::prefix('settings')->group(function () {
     Route::get('/landing_page_data', [SettingController::class, 'get_landing_page_data']);
+    Route::get('/translate_landing_page', [SettingController::class, 'get_translate_landing_page']);
 });
 Route::prefix('forgot')->group(function () {
     Route::post('/send_forgot_email', [ForgotController::class, 'post_send_forgot_email']);

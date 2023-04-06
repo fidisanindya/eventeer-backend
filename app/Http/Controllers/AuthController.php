@@ -2,14 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\LoginActivity;
-use App\Models\User;
-use App\Services\Jwt\JwtAuth;
 use DateTime;
+use App\Models\User;
 use Firebase\JWT\JWT;
+use GuzzleHttp\Client;
 use Illuminate\Http\Request;
+use App\Models\LoginActivity;
+use App\Models\UserProfile;
+use App\Services\Jwt\JwtAuth;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Hash;
-
+use Illuminate\Support\Facades\Validator;
+use stdClass;
 
 class AuthController extends Controller
 {
@@ -95,6 +99,92 @@ class AuthController extends Controller
                 'ipv4_address' => $request->ip(),
                 'is_successful' => $isSuccessful
             ]);
+        }
+    }
+
+    public function sso_login_post(Request $request, JwtAuth $jwtAuth){
+        $validator = Validator::make($request->all(), [
+            'nik'       => 'required',
+            'password'  => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'code'      => 422,
+                'status'    => 'failed',
+                'result'    => $validator->messages(),
+            ], 422);
+        }
+
+        $client = new Client();
+
+        $response = $client->post('https://apifactory.telkom.co.id:8243/hcm/auth/v1/token', [
+            'json' => [
+                'username' => $request->nik,
+                'password' => $request->password,
+            ],
+        ]);
+
+        $responseBody = json_decode($response->getBody(), true);
+
+        if ($responseBody['status'] == 'success') {
+            $response = $client->get('https://apifactory.telkom.co.id:8243/hcm/pwb/v1/profile/' . $responseBody['data']['auth'], [
+                'headers' => [
+                    'X-Authorization' => 'Bearer ' . $responseBody['data']['jwt']['token']
+                ]
+            ]);
+
+            $responseBody = json_decode($response->getBody(), true);
+            $checkUser = User::where('sso_id', $request->nik)->first();
+            
+            if ($checkUser == null){
+                // Registration
+                date_default_timezone_set('Asia/Jakarta');
+                $dataUser = [
+                    'full_name' => $responseBody['data']['dataPosisi']['NAMA'],
+                    'email' => $responseBody['data']['dataPosisi']['EMAIL'],
+                    'sso_id' => $request->nik,
+                    'password' => Hash::make($request->nik),
+                    'email_status' => "verified",
+                    'registered_via' => "telkom",
+                    'access' => "user",
+                ];
+                
+                $create = User::create($dataUser);
+                $id_user = $create->id;
+
+                $data_step_reg       = [
+                    'id_user' => $id_user,
+                    'key_name' => 'registration_step',
+                    'value' => 3,
+                ];
+
+                $step = UserProfile::where('id_user', $id_user)->first();
+
+                if(!$step){
+                    UserProfile::create($data_step_reg);
+                }
+            }
+        
+            $user = User::where('sso_id', $request->nik)->first();
+            $reg_step = UserProfile::where('id_user', $user->id_user)->where('key_name', 'registration_step')->latest()->first();
+            // Generate JWT
+            $token = $jwtAuth->createJwtToken($user);
+            $result = new stdClass;
+            $result->token = $token;
+            $result->registration_step = $reg_step->value;
+            
+            return response()->json([
+                'code'      => 200,
+                'status'    => 'success',
+                'result'    => $result,
+            ], 200);
+        } else {
+            return response()->json([
+                'code'      => 500,
+                'status'    => 'failed',
+                'result'    => 'Incorrect nik or password',
+            ], 500);
         }
     }
 }

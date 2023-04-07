@@ -9,7 +9,7 @@ use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 use App\Models\LoginActivity;
 use App\Models\UserProfile;
-use App\Services\Jwt\JwtAuth;
+use App\Services\JwtAuth;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -163,6 +163,8 @@ class AuthController extends Controller
 
                 if(!$step){
                     UserProfile::create($data_step_reg);
+                } else{
+                    UserProfile::where('id_user_profile', $step->id_user_profile)->update($data_step_reg);
                 }
             }
         
@@ -174,17 +176,31 @@ class AuthController extends Controller
             $result->token = $token;
             $result->registration_step = $reg_step->value;
             
+            // Save Login Activity
+            $this->saveLoginActivity($request, $user, true);
             return response()->json([
                 'code'      => 200,
                 'status'    => 'success',
                 'result'    => $result,
             ], 200);
         } else {
+            $user = User::where('sso_id', $request->nik)->first();
+            if($user){
+                $lastFailedAttempt = LoginActivity::where('id_user', $user->id_user)->where('is_successful', false)->where('created_at', '>', Carbon::now()->subMinutes(3))->count();
+                if($lastFailedAttempt >= 5) {
+                    return response()->json([
+                        'code'      => 429,
+                        'status'    => 'failed',
+                        'result'    => 'Too many attempts',
+                    ], 429);
+                }
+                $this->saveLoginActivity($request, $user, false);
+            }
             return response()->json([
-                'code'      => 500,
+                'code'      => 401,
                 'status'    => 'failed',
                 'result'    => 'Incorrect nik or password',
-            ], 500);
+            ], 401);
         }
     }
 }

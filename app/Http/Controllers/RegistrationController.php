@@ -17,6 +17,7 @@ use App\Models\UserProfile;
 use Illuminate\Http\Request;
 use App\Jobs\VerificationQueue;
 use App\Mail\EmailVerification;
+use App\Models\Company;
 use App\Models\EmailVerifActivity;
 use Aws\Credentials\Credentials;
 use Illuminate\Support\Facades\Hash;
@@ -310,6 +311,7 @@ class RegistrationController extends Controller
             'id_user' => 'required',
             'profile_picture' => 'image',
             'full_name' => 'required|string',
+            'bio' => '',
             'city' => 'required',
             'gender' => 'required',
         ]);
@@ -335,6 +337,7 @@ class RegistrationController extends Controller
                 User::where('id_user', $request->id_user)->update([
                     'full_name' => $request->full_name,
                     'id_city' => $request->city,
+                    'bio' => $request->bio,
                     'gender' => $request->gender,
                     'profile_picture' => $imageUrl
                 ]);
@@ -403,52 +406,41 @@ class RegistrationController extends Controller
             'profession' => 'required',
         ]);
 
-        UserProfile::create([
-            'id_user' => $request->id_user,
-            'key_name' => 'company',
-            'value' => $request->company,
-        ]);
+        $company = Company::where('company_name', $request->company)->first();
+
+        if($company == null){
+            Company::create([
+                'company_name' => $request->company,
+                'created_by' => $request->id_user
+            ]);
+
+            $company = Company::where('company_name', $request->company)->first();
+        }
 
         $profession = Profession::where('job_title', $request->profession)->first();
 
-        if($profession != null){
-            UserProfile::create([
-                'id_user' => $request->id_user,
-                'key_name' => 'id_job',
-                'value' => $profession->id_job,
-            ]);
-    
-            UserProfile::where([['id_user', '=', $request->id_user], ['key_name', '=', 'registration_step']])->update([
-                'value' => 5,
-            ]);
-    
-            return response()->json([
-                'code' => 200,
-                'status' => 'success add profession and company',
-            ], 200);
-        }else{
+        if($profession == null){
             Profession::create([
                 'job_title' => $request->profession,
                 'created_by' => $request->id_user
             ]);
 
-            $newProfession = Profession::select('id_job')->where('job_title', $request->profession)->first();
-
-            UserProfile::create([
-                'id_user' => $request->id_user,
-                'key_name' => 'id_job',
-                'value' => $newProfession->id_job,
-            ]);
-    
-            UserProfile::where([['id_user', '=', $request->id_user], ['key_name', '=', 'registration_step']])->update([
-                'value' => 5,
-            ]);
-    
-            return response()->json([
-                'code' => 200,
-                'status' => 'success add profession and company',
-            ], 200);
+            $profession = Profession::select('id_job')->where('job_title', $request->profession)->first();
         }
+
+        User::where('id_user', $request->id_user)->update([
+            'id_job' => $profession->id_job,
+            'id_company' => $company->id_company
+        ]);
+
+        UserProfile::where([['id_user', '=', $request->id_user], ['key_name', '=', 'registration_step']])->update([
+            'value' => 5,
+        ]);
+        
+        return response()->json([
+            'code' => 200,
+            'status' => 'success add profession and company',
+        ], 200);
     }
 
     public function get_profile_user(Request $request){

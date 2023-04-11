@@ -186,7 +186,7 @@ class AuthController extends Controller
         } else {
             $user = User::where('sso_id', $request->nik)->first();
             if($user){
-                $lastFailedAttempt = LoginActivity::where('id_user', $user->id_user)->where('is_successful', false)->where('created_at', '>', Carbon::now()->subMinutes(3))->count();
+                $lastFailedAttempt = LoginActivity::where('id_user', $user->id_user)->where('is_successful', false)->where('created_at', '>', Carbon::now()->subMinutes(1))->count();
                 if($lastFailedAttempt >= 5) {
                     return response()->json([
                         'code'      => 429,
@@ -197,10 +197,10 @@ class AuthController extends Controller
                 $this->saveLoginActivity($request, $user, false);
             }
             return response()->json([
-                'code'      => 401,
+                'code'      => 404,
                 'status'    => 'failed',
-                'result'    => 'Incorrect nik or password',
-            ], 401);
+                'result'    => 'NIK not found',
+            ], 404);
         }
     }
 }

@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ForgotController;
 use App\Http\Controllers\GoogleController;
+use App\Http\Controllers\MigrationController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\SettingController;
 use Illuminate\Http\Request;
@@ -59,4 +60,8 @@ Route::prefix('registration')->group(function () {
     Route::get('/get-user-profile-id/{id}', [RegistrationController::class, 'get_user']);
     // Route::get('/get-user-id', [RegistrationController::class, 'get_user']);
     Route::get('/get-user-profile', [RegistrationController::class, 'get_profile_user'])->name('GetProfileUser')->middleware('jwt.auth');
+});
+
+Route::prefix('migration')->group(function () {
+    Route::post('/id_company', [MigrationController::class, 'migrate_id_job']);
 });

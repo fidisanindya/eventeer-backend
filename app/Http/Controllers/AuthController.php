@@ -25,6 +25,13 @@ class AuthController extends Controller
 
         $user = User::where('email', $credentials['email'])->first();
 
+        if(!$user){
+            return response()->json([
+                'status' => 'error',
+                'message' => 'unregistered email',
+            ], 404);
+        }
+
         if ($user) {
             $userLoginActivities = $user->login_activities()->limit(5)->orderBy('created_at', 'desc')->get();
             $latestLoginActivity = $userLoginActivities->first();
@@ -42,7 +49,7 @@ class AuthController extends Controller
                 $blockLoginInterval = 60 * 10; // 10 minutes interval login attempt before user blocked from login
                 $isLoginAttemptReached = $timestampInterval <= $blockLoginInterval;
 
-                $blockTime = 60 * 15; // 15 minutes block user from login
+                $blockTime = 60 * 1; // 1 minutes block user from login
                 $blockTimeRemaining = $datetimeNow->getTimestamp() - $latestActivityTime->getTimestamp();
                 $isUserBlockedFromLogin = $blockTimeRemaining <= $blockTime;
 

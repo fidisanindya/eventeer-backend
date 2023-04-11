@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use App\Mail\ForgotPasswordMail;
 use App\Http\Controllers\Controller;
 use App\Models\ForgotActivity;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
 class ForgotController extends Controller
@@ -37,32 +38,22 @@ class ForgotController extends Controller
 
         $checkEmail = User::where('email', $request->email)->first();
 
-        // Send Email Attempt
+        // Email Attempt
         if ($checkEmail){
-            $lastAttempt = ForgotActivity::where('email', $checkEmail->email)->latest()->first();
-            
-            if ($lastAttempt != null){
-                if (strtotime(Carbon::now()->toDateTimeString()) - strtotime($lastAttempt->created_at) > env('EMAIL_ATTEMPT_TIMEOUT')){
-                    // After 6 hours, reset the attempt
-                    ForgotActivity::where('email', $checkEmail->email)->delete();
-                }
-            }
+            $lastAttempt = ForgotActivity::where('email', $checkEmail->email)->where('created_at', '>', Carbon::now()->subMinutes(5))->count();
 
-            $attempt = ForgotActivity::where('email', $checkEmail->email)->count();
-
-            if($attempt >= env('EMAIL_ATTEMPT_TRY')) {
+            if ($lastAttempt >= env('EMAIL_ATTEMPT_TRY')) {
                 return response()->json([
                     'code'      => 429,
                     'status'    => 'failed',
                     'result'    => 'Too many attempts',
                 ], 429);
-            } else {
-                // Create new log attempt
-                ForgotActivity::create([
-                    'id_user'   => $checkEmail->id_user,
-                    'email'     => $checkEmail->email,
-                ]);
             }
+            
+            ForgotActivity::create([
+                'id_user'   => $checkEmail->id_user,
+                'email'     => $checkEmail->email,
+            ]);
         }
 
         // Send Email
@@ -89,22 +80,7 @@ class ForgotController extends Controller
             ForgotQueue::dispatch($details);
             
             $html = (new ForgotPasswordMail($details))->render();
-            $logQueue = [
-                'to'            => $checkEmail->email,
-                'cc'            => '',
-                'bcc'           => '',
-                'message'       => $html,
-                'status'        => 'sent',
-                'date'          => date('Y-m-d H:i:s'),
-                'headers'       => '',
-                'attachment'    => '0',
-                'subject'       => 'Reset Password',
-                'is_broadcast'  => 0,
-                'id_event'      => null,
-                'id_broadcast'  => 0,
-            ];
-
-            EmailQueue::create($logQueue);
+            $this->logQueue($checkEmail->email, $html, 'Reset Password');
 
             User::where('id_user', $checkEmail->id_user)
                 ->update([
@@ -172,8 +148,7 @@ class ForgotController extends Controller
     public function post_reset_password(Request $request){
         $validator = Validator::make($request->all(), [
             'token'             => 'required',
-            'password'          => 'required|min:8|same:confirm_password',
-            'confirm_password'  => 'required|min:8',
+            'password'          => 'required|min:8',
         ]);
 
         if ($validator->fails()) {
@@ -187,20 +162,30 @@ class ForgotController extends Controller
         $dataUser = User::where('forgotten_password', $request->token)->first();
 
         if ($dataUser != null) {
-            $password = bcrypt($request->password);
+            $lastPassword = $dataUser->password;
+            
+            if(Hash::check($request->password, $lastPassword)){
+                return response()->json([
+                    'code'      => 422,
+                    'status'    => 'failed',
+                    'result'    => 'Password has the same value as last password',
+                ], 422);
+            } else {
+                $password = Hash::make($request->password);
+        
+                User::where('id_user', $dataUser->id_user)
+                    ->update([
+                        'password' => $password,
+                        'forgotten_password' => null,
+                        'forgotten_password_time'   => null,
+                    ]);
     
-            User::where('id_user', $dataUser->id_user)
-                ->update([
-                    'password' => $password,
-                    'forgotten_password' => null,
-                    'forgotten_password_time'   => null,
-                ]);
-
-            return response()->json([
-                'code'      => 200,
-                'status'    => 'success',
-                'result'    => 'Password updated successfully',
-            ], 200);
+                return response()->json([
+                    'code'      => 200,
+                    'status'    => 'success',
+                    'result'    => 'Password updated successfully',
+                ], 200);
+            }
         } else {
             return response()->json([
                 'code'      => 404,
@@ -208,5 +193,24 @@ class ForgotController extends Controller
                 'result'    => 'User not found',
             ], 404);
         }
+    }
+
+    private function logQueue($to, $message, $subject, $cc='', $bcc='', $headers='', $attachment='0', $is_broadcast=0, $id_event=null, $id_broadcast=0) {
+        $logQueue = [
+            'to'            => $to,
+            'cc'            => $cc,
+            'bcc'           => $bcc,
+            'message'       => $message,
+            'status'        => 'sent',
+            'date'          => date('Y-m-d H:i:s'),
+            'headers'       => $headers,
+            'attachment'    => $attachment,
+            'subject'       => $subject,
+            'is_broadcast'  => $is_broadcast,
+            'id_event'      => $id_event,
+            'id_broadcast'  => $id_broadcast,
+        ];
+
+        EmailQueue::create($logQueue);
     }
 }

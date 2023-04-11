@@ -79,22 +79,7 @@ class RegistrationController extends Controller
         VerificationQueue::dispatch($details);
 
         $html = (new EmailVerification($details))->render();
-        $logQueue = [
-            'to'            => $user->email,
-            'cc'            => '',
-            'bcc'           => '',
-            'message'       => $html,
-            'status'        => 'sent',
-            'date'          => date('Y-m-d H:i:s'),
-            'headers'       => '',
-            'attachment'    => '0',
-            'subject'       => 'Email Verification',
-            'is_broadcast'  => 0,
-            'id_event'      => null,
-            'id_broadcast'  => 0,
-        ];
-
-        EmailQueue::create($logQueue);
+        $this->logQueue($user->email, $html, 'Email Verification');
 
         UserProfile::create([
             'id_user' => $user->id_user,
@@ -120,32 +105,22 @@ class RegistrationController extends Controller
 
         $user = User::where('email', $request->email)->first();
 
-        // Send Email Attempt
+        // Email Attempt
         if ($user){
-            $lastAttempt = EmailVerifActivity::where('email', $user->email)->latest()->first();
-            
-            if($lastAttempt != null){
-                if (strtotime(Carbon::now()->toDateTimeString()) - strtotime($lastAttempt->created_at) > env('EMAIL_ATTEMPT_TIMEOUT')){
-                    // After 6 hours, reset the attempt
-                    EmailVerifActivity::where('email', $user->email)->delete();
-                }
-            }
+            $lastAttempt = EmailVerifActivity::where('email', $user->email)->where('created_at', '>', Carbon::now()->subMinutes(5))->count();
 
-            $attempt = EmailVerifActivity::where('email', $user->email)->count();
-
-            if($attempt >= env('EMAIL_ATTEMPT_TRY')) {
+            if ($lastAttempt >= env('EMAIL_ATTEMPT_TRY')) {
                 return response()->json([
                     'code'      => 429,
                     'status'    => 'failed',
                     'result'    => 'Too many attempts',
                 ], 429);
-            } else {
-                // Create new log attempt
-                EmailVerifActivity::create([
-                    'id_user'   => $user->id_user,
-                    'email'     => $user->email,
-                ]);
             }
+            
+            EmailVerifActivity::create([
+                'id_user'   => $user->id_user,
+                'email'     => $user->email,
+            ]);
         }
 
         // Send Email
@@ -155,8 +130,6 @@ class RegistrationController extends Controller
             User::where('email', $request->email)->update([
                 'activation_code' => $activation_code
             ]);
-
-            // Mail::to($user->email)->send(new EmailVerification($user));
             
             $details = [
                 'email'     => $user->email,
@@ -177,22 +150,7 @@ class RegistrationController extends Controller
             VerificationQueue::dispatch($details);
 
             $html = (new EmailVerification($details))->render();
-            $logQueue = [
-                'to'            => $user->email,
-                'cc'            => '',
-                'bcc'           => '',
-                'message'       => $html,
-                'status'        => 'sent',
-                'date'          => date('Y-m-d H:i:s'),
-                'headers'       => '',
-                'attachment'    => '0',
-                'subject'       => 'Email Verification',
-                'is_broadcast'  => 0,
-                'id_event'      => null,
-                'id_broadcast'  => 0,
-            ];
-
-            EmailQueue::create($logQueue);
+            $this->logQueue($user->email, $html, 'Email Verification');
 
             return response()->json([
                 'code' => 200,
@@ -516,5 +474,24 @@ class RegistrationController extends Controller
             'status' => 'success',
             'result' => $data
         ], 200);
+    }
+
+    private function logQueue($to, $message, $subject, $cc='', $bcc='', $headers='', $attachment='0', $is_broadcast=0, $id_event=null, $id_broadcast=0) {
+        $logQueue = [
+            'to'            => $to,
+            'cc'            => $cc,
+            'bcc'           => $bcc,
+            'message'       => $message,
+            'status'        => 'sent',
+            'date'          => date('Y-m-d H:i:s'),
+            'headers'       => $headers,
+            'attachment'    => $attachment,
+            'subject'       => $subject,
+            'is_broadcast'  => $is_broadcast,
+            'id_event'      => $id_event,
+            'id_broadcast'  => $id_broadcast,
+        ];
+
+        EmailQueue::create($logQueue);
     }
 }

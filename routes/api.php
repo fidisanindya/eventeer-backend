@@ -63,5 +63,8 @@ Route::prefix('registration')->group(function () {
 });
 
 Route::prefix('migration')->group(function () {
-    Route::post('/id_company', [MigrationController::class, 'migrate_id_job']);
+    Route::post('/id_job', [MigrationController::class, 'migrate_id_job']);
+    Route::post('/id_company', [MigrationController::class, 'migrate_id_company']);
 });
+// Migration
+Route::post('/migration-about-me', [MigrationController::class, 'migration_about_me'])->name('migrationAboutMe');

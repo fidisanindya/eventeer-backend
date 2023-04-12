@@ -62,7 +62,7 @@ Route::prefix('registration')->group(function () {
     Route::get('/get-user-profile', [RegistrationController::class, 'get_profile_user'])->name('GetProfileUser')->middleware('jwt.auth');
 });
 
-Route::prefix('migration')->group(function () {
+Route::prefix('migrate')->group(function () {
     Route::post('/id_job', [MigrationController::class, 'migrate_id_job']);
     Route::post('/id_company', [MigrationController::class, 'migrate_id_company']);
 });

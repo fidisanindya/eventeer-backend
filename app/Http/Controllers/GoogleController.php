@@ -10,28 +10,37 @@ use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Socialite\Facades\Socialite;
+use Laravel\Socialite\Two\InvalidStateException;
 
 class GoogleController extends Controller
 {
     public function redirectToGoogle()
     {
-        return Socialite::driver('google')->redirect();
+        try {
+            return Socialite::driver('google')->redirect();
+        } catch (InvalidStateException $e) {
+            return Socialite::driver('google')->stateless()->redirect();
+        }
     }
 
     public function handleGoogleCallback(JwtAuth $jwtAuth)
     {
-        $user = Socialite::driver('google')->user();
+        try {
+            $user = Socialite::driver('google')->user();
+        } catch (InvalidStateException $e) {
+            $user = Socialite::driver('google')->stateless()->user();
+        }
 
         $checkUser = User::where('email', $user->email)->first();
 
-        if($checkUser){
+        if($checkUser && !$checkUser->sso_id){
             return response()->json([
                 'code' => 409,
                 'status' => 'email already registered not using google',
             ],409);
         }
 
-        $findUser = User::where([['id_social', '=', $user->id], ['email', '=', $user->email]])->first();
+        $findUser = User::where([['sso_id', '=', $user->id]])->first();
         
         if($findUser){
             $token = $jwtAuth->createJwtToken($findUser);

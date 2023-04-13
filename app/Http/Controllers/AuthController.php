@@ -194,14 +194,20 @@ class AuthController extends Controller
             $user = User::where('sso_id', $request->nik)->first();
             if($user){
                 $lastFailedAttempt = LoginActivity::where('id_user', $user->id_user)->where('is_successful', false)->where('created_at', '>', Carbon::now()->subMinutes(1))->count();
+                $this->saveLoginActivity($request, $user, false);
                 if($lastFailedAttempt >= 5) {
                     return response()->json([
                         'code'      => 429,
                         'status'    => 'failed',
                         'result'    => 'Too many attempts',
                     ], 429);
+                } else {
+                    return response()->json([
+                        'code'      => 401,
+                        'status'    => 'failed',
+                        'result'    => 'Password incorrect',
+                    ], 401);
                 }
-                $this->saveLoginActivity($request, $user, false);
             }
             return response()->json([
                 'code'      => 404,

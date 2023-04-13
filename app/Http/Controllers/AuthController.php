@@ -182,6 +182,7 @@ class AuthController extends Controller
             $result = new stdClass;
             $result->token = $token;
             $result->registration_step = $reg_step->value;
+            $result->id_user = $user->id_user;
             
             // Save Login Activity
             $this->saveLoginActivity($request, $user, true);

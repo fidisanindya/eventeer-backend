@@ -33,6 +33,7 @@ Route::prefix('auth')->group(function () {
     Route::post('/sso_login', [AuthController::class, 'sso_login_post']);
     Route::get('/google', [GoogleController::class, 'redirectToGoogle']); 
     Route::get('/google/callback', [GoogleController::class, 'handleGoogleCallback']); 
+    Route::post('/google/callback-client', [GoogleController::class, 'handleCallbackClient']); 
 });
 
 Route::prefix('settings')->group(function () {

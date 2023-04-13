@@ -102,6 +102,24 @@ class GoogleController extends Controller
             ],409);
         }
 
+        $findUser = User::where([['email', '=', $request->email],['sso_id', '=', $request->id]])->first();
+
+        if($findUser){
+            $token = $jwtAuth->createJwtToken($findUser);
+        
+            $findUser->token = $token;
+
+            $registrationStep = UserProfile::select('value')->where([['id_user', '=', $findUser->id_user], ['key_name', '=', 'registration_step']])->first();
+
+            $findUser->registration_step = $registrationStep->value;
+
+            return response()->json([
+                'code' => 200,
+                'status' => 'success',
+                'result' => $findUser
+            ],200);
+        }
+        
         User::create([
             'email' => $request->email,
             'sso_id' => $request->id,

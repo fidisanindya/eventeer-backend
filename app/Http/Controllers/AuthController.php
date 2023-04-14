@@ -166,7 +166,7 @@ class AuthController extends Controller
                 $data_step_reg       = [
                     'id_user' => $id_user,
                     'key_name' => 'registration_step',
-                    'value' => 3,
+                    'value' => 2,
                 ];
 
                 $step = UserProfile::where('id_user', $id_user)->first();
@@ -184,7 +184,8 @@ class AuthController extends Controller
             $token = $jwtAuth->createJwtToken($user);
             $result = new stdClass;
             $result->token = $token;
-            $result->registration_step = $reg_step->value;
+            $result->finished_registration_step = $reg_step->value;
+            $result->id_user = $user->id_user;
             
             // Save Login Activity
             $this->saveLoginActivity($request, $user, true);

@@ -49,6 +49,7 @@ Route::prefix('forgot')->group(function () {
 
 Route::prefix('registration')->group(function () {
     Route::post('', [RegistrationController::class, 'registration'])->name('Registration');
+    Route::post('/v2', [RegistrationController::class, 'registration_v2'])->name('RegistrationV2');
     Route::post('/email-verification', [RegistrationController::class, 'verification_email'])->name('VerificationEmail')->middleware('jwt.auth');
     Route::post('/resend-link', [RegistrationController::class, 'resend_verification_link'])->name('ResendLink')->middleware('jwt.auth');
     Route::get('/get-interest', [RegistrationController::class, 'get_interest'])->name('GetInterest')->middleware('jwt.auth');

@@ -75,8 +75,11 @@ class AuthController extends Controller
                 // Create JWT Token
                 $this->saveLoginActivity($request, $user, true);
                 $token = $jwtAuth->createJwtToken($user);
+
+                $registrationStep = UserProfile::select('value')->where([['id_user', '=', $user->id_user], ['key_name', '=', 'registration_step']])->first();
                 
                 $user->token = $token;
+                $user->registration_step = $registrationStep->value;
     
                 $response = [
                     'code' => app('Illuminate\Http\Response')->status(),

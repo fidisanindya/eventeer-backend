@@ -119,7 +119,7 @@ class GoogleController extends Controller
                 'result' => $findUser
             ],200);
         }
-        
+
         User::create([
             'email' => $request->email,
             'sso_id' => $request->id,

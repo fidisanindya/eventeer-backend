@@ -32,8 +32,6 @@ class GoogleController extends Controller
             $user = Socialite::driver('google')->stateless()->user();
         }
 
-        dd($user);
-
         $checkUser = User::where('email', $user->email)->first();
 
         if($checkUser && !$checkUser->sso_id){

@@ -184,7 +184,7 @@ class AuthController extends Controller
             $token = $jwtAuth->createJwtToken($user);
             $result = new stdClass;
             $result->token = $token;
-            $result->finished_registration_step = $reg_step->value;
+            $result->registration_step = $reg_step->value;
             $result->id_user = $user->id_user;
             
             // Save Login Activity

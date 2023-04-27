@@ -35,34 +35,22 @@ class HomepageController extends Controller
 
         // Featured Community
         if($request->input('filter') == 'interest') {
-            // $user_interest = UserProfile::where('id_user', $userId)->where('key_name', 'id_interest')->get();
-            // if ($user_interest->first() != null) {
-            //     foreach ($user_interest as $key => $interest) {
-            //         $interest_name = Interest::where('id_interest', $interest->value)->get();
-                    
-            //         $community_interest = CommunityInterest::where('id_interest', $interest_name[$key]->id_interest)->get();
-
-            //         dd($user_interest, $interest_name, $community_interest);
-            //     }
-            // } else {
-
-            // }
-
-            $community = Community::limit(8)->get();
-        } elseif($request->input('filter') == 'all') {
-            $community = Community::limit(8)->get();
+            $user_interest = UserProfile::where('id_user', $userId)->where('key_name', 'id_interest')->pluck('value');
+            if ($user_interest->first() != null) {
+                $community_interest = CommunityInterest::whereIn('id_interest', $user_interest)->pluck('community_id');
+                $community = Community::whereIn('id_community', $community_interest)->limit(8)->select('id_community', 'title', 'image', 'type', 'banner')->get();
+            } else {
+                $community = Community::limit(8)->select('id_community', 'title', 'image', 'type', 'banner')->get();
+            }
+        } else if($request->input('filter') == 'all') {
+            $community = Community::limit(8)->select('id_community', 'title', 'image', 'type', 'banner')->get();
         }
-
-        $community->makeHidden(['description', 'location', 'id_vendor', 'created_at', 'updated_at', 'status', 'referral_code', 'start_date', 'end_date']);
         
-        foreach ($community as $key => $item) {
+        foreach ($community as $item) {
             // Add tag to result
-            $tag = CommunityInterest::with('interest')->where('community_id', $item->id_community)->get();
-            if($tag != null) {
-                $tag->each(function ($item) {
-                    $item->interest->makeHidden(['created_by', 'created_at', 'updated_at', 'deleted_at']);
-                });
-                $tag->makeHidden(['created_at', 'updated_at', 'deleted_at']);
+            $community_tag = CommunityInterest::where('community_id', $item->id_community)->pluck('id_interest');
+            if ($community_tag->first() != null) {
+                $tag = Interest::whereIn('id_interest', $community_tag)->select('id_interest', 'interest_name')->get();
             }
             $item->tag = $tag;
 
@@ -74,13 +62,9 @@ class HomepageController extends Controller
             $followed_id = Follow::where('followed_by', $userId)->pluck('id_user');
 
             if($followed_id->first() != null) {
-                if($key < count($followed_id)){
-                    $followed_communities = CommunityUser::whereIn('id_user', $followed_id)->select('id_community', DB::raw('COUNT(id_user) as total_friends'))->where('id_community', $item->id_community)->groupBy('id_community')->first();
-                }
+                $userCommunities = CommunityUser::whereIn('id_user', $followed_id)->where('id_community', $item->id_community)->pluck('id_user');
 
-                if ($followed_communities != null) {
-                    $userCommunities = CommunityUser::whereIn('id_user', $followed_id)->where('id_community', $item->id_community)->pluck('id_user');
-                    
+                if ($userCommunities->first() != null) {
                     $profilePicture = User::whereIn('id_user', $userCommunities)->whereNotNull('profile_picture')->select('profile_picture')->take(2)->get();
                     
                     $arrayProfile = [];
@@ -89,7 +73,7 @@ class HomepageController extends Controller
                     }
 
                     $item->friends = [
-                        'followed'          => $followed_communities,
+                        'total_friends'     => count($userCommunities),
                         'profile_picture'   => $arrayProfile,
                     ];
                 } else {

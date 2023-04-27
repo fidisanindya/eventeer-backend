@@ -35,18 +35,18 @@ class HomepageController extends Controller
 
         // Featured Community
         if($request->input('filter') == 'interest') {
-            // $user_interest = UserProfile::where('id_user', $userId)->where('key_name', 'id_interest')->get();
-            // if ($user_interest->first() != null) {
-            //     foreach ($user_interest as $key => $interest) {
-            //         $interest_name = Interest::where('id_interest', $interest->value)->get();
+            $user_interest = UserProfile::where('id_user', $userId)->where('key_name', 'id_interest')->get();
+            if ($user_interest->first() != null) {
+                foreach ($user_interest as $key => $interest) {
+                    $interest_name = Interest::where('id_interest', $interest->value)->get();
                     
-            //         $community_interest = CommunityInterest::where('id_interest', $interest_name[$key]->id_interest)->get();
+                    $community_interest = CommunityInterest::where('id_interest', $interest_name[$key]->id_interest)->get();
 
-            //         dd($user_interest, $interest_name, $community_interest);
-            //     }
-            // } else {
+                    dd($user_interest, $interest_name, $community_interest);
+                }
+            } else {
 
-            // }
+            }
 
             $community = Community::limit(8)->get();
         } elseif($request->input('filter') == 'all') {
@@ -73,19 +73,25 @@ class HomepageController extends Controller
             // Add Friends are member to result
             $followed_id = Follow::where('followed_by', $userId)->pluck('id_user');
 
-            $profilePicture1 = User::where('id_user', $followed_id[0])->get()->pluck('profile_picture');
-            $profilePicture2 = User::where('id_user', $followed_id[1])->get()->pluck('profile_picture');
-            
-            if($key < count($followed_id)){
-                $followed_communities = CommunityUser::whereIn('id_user', $followed_id)->select('id_community', DB::raw('COUNT(id_user) as total_friends'))->where('id_community', $item->id_community)->groupBy('id_community')->first();
+            if($followed_id->first() != null) {
+                if($key < count($followed_id)){
+                    $followed_communities = CommunityUser::whereIn('id_user', $followed_id)->select('id_community', DB::raw('COUNT(id_user) as total_friends'))->where('id_community', $item->id_community)->groupBy('id_community')->first();
+                }
+
+                $profilePicture = User::whereIn('id_user', $followed_id)->whereNotNull('profile_picture')->select('profile_picture')->take(2)->get();
+                
+                $arrayProfile = [];
+                for ($i=0; $i < 2; $i++) { 
+                    array_push($arrayProfile, $profilePicture[$i]->profile_picture);
+                }
+                
+                $item->friends = [
+                    'followed'          => $followed_communities,
+                    'profile_picture'   => $arrayProfile,
+                ];
+            } else {
+                $item->friends = null;
             }
-            $item->friends = [
-                'followed'          => $followed_communities,
-                'profile_picture'   => [
-                    'profile_one'   => $profilePicture1,
-                    'profile_two'   => $profilePicture2
-                ],
-            ];
         }
 
         $result->featured_community = $community;
@@ -93,7 +99,7 @@ class HomepageController extends Controller
         // Featured Event
         $event = Event::with(['community' => function ($item) {
             $item->select('id_community', 'title', 'image');
-        }])->where('deleted_at', null)->limit(4)->latest()->get();
+        }])->where('deleted_at', null)->where('status', 'active')->limit(4)->latest()->get();
         $event->makeHidden(['description', 'created_at', 'updated_at', 'deleted_at', 'id_user', 'vendor_id']);
 
         foreach ($event as $item){

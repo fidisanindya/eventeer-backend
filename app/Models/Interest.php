@@ -16,4 +16,8 @@ class Interest extends Model
     ];
 
     protected $table = 'module_interest';
+
+    public function community_interest(){
+        return $this->hasMany(CommunityInterest::class, 'id_interest', 'id_interest');
+    }
 }

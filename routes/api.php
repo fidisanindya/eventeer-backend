@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\ForgotController;
 use App\Http\Controllers\GoogleController;
 use App\Http\Controllers\MigrationController;
@@ -64,9 +65,16 @@ Route::prefix('registration')->group(function () {
     Route::get('/get-user-profile', [RegistrationController::class, 'get_profile_user'])->name('GetProfileUser')->middleware('jwt.auth');
 });
 
+// Migration
 Route::prefix('migrate')->group(function () {
     Route::post('/id_job', [MigrationController::class, 'migrate_id_job']);
     Route::post('/id_company', [MigrationController::class, 'migrate_id_company']);
+    Route::post('/about-me', [MigrationController::class, 'migration_about_me'])->name('migrationAboutMe');
 });
-// Migration
-Route::post('/migration-about-me', [MigrationController::class, 'migration_about_me'])->name('migrationAboutMe');
+
+// Community List
+Route::prefix('community-list')->group(function () {
+    Route::post('/community-public', [CommunityController::class, 'getCommunityPublic']);
+    Route::post('/community-interest', [CommunityController::class, 'getCommunityInterest']);
+    Route::post('/community-top', [CommunityController::class, 'getTopCommunity']);
+});

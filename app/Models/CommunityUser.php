@@ -8,10 +8,10 @@ use Illuminate\Database\Eloquent\Model;
 class CommunityUser extends Model
 {
     use HasFactory;
-
+    
     protected $table = 'module_community_user';
 
     public function community(){
-        return $this->belongsTo(Community::class, 'id_community', 'id_community');
+        return $this->belongsTo(Community::class, 'id_community', 'community_id');
     }
 }

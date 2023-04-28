@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\ForgotController;
 use App\Http\Controllers\GoogleController;
 use App\Http\Controllers\HomepageController;
@@ -69,8 +70,15 @@ Route::prefix('registration')->group(function () {
 Route::prefix('migrate')->group(function () {
     Route::post('/id_job', [MigrationController::class, 'migrate_id_job']);
     Route::post('/id_company', [MigrationController::class, 'migrate_id_company']);
+    Route::post('/about-me', [MigrationController::class, 'migration_about_me'])->name('migrationAboutMe');
 });
-Route::post('/migration-about-me', [MigrationController::class, 'migration_about_me'])->name('migrationAboutMe');
+
+// Community List
+Route::prefix('community-list')->group(function () {
+    Route::post('/community-public', [CommunityController::class, 'getCommunityPublic']);
+    Route::post('/community-interest', [CommunityController::class, 'getCommunityInterest']);
+    Route::post('/community-top', [CommunityController::class, 'getTopCommunity']);
+});
 
 // Homepage
 Route::get('/homepage', [HomepageController::class, 'get_homepage'])->middleware('jwt.auth');

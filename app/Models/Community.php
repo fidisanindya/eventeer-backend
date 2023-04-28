@@ -15,6 +15,7 @@ class Community extends Model
     public function community_interest(){
         return $this->hasMany(CommunityInterest::class, 'community_id', 'id_community');
     }
+
     public function community_user(){
         return $this->hasMany(CommunityUser::class, 'id_community', 'id_community');
     }

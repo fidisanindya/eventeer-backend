@@ -87,11 +87,10 @@ class HomepageController extends Controller
         $result->featured_community = $community;
 
         // Featured Event
-        $event = Event::with(['community' => function ($item) {
-            $item->select('id_community', 'title', 'image');
-        }])->where('deleted_at', null)->where('status', 'active')->limit(4)->latest()->get();
-        $event->makeHidden(['description', 'created_at', 'updated_at', 'deleted_at', 'id_user', 'vendor_id']);
+        $today = now()->toDateString();
 
+        $event = Event::where('status', 'active')->where('additional_data->date->start', '>=', $today)->orderBy('additional_data->date->start', 'asc')->select('id_event', 'id_community', 'title', 'image', 'category', 'additional_data', 'status')->limit(4)->get();
+        
         foreach ($event as $item){
             $item->additional_data = json_decode($item->additional_data);
         }

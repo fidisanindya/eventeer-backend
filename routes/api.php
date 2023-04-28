@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\ForgotController;
 use App\Http\Controllers\GoogleController;
+use App\Http\Controllers\HomepageController;
 use App\Http\Controllers\MigrationController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\SettingController;
@@ -78,3 +79,6 @@ Route::prefix('community-list')->group(function () {
     Route::post('/community-interest', [CommunityController::class, 'getCommunityInterest']);
     Route::post('/community-top', [CommunityController::class, 'getTopCommunity']);
 });
+
+// Homepage
+Route::get('/homepage', [HomepageController::class, 'get_homepage'])->middleware('jwt.auth');

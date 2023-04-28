@@ -82,7 +82,9 @@ class CommunityController extends Controller
         $idCommunity = collect($idCommunity);
         $uniqueId = $idCommunity->unique();
         
-        $communityByInterest = Community::select('id_community', 'title', 'image', 'banner', 'type')->whereIn('id_community', $uniqueId)->where('status', 'active')->get();
+        $communityByInterest = Community::select('id_community', 'title', 'image', 'banner', 'type')->whereIn('id_community', $uniqueId)->where('status', 'active')->withCount(['community_user as total_members' => function ($query) {
+            $query->where('status', '=', 'active')->whereOr('status', '=', 'running');
+        }])->get();
 
         $followed_id = Follow::where('followed_by', $request->id_user)->pluck('id_user');
 
@@ -149,7 +151,7 @@ class CommunityController extends Controller
                 $tag->makeHidden(['created_at', 'updated_at', 'deleted_at']);
             }
             $item->tag = $tag;
-            
+
             if($followed_id->first() != null) {
                 if($ct < count($followed_id))  {
                     $followed_communities = CommunityUser::whereIn('id_user', $followed_id)->select('id_community', DB::raw('COUNT(id_user) as total_friends'))->where('id_community', $item->id_community)->groupBy('id_community')->first();

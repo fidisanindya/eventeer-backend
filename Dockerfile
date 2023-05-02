@@ -1,22 +1,34 @@
-FROM trafex/php-nginx:3.0.0
+# Build stage
+FROM masrodjie/php81:slim AS build
 
-LABEL "maintainer"="M Arnas Risqianto <arnas@digitalamoeba.id>"
+COPY --chown=www-data . /app/
 
+WORKDIR /app/
+
+RUN composer install --no-cache --no-dev --optimize-autoloader --no-interaction --no-progress
+
+# Production stage
+FROM masrodjie/php81:slim
+
+COPY --from=build --chown=www-data /app/ /var/www/html/
+
+COPY ./docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY ./docker/rr.yaml /var/www/html/.rr.yaml
+
+RUN rm -Rf /var/www/html/Dockerfile /var/www/html/docker /var/www/html/.styleci.yml /var/www/html/.gitlab-ci.yml /var/www/html/.gitignore /var/www/html/.gitattributes /var/www/html/.git
 
 USER root
-RUN apk add --no-cache php81-tokenizer php81-xmlwriter php81-simplexml php81-redis php81-pdo php81-pdo_mysql php81-fileinfo
-RUN rm -rf /var/cache/apk/*
-COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
-COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+COPY docker/php.ini /etc/php/8.1/cli/php.ini
+RUN usermod -s /bin/bash www-data
+RUN chown -R www-data.www-data /var/www
 
-RUN rm /var/www/html/*
-RUN chown -R nobody.nobody /var/www /run /var/lib/nginx /var/log/nginx
-COPY --chown=nobody . /var/www/html
-RUN rm -Rf /var/www/html/docker /var/www/html/public/uploads
+RUN /var/www/html/vendor/bin/rr get-binary -q
 
-USER nobody
+WORKDIR /var/www/html
 
-RUN composer update --optimize-autoloader --no-interaction --no-progress 
+USER www-data
 
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+
+HEALTHCHECK --interval=10s --timeout=1s CMD curl --fail http://localhost:8001/health?plugin=http || exit 1

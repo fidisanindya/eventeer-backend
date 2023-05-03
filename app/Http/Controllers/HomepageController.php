@@ -16,6 +16,7 @@ use App\Models\CommunityUser;
 use App\Models\CommunityInterest;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use App\Models\Submission;
 
 class HomepageController extends Controller
 {
@@ -38,12 +39,12 @@ class HomepageController extends Controller
             $user_interest = UserProfile::where('id_user', $userId)->where('key_name', 'id_interest')->pluck('value');
             if ($user_interest->first() != null) {
                 $community_interest = CommunityInterest::whereIn('id_interest', $user_interest)->pluck('community_id');
-                $community = Community::whereIn('id_community', $community_interest)->limit(8)->select('id_community', 'title', 'image', 'type', 'banner')->get();
+                $community = Community::where('status', 'active')->whereIn('id_community', $community_interest)->limit(8)->select('id_community', 'title', 'image', 'type', 'banner')->get();
             } else {
-                $community = Community::limit(8)->select('id_community', 'title', 'image', 'type', 'banner')->get();
+                $community = Community::where('status', 'active')->limit(8)->select('id_community', 'title', 'image', 'type', 'banner')->get();
             }
         } else if($request->input('filter') == 'all') {
-            $community = Community::limit(8)->select('id_community', 'title', 'image', 'type', 'banner')->get();
+            $community = Community::where('status', 'active')->limit(8)->select('id_community', 'title', 'image', 'type', 'banner')->get();
         }
         
         foreach ($community as $item) {
@@ -55,7 +56,7 @@ class HomepageController extends Controller
             $item->tag = $tag;
 
             // Add total members to result
-            $members = CommunityUser::select('id_community', DB::raw('COUNT(id_user) as total_members'))->where('id_community', $item->id_community)->groupBy('id_community')->first();
+            $members = CommunityUser::select('id_community', DB::raw('COUNT(id_user) as total_members'))->where('id_community', $item->id_community)->where('status', '=', 'active')->whereOr('status', '=', 'running')->groupBy('id_community')->first();
             $item->members = $members;
 
             // Add Friends are member to result
@@ -95,6 +96,10 @@ class HomepageController extends Controller
 
         foreach ($event as $item){
             $item->additional_data = json_decode($item->additional_data);
+
+            $people_joined = Submission::select('id_event', DB::raw('COUNT(distinct id_user) as people_joined'))->where('id_event', $item->id_event)->groupBy('id_event')->first();
+
+            $item->people_joined = $people_joined;
         }
 
         $result->featured_event = $event;

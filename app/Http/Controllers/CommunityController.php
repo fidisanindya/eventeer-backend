@@ -8,32 +8,41 @@ use App\Models\CommunityUser;
 use App\Models\Follow;
 use App\Models\User;
 use App\Models\UserProfile;
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class CommunityController extends Controller
 {
     public function getCommunityPublic(Request $request){
-        $request->validate([
-            'id_user' => 'required'
-        ]);
+        // Get id_user from Bearer Token
+        $authorizationHeader = $request->header('Authorization');
+
+        $jwtParts = explode(' ', $authorizationHeader);
+        $jwtToken = $jwtParts[1];
+
+        $publicKey = env("JWT_PUBLIC_KEY"); 
+        $decoded = JWT::decode($jwtToken, new Key($publicKey, 'RS256'));
+        
+        $userId = $decoded->data->id_user;
 
         $communityPublic = Community::select('id_community', 'title', 'image', 'banner', 'type')->where([['type', '=', 'public'], ['status', '=', 'active']])->withCount(['community_user as total_members' => function ($query) {
             $query->where('status', '=', 'active')->whereOr('status', '=', 'running');
         }])->get();
 
-        $followed_id = Follow::where('followed_by', $request->id_user)->pluck('id_user');
+        $followed_id = Follow::where('followed_by', $userId)->pluck('id_user');
 
         foreach ($communityPublic as $cp => $item){
             // Add tag to result
             $tag = CommunityInterest::with('interest')->where('community_id', $item->id_community)->get();
+            $interest = [];
             if($tag != null) {
-                $tag->each(function ($item) {
-                    $item->interest->makeHidden(['created_by', 'created_at', 'updated_at', 'deleted_at', 'icon', 'icon_selected']);
+                $tag->each(function ($item) use (&$interest) {
+                    array_push($interest, $item->interest->interest_name);
                 });
-                $tag->makeHidden(['created_at', 'updated_at', 'deleted_at']);
             }
-            $item->tag = $tag;
+            $item->tag = $interest;
 
             if($followed_id->first() != null) {
                 if($cp < count($followed_id))  {
@@ -64,11 +73,18 @@ class CommunityController extends Controller
     }
 
     public function getCommunityInterest(Request $request){
-        $request->validate([
-            'id_user' => 'required'
-        ]);
+        // Get id_user from Bearer Token
+        $authorizationHeader = $request->header('Authorization');
 
-        $interestUser = UserProfile::select('value')->where([['id_user', '=', $request->id_user], ['key_name', '=', 'id_interest']])->get();
+        $jwtParts = explode(' ', $authorizationHeader);
+        $jwtToken = $jwtParts[1];
+
+        $publicKey = env("JWT_PUBLIC_KEY"); 
+        $decoded = JWT::decode($jwtToken, new Key($publicKey, 'RS256'));
+        
+        $userId = $decoded->data->id_user;
+
+        $interestUser = UserProfile::select('value')->where([['id_user', '=', $userId], ['key_name', '=', 'id_interest']])->get();
 
         $communityInterest = CommunityInterest::select('community_id')->whereIn('id_interest', $interestUser)->get();
 
@@ -86,18 +102,18 @@ class CommunityController extends Controller
             $query->where('status', '=', 'active')->whereOr('status', '=', 'running');
         }])->get();
 
-        $followed_id = Follow::where('followed_by', $request->id_user)->pluck('id_user');
+        $followed_id = Follow::where('followed_by', $userId)->pluck('id_user');
 
         foreach($communityByInterest as $ci => $item){
             // Add tag to result
             $tag = CommunityInterest::with('interest')->where('community_id', $item->id_community)->get();
+            $interest = [];
             if($tag != null) {
-                $tag->each(function ($item) {
-                    $item->interest->makeHidden(['created_by', 'created_at', 'updated_at', 'deleted_at', 'icon', 'icon_selected']);
+                $tag->each(function ($item) use (&$interest) {
+                    array_push($interest, $item->interest->interest_name);
                 });
-                $tag->makeHidden(['created_at', 'updated_at', 'deleted_at']);
             }
-            $item->tag = $tag;
+            $item->tag = $interest;
 
             if($followed_id->first() != null) {
                 if($ci < count($followed_id))  {
@@ -129,9 +145,16 @@ class CommunityController extends Controller
     }
 
     public function getTopCommunity(Request $request){
-        $request->validate([
-            'id_user' => 'required'
-        ]);
+        // Get id_user from Bearer Token
+        $authorizationHeader = $request->header('Authorization');
+
+        $jwtParts = explode(' ', $authorizationHeader);
+        $jwtToken = $jwtParts[1];
+
+        $publicKey = env("JWT_PUBLIC_KEY"); 
+        $decoded = JWT::decode($jwtToken, new Key($publicKey, 'RS256'));
+        
+        $userId = $decoded->data->id_user;
 
         $communityTop = Community::select('id_community', 'title', 'image')->withCount(['community_user as total_members' => function ($query) {
             $query->where('status', '=', 'active')->whereOr('status', '=', 'running');
@@ -139,18 +162,18 @@ class CommunityController extends Controller
         ->where('status', 'active')
         ->orderBy('total_members', 'DESC')->limit(3)->get();
 
-        $followed_id = Follow::where('followed_by', $request->id_user)->pluck('id_user');
+        $followed_id = Follow::where('followed_by', $userId)->pluck('id_user');
 
         foreach($communityTop as $ct => $item){
             // Add tag to result
             $tag = CommunityInterest::with('interest')->where('community_id', $item->id_community)->get();
+            $interest = [];
             if($tag != null) {
-                $tag->each(function ($item) {
-                    $item->interest->makeHidden(['created_by', 'created_at', 'updated_at', 'deleted_at', 'icon', 'icon_selected']);
+                $tag->each(function ($item) use (&$interest) {
+                    array_push($interest, $item->interest->interest_name);
                 });
-                $tag->makeHidden(['created_at', 'updated_at', 'deleted_at']);
             }
-            $item->tag = $tag;
+            $item->tag = $interest;
 
             if($followed_id->first() != null) {
                 if($ct < count($followed_id))  {

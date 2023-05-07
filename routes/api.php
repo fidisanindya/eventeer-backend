@@ -6,6 +6,7 @@ use App\Http\Controllers\ForgotController;
 use App\Http\Controllers\GoogleController;
 use App\Http\Controllers\HomepageController;
 use App\Http\Controllers\MigrationController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\SettingController;
 use Illuminate\Http\Request;
@@ -75,10 +76,20 @@ Route::prefix('migrate')->group(function () {
 
 // Community List
 Route::prefix('community-list')->group(function () {
-    Route::post('/community-public', [CommunityController::class, 'getCommunityPublic']);
-    Route::post('/community-interest', [CommunityController::class, 'getCommunityInterest']);
-    Route::post('/community-top', [CommunityController::class, 'getTopCommunity']);
+    Route::get('/community-public', [CommunityController::class, 'getCommunityPublic'])->middleware('jwt.auth');
+    Route::get('/community-interest', [CommunityController::class, 'getCommunityInterest'])->middleware('jwt.auth');
+    Route::get('/community-top', [CommunityController::class, 'getTopCommunity'])->middleware('jwt.auth');
 });
 
 // Homepage
 Route::get('/homepage', [HomepageController::class, 'get_homepage'])->middleware('jwt.auth');
+
+// Profile
+Route::prefix('profile')->group(function (){
+    Route::get('/get-profile/{id}', [ProfileController::class, 'get_profile']);
+    Route::post('/edit-profile-picture', [ProfileController::class, 'edit_profile_picture']);
+    Route::post('/edit-banner-picture', [ProfileController::class, 'edit_banner']);
+    Route::post('/add-portofolio', [ProfileController::class, 'add_portofolio']);
+    // Route::post('/edit-portofolio', [ProfileController::class, 'add_portofolio']);
+    // Route::post('/delete-portofolio', [ProfileController::class, 'add_portofolio']);
+});

@@ -6,6 +6,7 @@ use App\Http\Controllers\ForgotController;
 use App\Http\Controllers\GoogleController;
 use App\Http\Controllers\HomepageController;
 use App\Http\Controllers\MigrationController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\SettingController;
 use Illuminate\Http\Request;
@@ -78,6 +79,12 @@ Route::prefix('community-list')->group(function () {
     Route::post('/community-public', [CommunityController::class, 'getCommunityPublic']);
     Route::post('/community-interest', [CommunityController::class, 'getCommunityInterest']);
     Route::post('/community-top', [CommunityController::class, 'getTopCommunity']);
+    Route::middleware(['jwt.auth'])->group(function () {
+        Route::get('/event-all', [CommunityController::class, 'getEventAll']);
+        Route::get('/event-might-like', [CommunityController::class, 'getEventMightLike']);
+        Route::get('/event-top', [CommunityController::class, 'getEventTop']);
+        Route::get('/your-event', [CommunityController::class, 'getYourEvent']);
+    });
 });
 
 // Homepage

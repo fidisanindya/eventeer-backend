@@ -16,6 +16,7 @@ use App\Models\CommunityUser;
 use App\Models\CommunityInterest;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use App\Models\Submission;
 
 class HomepageController extends Controller
 {
@@ -35,52 +36,36 @@ class HomepageController extends Controller
 
         // Featured Community
         if($request->input('filter') == 'interest') {
-            // $user_interest = UserProfile::where('id_user', $userId)->where('key_name', 'id_interest')->get();
-            // if ($user_interest->first() != null) {
-            //     foreach ($user_interest as $key => $interest) {
-            //         $interest_name = Interest::where('id_interest', $interest->value)->get();
-                    
-            //         $community_interest = CommunityInterest::where('id_interest', $interest_name[$key]->id_interest)->get();
-
-            //         dd($user_interest, $interest_name, $community_interest);
-            //     }
-            // } else {
-
-            // }
-
-            $community = Community::limit(8)->get();
-        } elseif($request->input('filter') == 'all') {
-            $community = Community::limit(8)->get();
+            $user_interest = UserProfile::where('id_user', $userId)->where('key_name', 'id_interest')->pluck('value');
+            if ($user_interest->first() != null) {
+                $community_interest = CommunityInterest::whereIn('id_interest', $user_interest)->pluck('community_id');
+                $community = Community::where('status', 'active')->whereIn('id_community', $community_interest)->limit(8)->select('id_community', 'title', 'image', 'type', 'banner')->get();
+            } else {
+                $community = Community::where('status', 'active')->limit(8)->select('id_community', 'title', 'image', 'type', 'banner')->get();
+            }
+        } else if($request->input('filter') == 'all') {
+            $community = Community::where('status', 'active')->limit(8)->select('id_community', 'title', 'image', 'type', 'banner')->get();
         }
-
-        $community->makeHidden(['description', 'location', 'id_vendor', 'created_at', 'updated_at', 'status', 'referral_code', 'start_date', 'end_date']);
         
-        foreach ($community as $key => $item) {
+        foreach ($community as $item) {
             // Add tag to result
-            $tag = CommunityInterest::with('interest')->where('community_id', $item->id_community)->get();
-            if($tag != null) {
-                $tag->each(function ($item) {
-                    $item->interest->makeHidden(['created_by', 'created_at', 'updated_at', 'deleted_at']);
-                });
-                $tag->makeHidden(['created_at', 'updated_at', 'deleted_at']);
+            $community_tag = CommunityInterest::where('community_id', $item->id_community)->pluck('id_interest');
+            if ($community_tag->first() != null) {
+                $tag = Interest::whereIn('id_interest', $community_tag)->select('id_interest', 'interest_name')->get();
             }
             $item->tag = $tag;
 
             // Add total members to result
-            $members = CommunityUser::select('id_community', DB::raw('COUNT(id_user) as total_members'))->where('id_community', $item->id_community)->groupBy('id_community')->first();
+            $members = CommunityUser::select('id_community', DB::raw('COUNT(id_user) as total_members'))->where('id_community', $item->id_community)->where('status', '=', 'active')->whereOr('status', '=', 'running')->groupBy('id_community')->first();
             $item->members = $members;
 
             // Add Friends are member to result
             $followed_id = Follow::where('followed_by', $userId)->pluck('id_user');
 
             if($followed_id->first() != null) {
-                if($key < count($followed_id)){
-                    $followed_communities = CommunityUser::whereIn('id_user', $followed_id)->select('id_community', DB::raw('COUNT(id_user) as total_friends'))->where('id_community', $item->id_community)->groupBy('id_community')->first();
-                }
+                $userCommunities = CommunityUser::whereIn('id_user', $followed_id)->where('id_community', $item->id_community)->pluck('id_user');
 
-                if ($followed_communities != null) {
-                    $userCommunities = CommunityUser::whereIn('id_user', $followed_id)->where('id_community', $item->id_community)->pluck('id_user');
-                    
+                if ($userCommunities->first() != null) {
                     $profilePicture = User::whereIn('id_user', $userCommunities)->whereNotNull('profile_picture')->select('profile_picture')->take(2)->get();
                     
                     $arrayProfile = [];
@@ -89,7 +74,7 @@ class HomepageController extends Controller
                     }
 
                     $item->friends = [
-                        'followed'          => $followed_communities,
+                        'total_friends'     => count($userCommunities),
                         'profile_picture'   => $arrayProfile,
                     ];
                 } else {
@@ -103,13 +88,18 @@ class HomepageController extends Controller
         $result->featured_community = $community;
 
         // Featured Event
+        $today = now()->toDateString();
+
         $event = Event::with(['community' => function ($item) {
             $item->select('id_community', 'title', 'image');
-        }])->where('deleted_at', null)->where('status', 'active')->limit(4)->latest()->get();
-        $event->makeHidden(['description', 'created_at', 'updated_at', 'deleted_at', 'id_user', 'vendor_id']);
+        }])->where('deleted_at', null)->where('status', 'active')->where('additional_data->date->start', '>=', $today)->orderBy('additional_data->date->start', 'asc')->select('id_event', 'id_community', 'title', 'image', 'category', 'additional_data', 'status')->limit(4)->get();
 
         foreach ($event as $item){
             $item->additional_data = json_decode($item->additional_data);
+
+            $people_joined = Submission::select('id_event', DB::raw('COUNT(distinct id_user) as people_joined'))->where('id_event', $item->id_event)->groupBy('id_event')->first();
+
+            $item->people_joined = $people_joined;
         }
 
         $result->featured_event = $event;

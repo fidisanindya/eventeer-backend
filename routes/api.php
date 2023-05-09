@@ -89,7 +89,7 @@ Route::prefix('profile')->group(function (){
     Route::get('/get-profile/{id}', [ProfileController::class, 'get_profile']);
     Route::post('/edit-profile-picture', [ProfileController::class, 'edit_profile_picture']);
     Route::post('/edit-banner-picture', [ProfileController::class, 'edit_banner']);
-    Route::post('/add-portofolio', [ProfileController::class, 'add_portofolio']);
-    // Route::post('/edit-portofolio', [ProfileController::class, 'add_portofolio']);
-    // Route::post('/delete-portofolio', [ProfileController::class, 'add_portofolio']);
+    // Route::post('/add-portofolio', [ProfileController::class, 'add_portofolio']);
+    // Route::post('/edit-portofolio', [ProfileController::class, 'edit_portofolio']);
+    // Route::post('/delete-portofolio', [ProfileController::class, 'delete_portofolio']);
 });

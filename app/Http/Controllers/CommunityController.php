@@ -17,6 +17,9 @@ class CommunityController extends Controller
 {
     public function getCommunityPublic(Request $request){
         // Get id_user from Bearer Token
+        $limit = $request->input('limit');
+        $offset = $request->input('offset');
+
         $authorizationHeader = $request->header('Authorization');
 
         $jwtParts = explode(' ', $authorizationHeader);
@@ -27,9 +30,18 @@ class CommunityController extends Controller
         
         $userId = $decoded->data->id_user;
 
-        $communityPublic = Community::select('id_community', 'title', 'image', 'banner', 'type')->where([['type', '=', 'public'], ['status', '=', 'active']])->withCount(['community_user as total_members' => function ($query) {
+        $query = Community::select('id_community', 'title', 'image', 'banner', 'type')->where([['type', '=', 'public'], ['status', '=', 'active']])->withCount(['community_user as total_members' => function ($query) {
             $query->where('status', '=', 'active')->whereOr('status', '=', 'running');
-        }])->get();
+        }]);
+
+        if ($limit !== null) {
+            $query->limit($limit);
+            if ($offset !== null) {
+                $query->offset($offset);
+            }
+        }
+
+        $communityPublic = $query->get();
 
         $followed_id = Follow::where('followed_by', $userId)->pluck('id_user');
 

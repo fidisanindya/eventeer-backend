@@ -4,11 +4,13 @@ namespace App\Http\Controllers;
 
 use Image;
 use App\Jobs\UploadImage;
+use App\Models\Certificate;
 use App\Models\Community;
 use App\Models\CommunityUser;
 use App\Models\Follow;
 use App\Models\Interest;
 use App\Models\Portofolio;
+use App\Models\Submission;
 use App\Models\User;
 use App\Models\UserProfile;
 use Illuminate\Http\Request;
@@ -27,17 +29,18 @@ class ProfileController extends Controller
             $data->tag = $interestData;
 
             // Following and Followers
-            $follower = Follow::where('id_user', $data->id_user)->count();
-            $following = Follow::where('followed_by', $data->id_user)->count();
-
-            $data->follower = $follower;
-            $data->following = $following;
+            $data->follower = Follow::where('id_user', $data->id_user)->count();
+            $data->following = Follow::where('followed_by', $data->id_user)->count();
 
             // Community 
             $communityUser = CommunityUser::select('id_community')->where('id_user', $data->id_user)->get();
-            $community = Community::select('title', 'start_date', 'end_date')->whereIn('id_community', $communityUser)->get();
-            
-            $data->community = $community;
+            $data->community = Community::select('title', 'start_date', 'end_date')->whereIn('id_community', $communityUser)->get();
+
+            // Portofolio
+            $data->portofolio = Portofolio::select('project_name', 'project_url', 'start_date', 'end_date')->where('id_user', $data->id_user)->get();
+
+            $certificateUser = Certificate::select('id_submission')->get();
+            $data->certificate = Submission::whereIn('id_submission', $certificateUser)->get();
 
             return response()->json([
                 'code' => 200,
@@ -120,46 +123,141 @@ class ProfileController extends Controller
         }
     }
 
+    public function edit_profile(Request $request){
+        $user = $request->validate([
+            'id_user' => 'required',
+            'full_name' => 'required',
+            'bio' => '',
+            'city' => 'required',
+            'gender' => 'required',
+            'company' => 'required',
+            'profession' => 'required',
+        ]);
+
+        $interest = $request->input('interest_name');
+
+        $portofolio = $request->input('portofolio');
+
+        $socialMedia = $request->validate([
+            'instagram' => '',
+            'twitter' => '',
+            'youtube' => '',
+            'github' => '',
+            'linkedin' => '',
+            'website' => '',
+        ]);
+
+        if($portofolio){
+            foreach($portofolio as $porto){
+                $record = Portofolio::where('id_portofolio', $porto['id_portofolio'])->first();
+
+                if($record){
+                    Portofolio::where('id_portofolio', $record->id_portofolio)->update([
+                        'project_name' => $porto['project_name'],
+                        'project_url' => $porto['project_url'],
+                        'start_date' => $porto['start_date'],
+                        'end_date' => $porto['end_date'],
+                    ]);
+                }else{
+                    Portofolio::create([
+                        'project_name' => $porto['project_name'],
+                        'project_url' => $porto['project_url'],
+                        'start_date' => $porto['start_date'],
+                        'end_date' => $porto['end_date'],
+                        'id_user' => $user['id_user']
+                    ]);
+                }
+            }
+        }
+
+        if($interest){
+            foreach($interest as $int){
+                $interest = Interest::select('id_interest')->where('interest_name', $int)->first();
+
+                if($interest != null){
+                    UserProfile::create([
+                        'id_user' => $request->id_user,
+                        'key_name' => 'id_interest',
+                        'value' => $interest->id_interest
+                    ]);
+                }else{
+                    Interest::create([
+                        'interest_name' => $int,
+                        'created_by' => $request->id_user,
+                    ]);
+
+                    $newInterest = Interest::select('id_interest')->where('interest_name', $int)->first();
+                    
+                    UserProfile::create([
+                        'id_user' => $request->id_user,
+                        'key_name' => 'id_interest',
+                        'value' => $newInterest->id_interest
+                    ]);
+                }
+            }
+        }
+
+        // not completed
+    }
+
     public function add_portofolio(Request $request){
         $request->validate([
-            'project_name' => 'required',
-            'project_url',
-            'start_date_month' => 'required',
-            'start_date_year' => 'required',
-            'end_date_month' => 'required',
-            'end_date_year' => 'required',
-            'id_user' => 'required'
+            'portofolio' => '',
+            'id_user' => 'required',
         ]);
 
-        if($request->start_date_month < 10){
-            $startDateMonth = '0' . $request->start_date_month;
-        }else{
-            $startDateMonth = $request->start_date_month;
+        foreach($request->portofolio as $porto){
+            Portofolio::create([
+                'project_name' => $porto['project_name'],
+                'project_url' => $porto['project_url'],
+                'start_date' => $porto['start_date'],
+                'end_date' => $porto['end_date'],
+                'id_user' => $request->id_user
+            ]);
         }
+     
+        return response()->json([
+            'code' => 200,
+            'status' => 'success'
+        ]);
+    }
 
-        $startDate = $request->start_date_year . '-' . $startDateMonth . '-01';
-
-        if($request->end_date_month < 10){
-            $endDateMonth = '0' . $request->end_date_month;
-        }else{
-            $endDateMonth = $request->end_date_month;
-        }
-
-        $endDate = $request->end_date_year . '-' . $endDateMonth . '-31';
-
-        $query = Portofolio::create([
-            'project_name' => $request->project_name,
-            'project_url' => $request->project_url,
-            'start_date' => $startDate,
-            'end_date' => $endDate,
-            'id_user' => $request->id_user
+    public function edit_portofolio(Request $request){
+        $request->validate([
+            'portofolio' => '',
         ]);
 
-        if($query){
+        foreach($request->portofolio as $porto){
+            $record = Portofolio::where('id_portofolio', $porto['id_portofolio'])->first();
+
+            if($record){
+                Portofolio::where('id_portofolio', $record->id_portofolio)->update([
+                    'project_name' => $porto['project_name'],
+                    'project_url' => $porto['project_url'],
+                    'start_date' => $porto['start_date'],
+                    'end_date' => $porto['end_date'],
+                ]);
+            }
+        }
+     
+        return response()->json([
+            'code' => 200,
+            'status' => 'success'
+        ]);
+    }
+
+    public function delete_portofolio(Request $request){
+        $request->validate([
+            'id_portofolio' => 'required'
+        ]);
+
+        $query = Portofolio::whereIn('id_portofolio', $request->id_portofolio)->delete();
+
+        if ($query){
             return response()->json([
                 'code' => 200,
                 'status' => 'success'
-            ]);
+            ]); 
         }
     }
 }

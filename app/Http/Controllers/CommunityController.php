@@ -2,15 +2,21 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Community;
-use App\Models\CommunityInterest;
-use App\Models\CommunityUser;
-use App\Models\Follow;
+use stdClass;
+use Carbon\Carbon;
 use App\Models\User;
+use App\Models\Event;
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
+use App\Models\Follow;
+use App\Models\Community;
+use App\Models\Submission;
 use App\Models\UserProfile;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use Illuminate\Http\Request;
+use App\Models\CommunityUser;
+use App\Models\CommunityInterest;
 use Illuminate\Support\Facades\DB;
 
 class CommunityController extends Controller
@@ -213,6 +219,213 @@ class CommunityController extends Controller
             'code' => 200,
             'status' => 'success',
             'result' => $communityTop,
+        ]);
+    }
+
+    public function getEventAll(Request $request){
+        $start = $request->input('start', 0);
+        $limit = $request->input('limit', 5);
+
+        $result = new stdClass;
+
+        // All events in eventeer
+        $event = Event::with(['community' => function ($item) {
+            $item->select('id_community', 'title', 'image');
+        }])
+        ->whereNull('deleted_at')
+        ->where('status', 'active')
+        ->where('category', 'event')
+        ->when(request()->has('location'), function ($query) {
+            $location = request()->input('location', null);
+            if($location != null) {
+                $query->where('additional_data->location->name', $location);
+            }
+        })
+        ->when(request()->has('date'), function ($query) {
+            $date = request()->input('date', null);
+            if($date != null && $date != 'anytime') {
+                if ($date == 'today') {
+                    $query->whereDate('additional_data->date->start', Carbon::today());
+                } else if ($date == 'weekly') {
+                    $query->whereBetween('additional_data->date->start', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
+                } else if ($date != 'anytime') {
+                    $query->whereDate('additional_data->date->start', $date);
+                }
+            }
+        })
+        ->select('id_event', 'id_community', 'title', 'image', 'category', 'additional_data', 'status')
+        ->withCount('submission as people_joined')
+        ->offset($start)->limit($limit)
+        ->orderBy('additional_data->date->start', 'ASC')->get();
+
+        foreach ($event as $item){
+            $item->additional_data = json_decode($item->additional_data);
+        }
+
+        if ($event != null) {
+            $result->event = $event;
+        } else {
+            $result->event = null;
+        }
+
+        $result->meta = [
+            'start' => $start,
+            'limit' => $limit,
+            'date'  => $request->input('date', null),
+            'location' => $request->input('location', null),
+        ];
+
+        return response()->json([
+            'code' => 200,
+            'status' => 'success',
+            'result' => $result,
+        ]);
+    }
+
+    public function getEventMightLike(Request $request){
+        // Get id_user from Bearer Token
+        $authorizationHeader = $request->header('Authorization');
+
+        $jwtParts = explode(' ', $authorizationHeader);
+        $jwtToken = $jwtParts[1];
+
+        $publicKey = env("JWT_PUBLIC_KEY"); 
+        $decoded = JWT::decode($jwtToken, new Key($publicKey, 'RS256'));
+        
+        $userId = $decoded->data->id_user;
+
+        // Event Might Like
+        $start = $request->input('start', 0);
+        $limit = $request->input('limit', 5);
+
+        $result = new stdClass;
+
+        // Event dari community bertipe public dan user belum join dari komunitas dengan interest yang relate & Event yang user belum join dari komunitas bertipe private dan user udah join komunitas tsb
+        
+        // Get public community that match with user interest and user joined event
+        $user_interest = UserProfile::where('id_user', $userId)->where('key_name', 'id_interest')->pluck('value');
+        if ($user_interest->first() != null) {
+            $community_interest = CommunityInterest::whereIn('id_interest', $user_interest)->pluck('community_id');
+            $public_community_interest = Community::where('status', 'active')->where('type', 'public')->whereIn('id_community', $community_interest)->pluck('id_community');
+        }
+        $joined_event = Submission::where('id_user', $userId)->pluck('id_event');
+
+        // Get private community that user join
+        $joined_community = CommunityUser::where('id_user', $userId)->pluck('id_community');
+        $private_community_joined = Community::whereIn('id_community', $joined_community)->where('status', 'active')->where('type', 'private')->pluck('id_community');
+
+        // Event that created by the public community that the user haven't joined yet
+        $event = Event::with(['community' => function ($item) {
+            $item->select('id_community', 'title', 'image');
+        }])
+        ->whereNull('deleted_at')
+        ->where('status', 'active')
+        ->where('category', 'event')
+        ->whereIn('id_community', $public_community_interest)
+        ->orWhereIn('id_community', $private_community_joined)
+        ->whereNotIn('id_event', $joined_event)
+        ->when(request()->has('location'), function ($query) {
+            $location = request()->input('location', null);
+            if($location != null) {
+                $query->where('additional_data->location->name', $location);
+            }
+        })
+        ->when(request()->has('date'), function ($query) {
+            $date = request()->input('date', null);
+            if($date != null && $date != 'anytime') {
+                if ($date == 'today') {
+                    $query->whereDate('additional_data->date->start', Carbon::today());
+                } else if ($date == 'weekly') {
+                    $query->whereBetween('additional_data->date->start', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
+                } else if ($date != 'anytime') {
+                    $query->whereDate('additional_data->date->start', $date);
+                }
+            }
+        })
+        ->select('id_event', 'id_community', 'title', 'image', 'category', 'additional_data', 'status')
+        ->withCount('submission as people_joined')
+        ->offset($start)->limit($limit)
+        ->orderBy('additional_data->date->start', 'ASC')->get();
+
+        foreach ($event as $item){
+            $item->additional_data = json_decode($item->additional_data);
+        }
+
+        $result->event_might_liked = $event;
+
+        $result->meta = [
+            'start' => $start,
+            'limit' => $limit,
+        ];
+
+        return response()->json([
+            'code' => 200,
+            'status' => 'success',
+            'result' => $result,
+        ]);
+    }
+
+    public function getEventTop(){
+        $result = new stdClass;
+
+        $topEvent = Event::select('id_event', 'id_community', 'title', 'image', 'category', 'additional_data', 'status')
+        ->whereNull('deleted_at')
+        ->where('status', 'active')
+        ->where('category', 'event')
+        ->withCount('submission as people_joined')
+        ->orderBy('people_joined', 'DESC')->limit(3)->get();
+
+        foreach ($topEvent as $item){
+            $item->additional_data = json_decode($item->additional_data);
+        }
+
+        $result->top_event = $topEvent;
+
+        return response()->json([
+            'code' => 200,
+            'status' => 'success',
+            'result' => $result,
+        ]);
+    }
+
+    public function getYourEvent(Request $request){
+        // Get id_user from Bearer Token
+        $authorizationHeader = $request->header('Authorization');
+
+        $jwtParts = explode(' ', $authorizationHeader);
+        $jwtToken = $jwtParts[1];
+
+        $publicKey = env("JWT_PUBLIC_KEY"); 
+        $decoded = JWT::decode($jwtToken, new Key($publicKey, 'RS256'));
+        
+        $userId = $decoded->data->id_user;
+        
+        $result = new stdClass;
+
+        // Your event
+        $submission = Submission::where('id_user', $userId)->pluck('id_event');
+        $event = Event::whereIn('id_event', $submission)
+        ->whereNull('deleted_at')
+        ->where('status', 'active')
+        ->where('category', 'event')
+        ->select('id_event', 'id_community', 'title', 'image', 'category', 'additional_data', 'status')
+        ->withCount('submission as people_joined')
+        ->orderBy('additional_data->date->start', 'ASC')->get();
+
+        foreach ($event as $item){
+            $item->additional_data = json_decode($item->additional_data);
+        }
+
+        if($event->first() != null){
+            $result->your_event = $event;
+        } else {
+            $result->your_event = null;
+        }
+
+        return response()->json([
+            'code' => 200,
+            'status' => 'success',
+            'result' => $result,
         ]);
     }
 }

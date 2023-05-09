@@ -76,9 +76,15 @@ Route::prefix('migrate')->group(function () {
 
 // Community List
 Route::prefix('community-list')->group(function () {
-    Route::get('/community-public', [CommunityController::class, 'getCommunityPublic'])->middleware('jwt.auth');
-    Route::get('/community-interest', [CommunityController::class, 'getCommunityInterest'])->middleware('jwt.auth');
-    Route::get('/community-top', [CommunityController::class, 'getTopCommunity'])->middleware('jwt.auth');
+    Route::middleware(['jwt.auth'])->group(function () {
+        Route::get('/event-all', [CommunityController::class, 'getEventAll']);
+        Route::get('/event-might-like', [CommunityController::class, 'getEventMightLike']);
+        Route::get('/event-top', [CommunityController::class, 'getEventTop']);
+        Route::get('/your-event', [CommunityController::class, 'getYourEvent']);
+        Route::get('/community-public', [CommunityController::class, 'getCommunityPublic']);
+        Route::get('/community-interest', [CommunityController::class, 'getCommunityInterest']);
+        Route::get('/community-top', [CommunityController::class, 'getTopCommunity']);
+    });
 });
 
 // Homepage

@@ -12,8 +12,6 @@ use App\Models\Follow;
 use App\Models\Community;
 use App\Models\Submission;
 use App\Models\UserProfile;
-use Firebase\JWT\JWT;
-use Firebase\JWT\Key;
 use Illuminate\Http\Request;
 use App\Models\CommunityUser;
 use App\Models\CommunityInterest;

@@ -275,7 +275,7 @@ class RegistrationController extends Controller
         ]);
 
         if($request->profile_picture){
-            $image = Image::make($request->profile_picture)->resize(1200, null, function ($constraint) {
+            $image = Image::make($request->profile_picture)->resize(400, null, function ($constraint) {
                 $constraint->aspectRatio();
             });
 

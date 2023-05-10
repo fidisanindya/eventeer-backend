@@ -76,14 +76,14 @@ Route::prefix('migrate')->group(function () {
 
 // Community List
 Route::prefix('community-list')->group(function () {
-    Route::post('/community-public', [CommunityController::class, 'getCommunityPublic']);
-    Route::post('/community-interest', [CommunityController::class, 'getCommunityInterest']);
-    Route::post('/community-top', [CommunityController::class, 'getTopCommunity']);
     Route::middleware(['jwt.auth'])->group(function () {
         Route::get('/event-all', [CommunityController::class, 'getEventAll']);
         Route::get('/event-might-like', [CommunityController::class, 'getEventMightLike']);
         Route::get('/event-top', [CommunityController::class, 'getEventTop']);
         Route::get('/your-event', [CommunityController::class, 'getYourEvent']);
+        Route::get('/community-public', [CommunityController::class, 'getCommunityPublic']);
+        Route::get('/community-interest', [CommunityController::class, 'getCommunityInterest']);
+        Route::get('/community-top', [CommunityController::class, 'getTopCommunity']);
     });
 });
 
@@ -99,4 +99,10 @@ Route::prefix('profile')->group(function () {
         Route::get('/detail-post', [ProfileController::class, 'detailPost']);
         Route::get('/detail-activity', [ProfileController::class, 'detailActivity']);
     });
+    Route::get('/get-profile/{id}', [ProfileController::class, 'get_profile']);
+    Route::post('/edit-profile-picture', [ProfileController::class, 'edit_profile_picture']);
+    Route::post('/edit-banner-picture', [ProfileController::class, 'edit_banner']);
+    // Route::post('/add-portofolio', [ProfileController::class, 'add_portofolio']);
+    // Route::post('/edit-portofolio', [ProfileController::class, 'edit_portofolio']);
+    // Route::post('/delete-portofolio', [ProfileController::class, 'delete_portofolio']);
 });

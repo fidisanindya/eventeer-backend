@@ -9,4 +9,5 @@ class Setting extends Model
 {
     use HasFactory;
     protected $table = 'system_settings';
+    protected $primaryKey = 'id_setting';
 }

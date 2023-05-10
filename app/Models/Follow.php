@@ -10,4 +10,6 @@ class Follow extends Model
     use HasFactory;
 
     protected $table = 'module_follow';
+    protected $primaryKey = 'id_follow';
+    protected $guarded = ['id_follow'];
 }

@@ -10,4 +10,6 @@ class City extends Model
     use HasFactory;
 
     protected $table = 'module_city';
+    protected $primaryKey = 'id_city';
+    protected $guarded = ['id_city'];
 }

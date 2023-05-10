@@ -91,7 +91,14 @@ Route::prefix('community-list')->group(function () {
 Route::get('/homepage', [HomepageController::class, 'get_homepage'])->middleware('jwt.auth');
 
 // Profile
-Route::prefix('profile')->group(function (){
+Route::prefix('profile')->group(function () {
+    Route::middleware(['jwt.auth'])->group(function () {
+        Route::get('/detail-portofolio', [ProfileController::class, 'detailPortfolio']);
+        Route::get('/detail-certificate', [ProfileController::class, 'detailCertificate']);
+        Route::get('/detail-community', [ProfileController::class, 'detailCommunity']);
+        Route::get('/detail-post', [ProfileController::class, 'detailPost']);
+        Route::get('/detail-activity', [ProfileController::class, 'detailActivity']);
+    });
     Route::get('/get-profile/{id}', [ProfileController::class, 'get_profile']);
     Route::post('/edit-profile-picture', [ProfileController::class, 'edit_profile_picture']);
     Route::post('/edit-banner-picture', [ProfileController::class, 'edit_banner']);

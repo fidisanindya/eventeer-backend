@@ -5,9 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Setting extends Model
+class React extends Model
 {
     use HasFactory;
-    protected $table = 'system_settings';
-    protected $primaryKey = 'id_setting';
+
+    protected $table = 'module_react';
+    protected $primaryKey = 'id_react';
+    protected $guarded = ['id_react'];
 }

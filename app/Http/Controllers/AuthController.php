@@ -35,7 +35,7 @@ class AuthController extends Controller
         if ($user) {
             $userLoginActivities = $user->login_activities()->limit(5)->orderBy('created_at', 'desc')->get();
             $latestLoginActivity = $userLoginActivities->first();
-            $blockLoginAttempts = 5;
+            $blockLoginAttempts = 4;
             $isAttemptsBlocked = false;
             $isSuccessLoginDetected = false;
 
@@ -199,7 +199,7 @@ class AuthController extends Controller
             if($user){
                 $lastFailedAttempt = LoginActivity::where('id_user', $user->id_user)->where('is_successful', false)->where('created_at', '>', Carbon::now()->subMinutes(1))->count();
                 $this->saveLoginActivity($request, $user, false);
-                if($lastFailedAttempt >= 5) {
+                if($lastFailedAttempt >= 4) {
                     return response()->json([
                         'code'      => 429,
                         'status'    => 'failed',

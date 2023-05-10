@@ -10,14 +10,8 @@ class Portofolio extends Model
     use HasFactory;
 
     public $timestamps = false;
-    
-    protected $fillable = [
-        'project_name',
-        'project_url',
-        'start_date',
-        'end_date',
-        'id_user'
-    ];
 
     protected $table = 'module_portofolio';
+    protected $primaryKey = 'id_portofolio';
+    protected $guarded = ['id_portofolio'];
 }

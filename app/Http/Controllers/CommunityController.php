@@ -265,12 +265,19 @@ class CommunityController extends Controller
         } else {
             $result->event = null;
         }
+        
+        $allEvent = Event::whereNull('deleted_at')
+        ->where('status', 'active')
+        ->where('category', 'event')
+        ->select('id_event', 'id_community', 'title', 'image', 'category', 'additional_data', 'status')
+        ->count();
 
         $result->meta = [
             'start' => $start,
             'limit' => $limit,
             'date'  => $request->input('date', null),
             'location' => $request->input('location', null),
+            'total_data' => $allEvent,
         ];
 
         return response()->json([
@@ -351,9 +358,20 @@ class CommunityController extends Controller
 
         $result->event_might_liked = $event;
 
+        $allEvent = Event::whereNull('deleted_at')
+        ->where('status', 'active')
+        ->where('category', 'event')
+        ->whereIn('id_community', $public_community_interest)
+        ->orWhereIn('id_community', $private_community_joined)
+        ->whereNotIn('id_event', $joined_event)
+        ->count();
+
         $result->meta = [
             'start' => $start,
             'limit' => $limit,
+            'date'  => $request->input('date', null),
+            'location' => $request->input('location', null),
+            'total_data' => $allEvent,
         ];
 
         return response()->json([

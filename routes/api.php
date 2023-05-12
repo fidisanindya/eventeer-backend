@@ -53,37 +53,37 @@ Route::prefix('forgot')->group(function () {
 Route::prefix('registration')->group(function () {
     Route::post('', [RegistrationController::class, 'registration'])->name('Registration');
     Route::post('/v2', [RegistrationController::class, 'registration_v2'])->name('RegistrationV2');
-    Route::post('/email-verification', [RegistrationController::class, 'verification_email'])->name('VerificationEmail')->middleware('jwt.auth');
-    Route::post('/resend-link', [RegistrationController::class, 'resend_verification_link'])->name('ResendLink')->middleware('jwt.auth');
-    Route::get('/get-interest', [RegistrationController::class, 'get_interest'])->name('GetInterest')->middleware('jwt.auth');
-    Route::post('/store-interest', [RegistrationController::class, 'store_interest'])->name('StoreInterest')->middleware('jwt.auth');
-    Route::post('/select-interest', [RegistrationController::class, 'choose_interest'])->name('ChooseInterest')->middleware('jwt.auth');
-    Route::get('/get-location', [RegistrationController::class, 'get_location'])->name('GetLocation')->middleware('jwt.auth');
-    Route::post('/setup-profile', [RegistrationController::class, 'submit_profile'])->name('SubmitProfile')->middleware('jwt.auth');
-    Route::get('/get-profession', [RegistrationController::class, 'get_profession'])->name('GetProfession')->middleware('jwt.auth');
-    Route::post('/submit-profession', [RegistrationController::class, 'submit_profession'])->name('SubmitProfession')->middleware('jwt.auth');
-    Route::get('/get-user-profile-id/{id}', [RegistrationController::class, 'get_user']);
+    Route::post('/email_verification', [RegistrationController::class, 'verification_email'])->name('VerificationEmail')->middleware('jwt.auth');
+    Route::post('/resend_link', [RegistrationController::class, 'resend_verification_link'])->name('ResendLink')->middleware('jwt.auth');
+    Route::get('/get_interest', [RegistrationController::class, 'get_interest'])->name('GetInterest')->middleware('jwt.auth');
+    Route::post('/store_interest', [RegistrationController::class, 'store_interest'])->name('StoreInterest')->middleware('jwt.auth');
+    Route::post('/select_interest', [RegistrationController::class, 'choose_interest'])->name('ChooseInterest')->middleware('jwt.auth');
+    Route::get('/get_location', [RegistrationController::class, 'get_location'])->name('GetLocation')->middleware('jwt.auth');
+    Route::post('/setup_profile', [RegistrationController::class, 'submit_profile'])->name('SubmitProfile')->middleware('jwt.auth');
+    Route::get('/get_profession', [RegistrationController::class, 'get_profession'])->name('GetProfession')->middleware('jwt.auth');
+    Route::post('/submit_profession', [RegistrationController::class, 'submit_profession'])->name('SubmitProfession')->middleware('jwt.auth');
+    Route::get('/get_user_profile_id/{id}', [RegistrationController::class, 'get_user']);
     // Route::get('/get-user-id', [RegistrationController::class, 'get_user']);
-    Route::get('/get-user-profile', [RegistrationController::class, 'get_profile_user'])->name('GetProfileUser')->middleware('jwt.auth');
+    Route::get('/get_user_profile', [RegistrationController::class, 'get_profile_user'])->name('GetProfileUser')->middleware('jwt.auth');
 });
 
 // Migration
 Route::prefix('migrate')->group(function () {
     Route::post('/id_job', [MigrationController::class, 'migrate_id_job']);
     Route::post('/id_company', [MigrationController::class, 'migrate_id_company']);
-    Route::post('/about-me', [MigrationController::class, 'migration_about_me'])->name('migrationAboutMe');
+    Route::post('/about_me', [MigrationController::class, 'migration_about_me'])->name('migrationAboutMe');
 });
 
 // Community List
-Route::prefix('community-list')->group(function () {
+Route::prefix('community_list')->group(function () {
     Route::middleware(['jwt.auth'])->group(function () {
-        Route::get('/event-all', [CommunityController::class, 'getEventAll']);
-        Route::get('/event-might-like', [CommunityController::class, 'getEventMightLike']);
-        Route::get('/event-top', [CommunityController::class, 'getEventTop']);
-        Route::get('/your-event', [CommunityController::class, 'getYourEvent']);
-        Route::get('/community-public', [CommunityController::class, 'getCommunityPublic']);
-        Route::get('/community-interest', [CommunityController::class, 'getCommunityInterest']);
-        Route::get('/community-top', [CommunityController::class, 'getTopCommunity']);
+        Route::get('/event_all', [CommunityController::class, 'getEventAll']);
+        Route::get('/event_might_like', [CommunityController::class, 'getEventMightLike']);
+        Route::get('/event_top', [CommunityController::class, 'getEventTop']);
+        Route::get('/your_event', [CommunityController::class, 'getYourEvent']);
+        Route::get('/community_public', [CommunityController::class, 'getCommunityPublic']);
+        Route::get('/community_interest', [CommunityController::class, 'getCommunityInterest']);
+        Route::get('/community_top', [CommunityController::class, 'getTopCommunity']);
     });
 });
 
@@ -93,16 +93,17 @@ Route::get('/homepage', [HomepageController::class, 'get_homepage'])->middleware
 // Profile
 Route::prefix('profile')->group(function () {
     Route::middleware(['jwt.auth'])->group(function () {
-        Route::get('/detail-portofolio', [ProfileController::class, 'detailPortfolio']);
-        Route::get('/detail-certificate', [ProfileController::class, 'detailCertificate']);
-        Route::get('/detail-community', [ProfileController::class, 'detailCommunity']);
-        Route::get('/detail-post', [ProfileController::class, 'detailPost']);
-        Route::get('/detail-activity', [ProfileController::class, 'detailActivity']);
+        Route::get('/detail_portofolio', [ProfileController::class, 'detailPortfolio']);
+        Route::get('/detail_certificate', [ProfileController::class, 'detailCertificate']);
+        Route::get('/detail_community', [ProfileController::class, 'detailCommunity']);
+        Route::get('/detail_post', [ProfileController::class, 'detailPost']);
+        Route::get('/detail_activity', [ProfileController::class, 'detailActivity']);
     });
-    Route::get('/get-profile/{id}', [ProfileController::class, 'get_profile']);
-    Route::post('/edit-profile-picture', [ProfileController::class, 'edit_profile_picture']);
-    Route::post('/edit-banner-picture', [ProfileController::class, 'edit_banner']);
+    Route::get('/get_profile/{id}', [ProfileController::class, 'get_profile']);
+    Route::post('/edit_profile_picture', [ProfileController::class, 'edit_profile_picture']);
+    Route::post('/edit_banner_picture', [ProfileController::class, 'edit_banner']);
     // Route::post('/add-portofolio', [ProfileController::class, 'add_portofolio']);
     // Route::post('/edit-portofolio', [ProfileController::class, 'edit_portofolio']);
     // Route::post('/delete-portofolio', [ProfileController::class, 'delete_portofolio']);
 });
+ 

@@ -7,9 +7,11 @@ use App\Jobs\UploadImage;
 use App\Models\Certificate;
 use App\Models\Community;
 use App\Models\CommunityUser;
+use App\Models\Company;
 use App\Models\Follow;
 use App\Models\Interest;
 use App\Models\Portofolio;
+use App\Models\Profession;
 use App\Models\Submission;
 use App\Models\User;
 use App\Models\UserProfile;
@@ -21,7 +23,12 @@ class ProfileController extends Controller
     public function get_profile($id){
         $data = User::where('id_user', $id)->first();
         if($data){
-
+            // Social Media
+            $socialMedia = UserProfile::select('key_name', 'value')->whereIn('key_name', ['instagram', 'twitter', 'youtube', 'github', 'linkedin', 'website'])->where('id_user', $data->id_user)->get();
+            foreach ($socialMedia as $sm){
+                $data->{$sm->key_name} = $sm->value;
+            }
+            
              // Interest
             $interestUser = UserProfile::select('value')->where([['id_user', '=', $data->id_user], ['key_name', '=', 'id_interest']])->get();
             $interestData = Interest::select('interest_name')->whereIn('id_interest', $interestUser)->get();
@@ -39,8 +46,8 @@ class ProfileController extends Controller
             // Portofolio
             $data->portofolio = Portofolio::select('project_name', 'project_url', 'start_date', 'end_date')->where('id_user', $data->id_user)->get();
 
-            $certificateUser = Certificate::select('id_submission')->get();
-            $data->certificate = Submission::whereIn('id_submission', $certificateUser)->get();
+            $submissionUser = Submission::select('id_submission')->where('id_user', $data->id_user)->get();
+            $data->certificate = Certificate::whereIn('id_submission', $submissionUser)->get();
 
             return response()->json([
                 'code' => 200,
@@ -134,9 +141,15 @@ class ProfileController extends Controller
             'profession' => 'required',
         ]);
 
-        $interest = $request->input('interest_name');
+        $interestDelete = $request->input('interest_delete');
 
-        $portofolio = $request->input('portofolio');
+        $interestAdd = $request->input('interest_add');
+
+        $portofolioAdd = $request->input('portofolio_add');
+
+        $portofolioEdit = $request->input('portofolio_edit');
+
+        $portofolioDelete = $request->input('portofolio_delete');
 
         $socialMedia = $request->validate([
             'instagram' => '',
@@ -147,49 +160,79 @@ class ProfileController extends Controller
             'website' => '',
         ]);
 
-        if($portofolio){
-            foreach($portofolio as $porto){
-                $record = Portofolio::where('id_portofolio', $porto['id_portofolio'])->first();
+        $company = Company::where('company_name', $request->company)->first();
 
+        if($company == null){
+            Company::create([
+                'company_name' => $request->company,
+                'created_by' => $request->id_user
+            ]);
+
+            $company = Company::where('company_name', $request->company)->first();
+        }
+
+        $profession = Profession::where('job_title', $request->profession)->first();
+
+        if($profession == null){
+            Profession::create([
+                'job_title' => $request->profession,
+                'created_by' => $request->id_user
+            ]);
+
+            $profession = Profession::select('id_job')->where('job_title', $request->profession)->first();
+        }
+
+        if($portofolioAdd){
+            foreach($portofolioAdd as $pa){
+                Portofolio::create([
+                    'project_name' => $pa['project_name'],
+                    'project_url' => $pa['project_url'],
+                    'start_date' => $pa['start_date'],
+                    'end_date' => $pa['end_date'],
+                    'id_user' => $user['id_user']
+                ]);
+            }
+        }
+
+        if($portofolioEdit){
+            foreach($portofolioEdit as $pe){
+                $record = Portofolio::where('id_portofolio', $pe['id_portofolio'])->first();
+    
                 if($record){
                     Portofolio::where('id_portofolio', $record->id_portofolio)->update([
-                        'project_name' => $porto['project_name'],
-                        'project_url' => $porto['project_url'],
-                        'start_date' => $porto['start_date'],
-                        'end_date' => $porto['end_date'],
-                    ]);
-                }else{
-                    Portofolio::create([
-                        'project_name' => $porto['project_name'],
-                        'project_url' => $porto['project_url'],
-                        'start_date' => $porto['start_date'],
-                        'end_date' => $porto['end_date'],
-                        'id_user' => $user['id_user']
+                        'project_name' => $pe['project_name'],
+                        'project_url' => $pe['project_url'],
+                        'start_date' => $pe['start_date'],
+                        'end_date' => $pe['end_date'],
                     ]);
                 }
             }
         }
 
-        if($interest){
-            foreach($interest as $int){
+        if($portofolioDelete){
+            Portofolio::whereIn('id_portofolio', $portofolioDelete)->delete();
+        }
+
+        if($interestAdd){
+            foreach($interestAdd as $int){
                 $interest = Interest::select('id_interest')->where('interest_name', $int)->first();
 
                 if($interest != null){
                     UserProfile::create([
-                        'id_user' => $request->id_user,
+                        'id_user' => $user['id_user'],
                         'key_name' => 'id_interest',
                         'value' => $interest->id_interest
                     ]);
                 }else{
                     Interest::create([
                         'interest_name' => $int,
-                        'created_by' => $request->id_user,
+                        'created_by' => $user['id_user'],
                     ]);
 
                     $newInterest = Interest::select('id_interest')->where('interest_name', $int)->first();
                     
                     UserProfile::create([
-                        'id_user' => $request->id_user,
+                        'id_user' => $user['id_user'],
                         'key_name' => 'id_interest',
                         'value' => $newInterest->id_interest
                     ]);
@@ -197,7 +240,40 @@ class ProfileController extends Controller
             }
         }
 
-        // not completed
+        if($interestDelete){
+            UserProfile::where([['id_user', '=', $user['id_user']], ['key_name', '=', 'id_interest']])->whereIn('value', $interestDelete)->delete();
+        }
+
+        if($socialMedia){
+            foreach($socialMedia as $keyName => $value){
+                $record = UserProfile::where([['id_user', '=', $user['id_user']], ['key_name', '=', $keyName]])->first();
+                if($record){
+                    UserProfile::where([['id_user', '=', $user['id_user']], ['key_name', '=', $keyName]])->update([
+                        'value' => $value
+                    ]);
+                }else{
+                    UserProfile::create([
+                        'id_user' => $user['id_user'],
+                        'key_name' => $keyName,
+                        'value' => $value
+                    ]);
+                }
+            }
+        }
+
+        User::where('id_user', $user['id_user'])->update([
+            'full_name' => $user['full_name'],
+            'bio' => $user['bio'],
+            'id_city' => $user['city'],
+            'gender' => $user['gender'],
+            'id_company' => $company->id_company,
+            'id_job' => $profession->id_profession
+        ]);
+
+        return response()->json([
+            'code' => 200,
+            'status' => 'success edit profile'
+        ]);
     }
 
     public function add_portofolio(Request $request){

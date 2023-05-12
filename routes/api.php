@@ -98,10 +98,11 @@ Route::prefix('profile')->group(function () {
         Route::get('/detail_community', [ProfileController::class, 'detailCommunity']);
         Route::get('/detail_post', [ProfileController::class, 'detailPost']);
         Route::get('/detail_activity', [ProfileController::class, 'detailActivity']);
+        Route::post('/edit_profile_picture', [ProfileController::class, 'edit_profile_picture']);
+        Route::post('/edit_banner_picture', [ProfileController::class, 'edit_banner']);
+        Route::post('/edit_profile', [ProfileController::class, 'edit_profile']);
     });
     Route::get('/get_profile/{id}', [ProfileController::class, 'get_profile']);
-    Route::post('/edit_profile_picture', [ProfileController::class, 'edit_profile_picture']);
-    Route::post('/edit_banner_picture', [ProfileController::class, 'edit_banner']);
     // Route::post('/add-portofolio', [ProfileController::class, 'add_portofolio']);
     // Route::post('/edit-portofolio', [ProfileController::class, 'edit_portofolio']);
     // Route::post('/delete-portofolio', [ProfileController::class, 'delete_portofolio']);

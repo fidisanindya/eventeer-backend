@@ -11,6 +11,8 @@ class Community extends Model
     use HasFactory;
 
     protected $table = 'module_community';
+    protected $primaryKey = 'id_community';
+    protected $guarded = ['id_community'];
 
     public function community_interest(){
         return $this->hasMany(CommunityInterest::class, 'community_id', 'id_community');

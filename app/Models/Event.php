@@ -12,6 +12,8 @@ class Event extends Model
     use HasFactory;
 
     protected $table = 'module_event';
+    protected $primaryKey = 'id_event';
+    protected $guarded = ['id_event'];
 
     public function community(){
         return $this->belongsTo(Community::class, 'id_community', 'id_community');

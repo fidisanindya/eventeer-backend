@@ -16,4 +16,5 @@ class UserProfile extends Model
     ];
 
     protected $table = 'system_users_profile';
+    protected $primaryKey = 'id_user_profile';
 }

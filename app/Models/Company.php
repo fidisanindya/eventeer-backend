@@ -9,10 +9,7 @@ class Company extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'company_name',
-        'created_by'
-    ];
-
     protected $table = 'module_company';
+    protected $primaryKey = 'id_company';
+    protected $guarded = ['id_company'];
 }

@@ -22,7 +22,7 @@ class CommunityController extends Controller
     public function getCommunityPublic(Request $request){
         // Get id_user from Bearer Token
         $limit = $request->input('limit');
-        $offset = $request->input('offset');
+        $start = $request->input('start');
 
         $authorizationHeader = $request->header('Authorization');
 
@@ -34,19 +34,23 @@ class CommunityController extends Controller
         
         $userId = $decoded->data->id_user;
 
+        $result = new stdClass;
+
         $query = Community::select('id_community', 'title', 'image', 'banner', 'type')->where([['type', '=', 'public'], ['status', '=', 'active']])->withCount(['community_user as total_members' => function ($query) {
             $query->where('status', '=', 'active')->whereOr('status', '=', 'running');
         }]);
 
+        $totalData = Community::select('id_community', 'title', 'image', 'banner', 'type')->where([['type', '=', 'public'], ['status', '=', 'active']])->count();
+
         if ($limit !== null) {
             $query->limit($limit);
-            if ($offset !== null) {
-                $query->offset($offset);
+            if ($start !== null) {
+                $query->offset($start);
             }
         }
 
         $communityPublic = $query->get();
-
+        
         $followed_id = Follow::where('followed_by', $userId)->pluck('id_user');
 
         foreach ($communityPublic as $cp => $item){
@@ -81,15 +85,30 @@ class CommunityController extends Controller
             }
         }
 
+        if($communityPublic != null){
+            $result->community = $communityPublic;
+        }else{
+            $result->community = null;
+        }
+
+        $result->meta = [
+            "start" => $start,
+            "limit" => $limit,
+            "total_data" => $totalData
+        ];
+
         return response()->json([
             'code' => 200,
             'status' => 'success',
-            'result' => $communityPublic,
+            'result' => $result,
         ]);
     }
 
     public function getCommunityInterest(Request $request){
         // Get id_user from Bearer Token
+        $limit = $request->input('limit');
+        $start = $request->input('start');
+
         $authorizationHeader = $request->header('Authorization');
 
         $jwtParts = explode(' ', $authorizationHeader);
@@ -106,6 +125,8 @@ class CommunityController extends Controller
 
         $idCommunity = [];
 
+        $result = new stdClass;
+
         foreach ($communityInterest as $ci){
             array_push($idCommunity, $ci->community_id);
         }
@@ -114,9 +135,20 @@ class CommunityController extends Controller
         $idCommunity = collect($idCommunity);
         $uniqueId = $idCommunity->unique();
         
-        $communityByInterest = Community::select('id_community', 'title', 'image', 'banner', 'type')->whereIn('id_community', $uniqueId)->where('status', 'active')->withCount(['community_user as total_members' => function ($query) {
+        $query = Community::select('id_community', 'title', 'image', 'banner', 'type')->whereIn('id_community', $uniqueId)->where('status', 'active')->withCount(['community_user as total_members' => function ($query) {
             $query->where('status', '=', 'active')->whereOr('status', '=', 'running');
-        }])->get();
+        }]);
+
+        $totalData = Community::select('id_community', 'title', 'image', 'banner', 'type')->whereIn('id_community', $uniqueId)->where('status', 'active')->count();
+
+        if ($limit !== null) {
+            $query->limit($limit);
+            if ($start !== null) {
+                $query->offset($start);
+            }
+        }
+
+        $communityByInterest = $query->get();
 
         $followed_id = Follow::where('followed_by', $userId)->pluck('id_user');
 
@@ -150,13 +182,24 @@ class CommunityController extends Controller
             } else {
                 $item->friends = null;
             }
-
         }
+
+        if($communityByInterest != null){
+            $result->community = $communityByInterest;
+        }else{
+            $result->community = null;
+        }
+
+        $result->meta = [
+            "start" => $start,
+            "limit" => $limit,
+            "total_data" => $totalData
+        ];
         
         return response()->json([
             'code' => 200,
             'status' => 'success',
-            'result' => $communityByInterest,
+            'result' => $result,
         ]);
     }
 

@@ -72,7 +72,7 @@ sonarqube-check:
     paths:
       - .sonar/cache
   script:
-    - sonar-scanner -Dsonar.qualitygate.wait=true
+    - sonar-scanner -X -Dsonar.qualitygate.wait=true
   allow_failure: true
   only:
     - feature/bintang/sonarqube

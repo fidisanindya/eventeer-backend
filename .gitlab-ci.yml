@@ -1,6 +1,7 @@
 stages:
   - build
   - deploy
+  - sonarqube_stage
 
 variables:
   IMAGE_TAG: $CI_REGISTRY/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME:$CI_COMMIT_REF_SLUG
@@ -27,16 +28,6 @@ build:development:
   <<: *build
   environment:
     name: development
-  image: masrodjie/php81:slim
-  variables:
-    SONAR_USER_HOME: "${$CI_PROJECT_DIR/.sonar}"
-    GIT_DEPTH: "0"
-  cache:
-    key: "${CI_JOB_NAME}"
-    paths:
-      - .sonar/cache
-  script:
-    - sonar-scanner -X -Dsonnar.sources=. -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.login=$SONAR_LOGIN -Dsonar.password=$SONAR_PASSWORD
   only:
     - feature/bintang/sonarqube
 
@@ -64,5 +55,18 @@ deploy:development:
     - ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP "docker exec --user nobody $CONTAINER_NAME php artisan migrate"
   environment:
     name: development
+  only:
+    - feature/bintang/sonarqube
+
+sonarqube_ci_stage:
+  image: sonarsource/sonar-scanner-cli:${SONAR_SCANNER_CLI_VERSION}
+  stage: sonarqube_stage
+  variables:
+    SONAR_PROJECT_BASE_DIR: "$CI_PROJECT_DIR"
+  script:
+    - /usr/bin/entrypoint.sh sonar-scanner -Dsonar.projectKey="$CI_PROJECT_NAME"    # sonar.projectKey defines the name of the project in SonarQube.
+                                                                                    # In this example it uses the same name of the project in GitLab.
+  tags:                                                                             # NOTE: this is NOT a git tag name.
+    - sonarqube
   only:
     - feature/bintang/sonarqube

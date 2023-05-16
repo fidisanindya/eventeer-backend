@@ -35,71 +35,81 @@ class HomepageController extends Controller
         $result = new stdClass;
 
         // Featured Community
+        $followed_id = Follow::where('followed_by', $userId)->pluck('id_user');
+
         if($request->input('filter') == 'interest') {
             $user_interest = UserProfile::where('id_user', $userId)->where('key_name', 'id_interest')->pluck('value');
             if ($user_interest->first() != null) {
                 $community_interest = CommunityInterest::whereIn('id_interest', $user_interest)->pluck('community_id');
-                $community = Community::where('status', 'active')->whereIn('id_community', $community_interest)->limit(8)->select('id_community', 'title', 'image', 'type', 'banner')->get();
+                $community = Community::whereIn('id_community', $community_interest)
+                ->select('id_community', 'title', 'image', 'type', 'banner')
+                ->with(['community_interest' => function($queryCommunity){
+                    $queryCommunity->with(['interest' => function($queryInterest){
+                        $queryInterest->select('id_interest', 'interest_name');
+                    }])->select('id_community_interest', 'id_interest', 'community_id');
+                }])
+                ->withCount(['community_user as total_members' => function ($query) {
+                    $query->where('status', '=', 'active')->whereOr('status', '=', 'running');
+                }])
+                ->withCount(['community_user as total_friends' => function ($query) use ($followed_id) {
+                    $query->whereIn('id_user', $followed_id)->where('status', '=', 'active')->whereOr('status', '=', 'running');
+                }])
+                ->with(['community_user' => function($query) use ($followed_id) {
+                    $query->whereIn('id_user', $followed_id)
+                    ->select('id_community_user', 'id_user', 'id_community')
+                    ->with(['user' => function($queryUser) {
+                        $queryUser->whereNotNull('profile_picture')
+                        ->select('id_user', 'profile_picture')->take(2)->get();
+                    }]);
+                }])
+                ->where('status', 'active')
+                ->limit(8)
+                ->get();
             } else {
-                $community = Community::where('status', 'active')->limit(8)->select('id_community', 'title', 'image', 'type', 'banner')->get();
+                $community = null;
             }
-        } else if($request->input('filter') == 'all') {
-            $community = Community::where('status', 'active')->limit(8)->select('id_community', 'title', 'image', 'type', 'banner')->get();
-        }
-        
-        foreach ($community as $item) {
-            // Add tag to result
-            $community_tag = CommunityInterest::where('community_id', $item->id_community)->pluck('id_interest');
-            if ($community_tag->first() != null) {
-                $tag = Interest::whereIn('id_interest', $community_tag)->select('id_interest', 'interest_name')->get();
-            }
-            $item->tag = $tag;
-
-            // Add total members to result
-            $members = CommunityUser::select('id_community', DB::raw('COUNT(id_user) as total_members'))->where('id_community', $item->id_community)->where('status', '=', 'active')->whereOr('status', '=', 'running')->groupBy('id_community')->first();
-            $item->members = $members;
-
-            // Add Friends are member to result
-            $followed_id = Follow::where('followed_by', $userId)->pluck('id_user');
-
-            if($followed_id->first() != null) {
-                $userCommunities = CommunityUser::whereIn('id_user', $followed_id)->where('id_community', $item->id_community)->pluck('id_user');
-
-                if ($userCommunities->first() != null) {
-                    $profilePicture = User::whereIn('id_user', $userCommunities)->whereNotNull('profile_picture')->select('profile_picture')->take(2)->get();
-                    
-                    $arrayProfile = [];
-                    for ($i=0; $i < count($profilePicture); $i++) { 
-                        array_push($arrayProfile, $profilePicture[$i]->profile_picture);
-                    }
-
-                    $item->friends = [
-                        'total_friends'     => count($userCommunities),
-                        'profile_picture'   => $arrayProfile,
-                    ];
-                } else {
-                    $item->friends = null;
-                }
-            } else {
-                $item->friends = null;
-            }
+        } else if($request->input('filter') == 'all' || $request->input('filter') == null) {
+            $community = Community::select('id_community', 'title', 'image', 'type', 'banner')
+            ->with(['community_interest' => function($queryCommunity){
+                $queryCommunity->with(['interest' => function($queryInterest){
+                    $queryInterest->select('id_interest', 'interest_name');
+                }])->select('id_community_interest', 'id_interest', 'community_id');
+            }])
+            ->withCount(['community_user as total_members' => function ($query) {
+                $query->where('status', '=', 'active')->whereOr('status', '=', 'running');
+            }])
+            ->withCount(['community_user as total_friends' => function ($query) use ($followed_id) {
+                $query->whereIn('id_user', $followed_id)->where('status', '=', 'active')->whereOr('status', '=', 'running');
+            }])
+            ->with(['community_user' => function($query) use ($followed_id) {
+                $query->whereIn('id_user', $followed_id)
+                ->select('id_community_user', 'id_user', 'id_community')
+                ->with(['user' => function($queryUser) {
+                    $queryUser->whereNotNull('profile_picture')
+                    ->select('id_user', 'profile_picture')->take(2)->get();
+                }]);
+            }])
+            ->where('status', 'active')
+            ->limit(8)
+            ->get();
         }
 
         $result->featured_community = $community;
 
         // Featured Event
-        $today = now()->toDateString();
-
         $event = Event::with(['community' => function ($item) {
             $item->select('id_community', 'title', 'image');
-        }])->where('deleted_at', null)->where('status', 'active')->where('additional_data->date->start', '>=', $today)->orderBy('additional_data->date->start', 'asc')->select('id_event', 'id_community', 'title', 'image', 'category', 'additional_data', 'status')->limit(4)->get();
+        }])
+        ->whereNull('deleted_at')
+        ->where('status', 'active')
+        ->where('category', 'event')
+        ->select('id_event', 'id_community', 'title', 'image', 'category', 'additional_data', 'status')
+        ->withCount('submission as people_joined')
+        ->limit(4)
+        ->orderBy('additional_data->date->start', 'ASC')->get();
 
         foreach ($event as $item){
             $item->additional_data = json_decode($item->additional_data);
-
-            $people_joined = Submission::select('id_event', DB::raw('COUNT(distinct id_user) as people_joined'))->where('id_event', $item->id_event)->groupBy('id_event')->first();
-
-            $item->people_joined = $people_joined;
         }
 
         $result->featured_event = $event;

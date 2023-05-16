@@ -1,5 +1,4 @@
 stages:
-  - test
   - build
   - deploy
 
@@ -12,22 +11,8 @@ variables:
   DOCKER_NETWORK: "ev_net"
   APP_BUILD_ID: $CI_PIPELINE_ID
   ENV: $ENV
-  
-.test: &test
-  stage: test
-  image: masrodjie/php81:slim
-  variables:
-    SONAR_USER_HOME: "${$CI_PROJECT_DIR/.sonar}"
-    GIT_DEPTH: "0"
-  cache:
-    key: "${CI_JOB_NAME}"
-    paths:
-      - .sonar/cache
-  script:
-    - sonar-scanner -X -Dsonnar.sources=. -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.login=$SONAR_LOGIN -Dsonar.password=$SONAR_PASSWORD
-  only:
-    - feature/bintang/sonarqube
 
+  
 .build: &build
   stage: build
   image: masrodjie/docker:latest
@@ -42,6 +27,16 @@ build:development:
   <<: *build
   environment:
     name: development
+  image: masrodjie/php81:slim
+  variables:
+    SONAR_USER_HOME: "${$CI_PROJECT_DIR/.sonar}"
+    GIT_DEPTH: "0"
+  cache:
+    key: "${CI_JOB_NAME}"
+    paths:
+      - .sonar/cache
+  script:
+    - sonar-scanner -X -Dsonnar.sources=. -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.login=$SONAR_LOGIN -Dsonar.password=$SONAR_PASSWORD
   only:
     - feature/bintang/sonarqube
 

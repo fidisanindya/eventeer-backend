@@ -22,13 +22,27 @@ use App\Models\Event;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use App\Http\Controllers\Controller;
+use App\Models\City;
 use App\Models\Timeline;
 
 class ProfileController extends Controller
 {
     public function get_profile($id){
         $data = User::where('id_user', $id)->first();
+        $data->makeHidden('id_city', 'id_company', 'id_job');
         if($data){
+            // City
+            $city = City::select('id_city', 'city_name')->where('id_city', $data->id_city)->first();
+            $data->city = $city;
+
+            // Company
+            $company = Company::select('id_company', 'company_name')->where('id_company', $data->id_company)->first();
+            $data->company = $company;
+
+            // Profession
+            $profession = Profession::select('id_job', 'job_title')->where('id_job', $data->id_job)->first();
+            $data->profession = $profession;
+
             // Social Media
             $socialMedia = UserProfile::select('key_name', 'value')->whereIn('key_name', ['instagram', 'twitter', 'youtube', 'github', 'linkedin', 'website'])->where('id_user', $data->id_user)->get();
             foreach ($socialMedia as $sm){
@@ -37,7 +51,7 @@ class ProfileController extends Controller
             
              // Interest
             $interestUser = UserProfile::select('value')->where([['id_user', '=', $data->id_user], ['key_name', '=', 'id_interest']])->get();
-            $interestData = Interest::select('interest_name')->whereIn('id_interest', $interestUser)->get();
+            $interestData = Interest::select('id_interest', 'interest_name')->whereIn('id_interest', $interestUser)->get();
 
             $data->tag = $interestData;
 
@@ -50,7 +64,7 @@ class ProfileController extends Controller
             $data->community = Community::select('title', 'start_date', 'end_date')->whereIn('id_community', $communityUser)->get();
 
             // Portofolio
-            $data->portofolio = Portofolio::select('project_name', 'project_url', 'start_date', 'end_date')->where('id_user', $data->id_user)->get();
+            $data->portofolio = Portofolio::select('id_portofolio', 'project_name', 'project_url', 'start_date', 'end_date')->where('id_user', $data->id_user)->get();
 
             $submissionUser = Submission::select('id_submission')->where('id_user', $data->id_user)->get();
             $data->certificate = Certificate::whereIn('id_submission', $submissionUser)->get();

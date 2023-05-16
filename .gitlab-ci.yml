@@ -1,7 +1,8 @@
 stages:
+  - test
   - build
   - deploy
-  - sonarqube_stage
+  
 
 variables:
   IMAGE_TAG: $CI_REGISTRY/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME:$CI_COMMIT_REF_SLUG
@@ -59,8 +60,8 @@ deploy:development:
     - feature/bintang/sonarqube
 
 sonarqube_ci_stage:
-  image: sonarsource/sonar-scanner-cli:${SONAR_SCANNER_CLI_VERSION}
-  stage: sonarqube_stage
+  image: sonarsource/sonar-scanner-cli:4.8
+  stage: test
   variables:
     SONAR_PROJECT_BASE_DIR: "$CI_PROJECT_DIR"
   script:

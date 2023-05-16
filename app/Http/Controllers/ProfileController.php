@@ -37,7 +37,7 @@ class ProfileController extends Controller
             
              // Interest
             $interestUser = UserProfile::select('value')->where([['id_user', '=', $data->id_user], ['key_name', '=', 'id_interest']])->get();
-            $interestData = Interest::select('interest_name')->whereIn('id_interest', $interestUser)->get();
+            $interestData = Interest::select('id_interest', 'interest_name')->whereIn('id_interest', $interestUser)->get();
 
             $data->tag = $interestData;
 
@@ -50,7 +50,7 @@ class ProfileController extends Controller
             $data->community = Community::select('title', 'start_date', 'end_date')->whereIn('id_community', $communityUser)->get();
 
             // Portofolio
-            $data->portofolio = Portofolio::select('project_name', 'project_url', 'start_date', 'end_date')->where('id_user', $data->id_user)->get();
+            $data->portofolio = Portofolio::select('id_portofolio', 'project_name', 'project_url', 'start_date', 'end_date')->where('id_user', $data->id_user)->get();
 
             $submissionUser = Submission::select('id_submission')->where('id_user', $data->id_user)->get();
             $data->certificate = Certificate::whereIn('id_submission', $submissionUser)->get();

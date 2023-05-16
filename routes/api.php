@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ChatController;
 use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\ForgotController;
 use App\Http\Controllers\GoogleController;
@@ -72,6 +73,8 @@ Route::prefix('migrate')->group(function () {
     Route::post('/id_job', [MigrationController::class, 'migrate_id_job']);
     Route::post('/id_company', [MigrationController::class, 'migrate_id_company']);
     Route::post('/about_me', [MigrationController::class, 'migration_about_me'])->name('migrationAboutMe');
+    Route::post('/group_message_to_message_room', [MigrationController::class, 'migrate_group_message_to_message_room']);
+    Route::post('/group_message_rolemember_to_message_user', [MigrationController::class, 'migrate_group_message_rolemember_to_message_user']);
 });
 
 // Community List

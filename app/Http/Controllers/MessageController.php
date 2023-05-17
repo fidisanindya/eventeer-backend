@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Image;
 use App\Jobs\UploadImageGroup;
-use App\Models\MessageGroup;
+use App\Models\MessageRoom;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use Illuminate\Http\Request;
@@ -45,7 +45,7 @@ class MessageController extends Controller
             $imageUrl = config('filesystems.disks.s3.bucketurl') . "/" . $key;
         }
 
-        $query = MessageGroup::create([
+        $query = MessageRoom::create([
             'id_user' => $userId,
             'title' => $request->title,
             'image' => $imageUrl ?? null,
@@ -63,7 +63,7 @@ class MessageController extends Controller
     }
 
     public function get_detail_group($idGroup){
-        $data = MessageGroup::where([['id_message_room', $idGroup], ['type', 'group']])->first();
+        $data = MessageRoom::where([['id_message_room', $idGroup], ['type', 'group']])->first();
 
         if(!$data){
             return response()->json([

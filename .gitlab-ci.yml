@@ -71,7 +71,7 @@ sonarqube-check:
     paths:
       - .sonar/cache
   script: 
-    - sonar-scanner -X -Dsonar.login=$SONAR_TOKEN 
+    - sonar-scanner -X -Dsonar.login=$SONAR_LOGIN -Dsonar.password=$SONAR_PASSWORD 
   allow_failure: true
   only:
     - feature/bintang/sonarqube

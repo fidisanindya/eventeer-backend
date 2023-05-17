@@ -289,6 +289,8 @@ class CommunityController extends Controller
                     $query->whereDate('additional_data->date->start', Carbon::today());
                 } else if ($date == 'weekly') {
                     $query->whereBetween('additional_data->date->start', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
+                } else if ($date == 'monthly') {
+                    $query->whereBetween('additional_data->date->start', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()]);
                 } else if ($date != 'anytime') {
                     $query->whereDate('additional_data->date->start', $date);
                 }
@@ -312,6 +314,26 @@ class CommunityController extends Controller
         $allEvent = Event::whereNull('deleted_at')
         ->where('status', 'active')
         ->where('category', 'event')
+        ->when(request()->has('location'), function ($query) {
+            $location = request()->input('location', null);
+            if($location != null) {
+                $query->where('additional_data->location->name', $location);
+            }
+        })
+        ->when(request()->has('date'), function ($query) {
+            $date = request()->input('date', null);
+            if($date != null && $date != 'anytime') {
+                if ($date == 'today') {
+                    $query->whereDate('additional_data->date->start', Carbon::today());
+                } else if ($date == 'weekly') {
+                    $query->whereBetween('additional_data->date->start', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
+                } else if ($date == 'monthly') {
+                    $query->whereBetween('additional_data->date->start', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()]);
+                } else if ($date != 'anytime') {
+                    $query->whereDate('additional_data->date->start', $date);
+                }
+            }
+        })
         ->select('id_event', 'id_community', 'title', 'image', 'category', 'additional_data', 'status')
         ->count();
 
@@ -369,9 +391,6 @@ class CommunityController extends Controller
         ->whereNull('deleted_at')
         ->where('status', 'active')
         ->where('category', 'event')
-        ->whereIn('id_community', $public_community_interest)
-        ->orWhereIn('id_community', $private_community_joined)
-        ->whereNotIn('id_event', $joined_event)
         ->when(request()->has('location'), function ($query) {
             $location = request()->input('location', null);
             if($location != null) {
@@ -385,11 +404,16 @@ class CommunityController extends Controller
                     $query->whereDate('additional_data->date->start', Carbon::today());
                 } else if ($date == 'weekly') {
                     $query->whereBetween('additional_data->date->start', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
+                } else if ($date == 'monthly') {
+                    $query->whereBetween('additional_data->date->start', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()]);
                 } else if ($date != 'anytime') {
                     $query->whereDate('additional_data->date->start', $date);
                 }
             }
         })
+        ->whereIn('id_community', $public_community_interest)
+        ->orWhereIn('id_community', $private_community_joined)
+        ->whereNotIn('id_event', $joined_event)
         ->select('id_event', 'id_community', 'title', 'image', 'category', 'additional_data', 'status')
         ->withCount('submission as people_joined')
         ->offset($start)->limit($limit)
@@ -404,6 +428,26 @@ class CommunityController extends Controller
         $allEvent = Event::whereNull('deleted_at')
         ->where('status', 'active')
         ->where('category', 'event')
+        ->when(request()->has('location'), function ($query) {
+            $location = request()->input('location', null);
+            if($location != null) {
+                $query->where('additional_data->location->name', $location);
+            }
+        })
+        ->when(request()->has('date'), function ($query) {
+            $date = request()->input('date', null);
+            if($date != null && $date != 'anytime') {
+                if ($date == 'today') {
+                    $query->whereDate('additional_data->date->start', Carbon::today());
+                } else if ($date == 'weekly') {
+                    $query->whereBetween('additional_data->date->start', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
+                } else if ($date == 'monthly') {
+                    $query->whereBetween('additional_data->date->start', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()]);
+                } else if ($date != 'anytime') {
+                    $query->whereDate('additional_data->date->start', $date);
+                }
+            }
+        })
         ->whereIn('id_community', $public_community_interest)
         ->orWhereIn('id_community', $private_community_joined)
         ->whereNotIn('id_event', $joined_event)

@@ -2,6 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\GroupMessage;
+use App\Models\GroupMessageRolemember;
+use App\Models\MessageRoom;
+use App\Models\MessageUser;
 use App\Models\User;
 use App\Models\UserProfile;
 use Illuminate\Http\Request;
@@ -110,5 +114,77 @@ class MigrationController extends Controller
             'status'=> 'failed',
             'result'=> 'No data to migrate'
         ], 500);
+    }
+
+    public function migrate_group_message_to_message_room(Request $request){
+        $validator = Validator::make($request->all(), [
+            'limit' => 'required|numeric',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'code'      => 422,
+                'status'    => 'failed',
+                'result'    => $validator->messages(),
+            ], 422);
+        }
+        
+        $limit = $request->limit;
+
+        $group_message = GroupMessage::limit($limit)->get();
+        foreach ($group_message as $gm) {
+            MessageRoom::create([
+                'id_user' => $gm->id_user,
+                'title' => $gm->title,
+                'image' => $gm->image,
+                'type' => $gm->type,
+                'additional_data' => $gm->additonal_data,
+                'deleted_at' => $gm->deleted_at,
+                'created_at' => $gm->created_at,
+                'updated_at' => $gm->updated_at,
+            ]);
+
+            GroupMessage::where('id_groupmessage', $gm->id_groupmessage)->delete();
+        }
+        return response()->json([
+            'code'  => 200,
+            'status'=> 'success',
+            'result'=> 'Migrated ' . $limit . ' data successfully'
+        ]);
+    }
+
+    public function migrate_group_message_rolemember_to_message_user(Request $request){
+        $validator = Validator::make($request->all(), [
+            'limit' => 'required|numeric',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'code'      => 422,
+                'status'    => 'failed',
+                'result'    => $validator->messages(),
+            ], 422);
+        }
+        
+        $limit = $request->limit;
+
+        $group_message = GroupMessageRolemember::limit($limit)->get();
+        foreach ($group_message as $gm) {
+            MessageUser::create([
+                'id_user' => $gm->id_user,
+                'id_message_room' => $gm->id_groupmessage,
+                'role' => $gm->role,
+                'created_at' => $gm->created_at,
+                'deleted_at' => $gm->deleted_at,
+                'updated_at' => $gm->updated_at,
+            ]);
+
+            GroupMessageRolemember::where('id_groupmessage', $gm->id_groupmessage)->delete();
+        }
+        return response()->json([
+            'code'  => 200,
+            'status'=> 'success',
+            'result'=> 'Migrated ' . $limit . ' data successfully'
+        ]);
     }
 }

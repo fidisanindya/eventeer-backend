@@ -192,7 +192,7 @@ class ProfileController extends Controller
         }
 
         $profession = Profession::where('job_title', $request->profession)->first();
-
+       
         if($profession == null){
             Profession::create([
                 'job_title' => $request->profession,
@@ -204,11 +204,31 @@ class ProfileController extends Controller
 
         if($portofolioAdd){
             foreach($portofolioAdd as $pa){
+                if($pa['start_date_month'] == "2"){
+                    $startDate = $pa['start_date_year'] . "-0" . $pa['start_date_month'] . "-" . "28";
+                }else{
+                    if($pa['start_date_month'] < 10){
+                        $startDate = $pa['start_date_year'] . "-0" . $pa['start_date_month'] . "-" . "30";
+                    }else{
+                        $startDate = $pa['start_date_year'] . "-" . $pa['start_date_month'] . "-" . "30";
+                    }
+                }
+
+                if($pa['end_date_month'] == "2"){
+                    $endDate = $pa['end_date_year'] . "-0" . $pa['end_date_month'] . "-" . "28";
+                }else{
+                    if($pa['end_date_month'] < 10){
+                        $endDate = $pa['end_date_year'] . "-0" . $pa['end_date_month'] . "-" . "30";
+                    }else{
+                        $endDate = $pa['end_date_year'] . "-" . $pa['end_date_month'] . "-" . "30";
+                    }
+                }
+
                 Portofolio::create([
                     'project_name' => $pa['project_name'],
                     'project_url' => $pa['project_url'],
-                    'start_date' => $pa['start_date'],
-                    'end_date' => $pa['end_date'],
+                    'start_date' => $startDate,
+                    'end_date' => $endDate,
                     'id_user' => $user['id_user']
                 ]);
             }
@@ -219,11 +239,32 @@ class ProfileController extends Controller
                 $record = Portofolio::where('id_portofolio', $pe['id_portofolio'])->first();
     
                 if($record){
+
+                    if($pe['start_date_month'] == "2"){
+                        $startDate = $pe['start_date_year'] . "-0" . $pe['start_date_month'] . "-" . "28";
+                    }else{
+                        if($pe['start_date_month'] < 10){
+                            $startDate = $pe['start_date_year'] . "-0" . $pe['start_date_month'] . "-" . "30";
+                        }else{
+                            $startDate = $pe['start_date_year'] . "-" . $pe['start_date_month'] . "-" . "30";
+                        }
+                    }
+    
+                    if($pe['end_date_month'] == "2"){
+                        $endDate = $pe['end_date_year'] . "-0" . $pe['end_date_month'] . "-" . "28";
+                    }else{
+                        if($pe['end_date_month'] < 10){
+                            $endDate = $pe['end_date_year'] . "-0" . $pe['end_date_month'] . "-" . "30";
+                        }else{
+                            $endDate = $pe['end_date_year'] . "-" . $pe['end_date_month'] . "-" . "30";
+                        }
+                    }
+
                     Portofolio::where('id_portofolio', $record->id_portofolio)->update([
                         'project_name' => $pe['project_name'],
                         'project_url' => $pe['project_url'],
-                        'start_date' => $pe['start_date'],
-                        'end_date' => $pe['end_date'],
+                        'start_date' => $startDate,
+                        'end_date' => $endDate,
                     ]);
                 }
             }
@@ -287,7 +328,7 @@ class ProfileController extends Controller
             'id_city' => $user['city'],
             'gender' => $user['gender'],
             'id_company' => $company->id_company,
-            'id_job' => $profession->id_profession
+            'id_job' => $profession->id_job
         ]);
 
         return response()->json([

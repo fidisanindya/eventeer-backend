@@ -5,6 +5,7 @@ use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\ForgotController;
 use App\Http\Controllers\GoogleController;
 use App\Http\Controllers\HomepageController;
+use App\Http\Controllers\MessageController;
 use App\Http\Controllers\MigrationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RegistrationController;
@@ -106,5 +107,12 @@ Route::prefix('profile')->group(function () {
     // Route::post('/add-portofolio', [ProfileController::class, 'add_portofolio']);
     // Route::post('/edit-portofolio', [ProfileController::class, 'edit_portofolio']);
     // Route::post('/delete-portofolio', [ProfileController::class, 'delete_portofolio']);
+});
+
+Route::prefix('chat')->group(function () {
+    Route::middleware(['jwt.auth'])->group(function () {
+        Route::post('/create_group_chat', [MessageController::class, 'create_group_message']);
+        Route::get('/detail_group_chat/{idGroup}', [MessageController::class, 'get_detail_group']);
+    });
 });
  

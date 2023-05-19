@@ -60,7 +60,7 @@ deploy:development:
     - feature/bintang/sonarqube
 
 sonarqube-check:
-  stage: sonarqube
+  stage: test
   image: sonarsource/sonar-scanner-cli:latest
   script:
     - sonar-scanner

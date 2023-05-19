@@ -71,8 +71,7 @@ deploy:development:
 #         -Dsonar.projectName=$CI_PROJECT_NAME
 #         -Dsonar.projectVersion=$CI_COMMIT_REF_NAME
 #         -Dsonar.sources=.
-#         -Dsonar.language=php
-#         -Dsonar.php.coverage.reportPaths=coverage.xml  # Update with your coverage report path
+#           # Update with your coverage report path
 #   only:
 #     - feature/bintang/sonarqube
 
@@ -89,7 +88,7 @@ sonarqube-check:
     paths:
       - .sonar/cache
   script: 
-    - sonar-scanner
+    - sonar-scanner -X -Dsonar.language=php -Dsonar.php.coverage.reportPaths=coverage.xml
   allow_failure: true
   only:
     - feature/bintang/sonarqube

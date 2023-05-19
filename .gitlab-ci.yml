@@ -64,7 +64,10 @@ sonarqube-check:
   needs: []
   dependencies: []
   script:
-    - sonar-scanner -X -Dsonar.qualitygate.wait=true -Dsonar.login=$SONAR_TOKEN
+    - sonar-scanner
+        -Dsonar.host.url=$SONAR_HOST_URL
+        -Dsonar.login=$SONAR_TOKEN
+        -Dsonar.sources=.
   allow_failure: true
   variables:
     SONAR_PROJECT_BASE_DIR: "${CI_PROJECT_DIR}"

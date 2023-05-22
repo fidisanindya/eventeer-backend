@@ -33,38 +33,9 @@ class AuthController extends Controller
         }
 
         if ($user) {
-            $userLoginActivities = $user->login_activities()->limit(5)->orderBy('created_at', 'desc')->get();
-            $latestLoginActivity = $userLoginActivities->first();
-            $blockLoginAttempts = 4;
-            $isAttemptsBlocked = false;
-            $isSuccessLoginDetected = false;
-
-            if (count($userLoginActivities) == $blockLoginAttempts) {
-                $endActivity = $userLoginActivities->last();
-                $latestActivityTime = new DateTime($latestLoginActivity->created_at);
-                $endActivityTime = new DateTime($endActivity->created_at);
-                $datetimeNow = new DateTime();
-
-                $timestampInterval = $latestActivityTime->getTimestamp() - $endActivityTime->getTimestamp();
-                $blockLoginInterval = 60 * 10; // 10 minutes interval login attempt before user blocked from login
-                $isLoginAttemptReached = $timestampInterval <= $blockLoginInterval;
-
-                $blockTime = 60 * 1; // 1 minutes block user from login
-                $blockTimeRemaining = $datetimeNow->getTimestamp() - $latestActivityTime->getTimestamp();
-                $isUserBlockedFromLogin = $blockTimeRemaining <= $blockTime;
-
-                if ($isLoginAttemptReached && $isUserBlockedFromLogin) {
-                    $isAttemptsBlocked = true;
-                }
-            }
-
-            foreach ($userLoginActivities as $loginActivity) {
-                if (boolval($loginActivity->is_successful)) {
-                    $isSuccessLoginDetected = true;
-                }
-            }
-
-            if ($isAttemptsBlocked && !$isSuccessLoginDetected) {
+            $lastFailedAttempt = LoginActivity::where('id_user', $user->id_user)->where('is_successful', false)->where('created_at', '>', Carbon::now()->subMinutes(1))->count();
+                $this->saveLoginActivity($request, $user, false);
+            if($lastFailedAttempt >= 4) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Too many attempts',
@@ -89,8 +60,12 @@ class AuthController extends Controller
     
                 return response($response, 200);
     
-            }else if ($user) {
-                $this->saveLoginActivity($request, $user, false);
+            }else{
+                return response()->json([
+                    'code'      => 401,
+                    'status'    => 'failed',
+                    'result'    => 'Password incorrect',
+                ], 401);
             }
         }
 

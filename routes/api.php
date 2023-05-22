@@ -116,6 +116,10 @@ Route::prefix('chat')->group(function () {
     Route::middleware(['jwt.auth'])->group(function () {
         Route::post('/create_group_chat', [MessageController::class, 'create_group_message']);
         Route::get('/detail_group_chat/{idGroup}', [MessageController::class, 'get_detail_group']);
+        Route::post('/send_message', [MessageController::class, 'send_message']);
+        Route::get('/get_detail_message', [MessageController::class, 'get_detail_message']);
+        Route::get('/get_list_message', [MessageController::class, 'get_list_message']);
+        Route::get('/get_list_files', [MessageController::class, 'get_list_files']);
     });
 });
  

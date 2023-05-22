@@ -30,7 +30,7 @@ build:development:
   environment:
     name: development
   only:
-    - feature/bintang/sonarqube
+    - development
 
 .deploy: &deploy
   stage: deploy
@@ -57,23 +57,7 @@ deploy:development:
   environment:
     name: development
   only:
-    - feature/bintang/sonarqube
-
-# sonarqube-check:
-#   stage: test
-#   image: sonarsource/sonar-scanner-cli:latest
-#   script:
-#     - sonar-scanner
-#         -X
-#         -Dsonar.host.url=$SONAR_HOST_URL
-#         -Dsonar.login=$SONAR_TOKEN
-#         -Dsonar.projectKey=$CI_PROJECT_NAME
-#         -Dsonar.projectName=$CI_PROJECT_NAME
-#         -Dsonar.projectVersion=$CI_COMMIT_REF_NAME
-#         -Dsonar.sources=.
-#           # Update with your coverage report path
-#   only:
-#     - feature/bintang/sonarqube
+    - development
 
 sonarqube-check:
   stage: test
@@ -91,4 +75,4 @@ sonarqube-check:
     - sonar-scanner -X -Dsonar.language=php -Dsonar.php.coverage.reportPaths=coverage.xml
   allow_failure: true
   only:
-    - feature/bintang/sonarqube
+    - development

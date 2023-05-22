@@ -12,4 +12,12 @@ class MessageRoom extends Model
     protected $table = 'module_message_room';
     protected $primaryKey = 'id_message_room';
     protected $guarded = ['id_message_room'];
+
+    public function message_user(){
+        return $this->hasMany(MessageUser::class, 'id_message_room', 'id_message_room');
+    }
+    
+    public function message_pin(){
+        return $this->hasMany(MessagePin::class, 'id_message_room', 'id_message_room');
+    }
 }

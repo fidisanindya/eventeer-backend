@@ -115,12 +115,16 @@ Route::prefix('profile')->group(function () {
 Route::prefix('chat')->group(function () {
     Route::middleware(['jwt.auth'])->group(function () {
         Route::post('/create_group_chat', [MessageController::class, 'create_group_message']);
-        Route::get('/detail_group_chat/{idGroup}', [MessageController::class, 'get_detail_group']);
+        Route::get('/detail_group_chat', [MessageController::class, 'get_detail_group']);
+        Route::post('/send_message', [MessageController::class, 'send_message']);
+        Route::get('/get_detail_message', [MessageController::class, 'get_detail_message']);
+        Route::get('/get_list_message', [MessageController::class, 'get_list_message']);
+        Route::get('/get_list_files', [MessageController::class, 'get_list_files']);
         Route::post('/pin_unpin', [MessageController::class, 'post_pin_unpin_chat']);
         Route::delete('/delete_chat', [MessageController::class, 'delete_chat']);
         Route::post('/add_member', [MessageController::class, 'post_add_member']);
         Route::delete('/delete_member', [MessageController::class, 'delete_member']);
         Route::post('/leave_group', [MessageController::class, 'post_leave_group']);
-        Route::post('/delete_group', [MessageController::class, 'delete_group']);
+        Route::delete('/delete_group', [MessageController::class, 'delete_group']);
     });
 });

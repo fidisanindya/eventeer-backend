@@ -93,6 +93,18 @@ return [
             // 'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
         ],
 
+        'mongodb' => [
+            'driver' => 'mongodb',
+            'host' => env('MD_HOST', '127.0.0.1'),
+            'port' => env('MD_PORT', 27017),
+            'database' => env('MD_DATABASE', 'homestead'),
+            'username' => env('MD_USERNAME', 'homestead'),
+            'password' => env('MD_PASSWORD', 'secret'),
+            'options' => [
+                'appname' => 'Eventeer V2',
+            ],
+        ],
+
     ],
 
     /*

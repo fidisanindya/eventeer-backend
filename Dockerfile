@@ -2,7 +2,7 @@
 FROM masrodjie/php81:slim AS build
 
 USER root 
-RUN apt install php8.1-mongodb -y
+RUN apt-get update && apt-get install -y libmcrypt-dev libcurl4-openssl-dev libssl-dev libc-ares-dev php8.1-dev php-pear
 
 COPY --chown=www-data . /app/
 
@@ -31,7 +31,7 @@ RUN /var/www/html/vendor/bin/rr get-binary -q
 
 USER root
 
-RUN apt install php8.1-mongodb -y 
+RUN apt-get update && apt-get install -y libmcrypt-dev libcurl4-openssl-dev libssl-dev libc-ares-dev php8.1-dev php-pear
 WORKDIR /var/www/html
 
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

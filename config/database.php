@@ -95,16 +95,9 @@ return [
 
         'mongodb' => [
             'driver' => 'mongodb',
-            'host' => env('MD_HOST', '127.0.0.1'),
-            'port' => env('MD_PORT', 27017),
-            'database' => env('MD_DATABASE', 'homestead'),
-            'username' => env('MD_USERNAME', 'homestead'),
-            'password' => env('MD_PASSWORD', 'secret'),
-            'options' => [
-                'appname' => 'Eventeer V2',
-            ],
+            'dsn' => env('MONGO_DSN'),
+            'database' => env('MONGO_DATABASE'),
         ],
-
     ],
 
     /*

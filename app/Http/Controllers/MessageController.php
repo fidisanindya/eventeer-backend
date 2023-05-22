@@ -82,7 +82,7 @@ class MessageController extends Controller
 
     public function get_detail_group(Request $request){
         $id_group = $request->input('id_message_room');
-        
+
         $data = MessageRoom::where([['id_message_room', $id_group], ['type', 'group']])->first();
 
         if(!$data){
@@ -132,6 +132,7 @@ class MessageController extends Controller
                  Message::insert([
                      "text" => $pdfUrl,
                      "type" => 'pdf',
+                     "date" => date('Y-m-d h:i:s'),
                      "id_user" => $userId,
                      "id_message_room" => $request->id_message_room
                  ]);
@@ -160,6 +161,7 @@ class MessageController extends Controller
                  Message::insert([
                      "text" => $imageUrl,
                      "type" => 'photo',
+                     "date" => date('Y-m-d h:i:s'),
                      "id_user" => $userId,
                      "id_message_room" => $request->id_message_room
                  ]);
@@ -174,6 +176,7 @@ class MessageController extends Controller
          Message::insert([
              "text" => $request->text,
              "type" => 'txt',
+             "date" => date('Y-m-d h:i:s'),
              "id_user" => $userId,
              "id_message_room" => $request->id_message_room
          ]);

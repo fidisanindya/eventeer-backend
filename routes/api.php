@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\ChatController;
 use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\ForgotController;
 use App\Http\Controllers\GoogleController;
@@ -112,10 +111,16 @@ Route::prefix('profile')->group(function () {
     // Route::post('/delete-portofolio', [ProfileController::class, 'delete_portofolio']);
 });
 
+// Chat
 Route::prefix('chat')->group(function () {
     Route::middleware(['jwt.auth'])->group(function () {
         Route::post('/create_group_chat', [MessageController::class, 'create_group_message']);
         Route::get('/detail_group_chat/{idGroup}', [MessageController::class, 'get_detail_group']);
+        Route::post('/pin_unpin', [MessageController::class, 'post_pin_unpin_chat']);
+        Route::delete('/delete_chat', [MessageController::class, 'delete_chat']);
+        Route::post('/add_member', [MessageController::class, 'post_add_member']);
+        Route::delete('/delete_member', [MessageController::class, 'delete_member']);
+        Route::post('/leave_group', [MessageController::class, 'post_leave_group']);
+        Route::post('/delete_group', [MessageController::class, 'delete_group']);
     });
 });
- 

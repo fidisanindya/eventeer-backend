@@ -126,5 +126,6 @@ Route::prefix('chat')->group(function () {
         Route::delete('/delete_member', [MessageController::class, 'delete_member']);
         Route::post('/leave_group', [MessageController::class, 'post_leave_group']);
         Route::delete('/delete_group', [MessageController::class, 'delete_group']);
+        Route::get('/get_list_friend', [MessageController::class, 'get_list_friend']);
     });
 });

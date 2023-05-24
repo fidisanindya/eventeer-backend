@@ -13,6 +13,10 @@ use App\Models\MessageRoom;
 use App\Models\MessageUser;
 use Illuminate\Http\Request;
 use App\Jobs\UploadImageGroup;
+use App\Models\Company;
+use App\Models\Follow;
+use App\Models\Profession;
+use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -103,7 +107,8 @@ class MessageController extends Controller
     public function send_message(Request $request){
         $request->validate([
             "text" => "required",
-            "id_message_room" => "required"
+            "id_message_room" => "",
+            "with_id_user" => ""
         ]);
 
          // Get id_user from Bearer Token
@@ -117,70 +122,105 @@ class MessageController extends Controller
          
          $userId = $decoded->data->id_user;
  
-         if($request->hasFile('text')) {
-             if($request->text->getClientOriginalExtension() == 'pdf'){
-                 $filename = date('dmYhis') . '_pdf.' . $request->text->getClientOriginalExtension();
- 
-                 Storage::put('public/pdf_queue/' . $filename, file_get_contents($request->text));
- 
-                 UploadPDF::dispatch($filename);
- 
-                 $key = "userfiles/chat/" . $filename;
- 
-                 $pdfUrl = config('filesystems.disks.s3.bucketurl') . "/" . $key;
- 
-                 Message::insert([
-                     "text" => $pdfUrl,
-                     "type" => 'pdf',
-                     "date" => date('Y-m-d h:i:s'),
-                     "id_user" => $userId,
-                     "id_message_room" => $request->id_message_room
-                 ]);
- 
-                 return response()->json([
-                     "code" => 200,
-                     "status" => "success send new message"
-                 ], 200);   
-             }else{
-                 $image = Image::make($request->text)->resize(400, null, function ($constraint) {
-                     $constraint->aspectRatio();
-                 });
-     
-                 $filename = date('dmYhis') . '_picture.' . $request->text->getClientOriginalExtension();
-     
-                 $data = $image->encode($request->text->getClientOriginalExtension())->__toString();
-     
-                 Storage::put('public/picture_queue/' . $filename, $data);
-     
-                 UploadImageChat::dispatch($filename);
-     
-                 $key = "userfiles/chat/" . $filename;
-     
-                 $imageUrl = config('filesystems.disks.s3.bucketurl') . "/" . $key;
- 
-                 Message::insert([
-                     "text" => $imageUrl,
-                     "type" => 'photo',
-                     "date" => date('Y-m-d h:i:s'),
-                     "id_user" => $userId,
-                     "id_message_room" => $request->id_message_room
-                 ]);
- 
-                 return response()->json([
-                     "code" => 200,
-                     "status" => "success send new message"
-                 ], 200);   
-             }
-         }
- 
-         Message::insert([
-             "text" => $request->text,
-             "type" => 'txt',
-             "date" => date('Y-m-d h:i:s'),
-             "id_user" => $userId,
-             "id_message_room" => $request->id_message_room
-         ]);
- 
+         if(!$request->id_message_room){
+            $validator = Validator::make($request->all(), [
+                'with_id_user' => 'required|numeric',
+            ]);
+    
+            if ($validator->fails()) {
+                return response()->json([
+                    'code'      => 422,
+                    'status'    => 'failed',
+                    'result'    => $validator->messages(),
+                ], 422);
+            }
+
+            $query = MessageRoom::create([
+                'id_user' => $userId,
+                'title' => "",
+                'type' => 'personal'
+             ]);
+             
+             MessageUser::create([
+                'id_user' => $query->id_user,
+                'id_message_room' => $query->id_message_room,
+                'role' => 'member'
+             ]);
+             MessageUser::create([
+                'id_user' => $request->with_id_user,
+                'id_message_room' => $query->id_message_room,
+                'role' => 'member'
+             ]);
+             
+        }
+        
+        if($request->hasFile('text')) {
+            if($request->text->getClientOriginalExtension() == 'pdf'){
+                $filename = date('dmYhis') . '_pdf.' . $request->text->getClientOriginalExtension();
+
+                Storage::put('public/pdf_queue/' . $filename, file_get_contents($request->text));
+
+                UploadPDF::dispatch($filename);
+
+                $key = "userfiles/chat/" . $filename;
+
+                $pdfUrl = config('filesystems.disks.s3.bucketurl') . "/" . $key;
+
+                Message::insert([
+                    "text" => $pdfUrl,
+                    "type" => 'pdf',
+                    "date" => date('Y-m-d h:i:s'),
+                    "id_user" => $userId,
+                    "with_id_user" => $request->with_id_user ?? null,
+                    "id_message_room" => (int)($request->id_message_room ?? $query->id_message_room)
+                ]);
+
+                return response()->json([
+                    "code" => 200,
+                    "status" => "success send new message"
+                ], 200);   
+            }else{
+                $image = Image::make($request->text)->resize(400, null, function ($constraint) {
+                    $constraint->aspectRatio();
+                });
+    
+                $filename = date('dmYhis') . '_picture.' . $request->text->getClientOriginalExtension();
+    
+                $data = $image->encode($request->text->getClientOriginalExtension())->__toString();
+    
+                Storage::put('public/picture_queue/' . $filename, $data);
+    
+                UploadImageChat::dispatch($filename);
+    
+                $key = "userfiles/chat/" . $filename;
+    
+                $imageUrl = config('filesystems.disks.s3.bucketurl') . "/" . $key;
+
+                Message::insert([
+                    "text" => $imageUrl,
+                    "type" => 'photo',
+                    "date" => date('Y-m-d h:i:s'),
+                    "id_user" => $userId,
+                    "with_id_user" => $request->with_id_user ?? null,
+                    "id_message_room" => (int)($request->id_message_room ?? $query->id_message_room)
+                ]);
+
+                return response()->json([
+                    "code" => 200,
+                    "status" => "success send new message"
+                ], 200);   
+            }
+        }
+
+        Message::insert([
+            "text" => $request->text,
+            "type" => 'txt',
+            "date" => date('Y-m-d h:i:s'),
+            "id_user" => $userId,
+            "with_id_user" => $request->with_id_user ?? null,
+            "id_message_room" => (int)($request->id_message_room ?? $query->id_message_room)
+        ]);
+
          return response()->json([
              "code" => 200,
              "status" => "success send new message"
@@ -258,25 +298,6 @@ class MessageController extends Controller
     }
 
     public function get_detail_message(Request $request){
-        $id_message = $request->input('id_message');
-        
-        $message = Message::where('_id',  $id_message)->first();
-
-        if($message){    
-            return response()->json([
-                "code" => 200,
-                "status" => "success",
-                "result" => $message
-            ], 200);
-        }
-
-        return response()->json([
-            "code" => 404,
-            "status" => "message not found"
-        ], 404);
-    }
-
-    public function get_list_message(Request $request){
         $id_message_room = $request->input('id_message_room');
 
         $list_message = Message::where('id_message_room', $id_message_room)->get();
@@ -293,6 +314,58 @@ class MessageController extends Controller
             "code" => 404,
             "status" => "no message"
         ], 404);
+    }
+
+    public function get_list_message(Request $request){
+        // Get id_user from Bearer Token
+        $authorizationHeader = $request->header('Authorization');
+
+        $jwtParts = explode(' ', $authorizationHeader);
+        $jwtToken = $jwtParts[1];
+
+        $publicKey = env("JWT_PUBLIC_KEY"); 
+        $decoded = JWT::decode($jwtToken, new Key($publicKey, 'RS256'));
+        
+        $userId = $decoded->data->id_user;
+
+        $room_user = MessageUser::select('id_message_room')->where('id_user', $userId)->whereNull('deleted_at')->get();
+
+        $data = MessageRoom::select('id_message_room', 'title', 'image', 'type')->whereIn('id_message_room', $room_user)->whereNull('deleted_at')->get();
+
+        // $data_personal = MessageRoom::select('id_message_room', 'title', 'image', 'type')->where('type', 'personal')->whereIn('id_message_room', $room_user)->whereNull('deleted_at')->get();
+
+        foreach($data as $dt){
+            if($dt->type == "personal"){
+                $data_personal = MessageUser::select('id_user')->where([['id_user', '!=', $userId], ['id_message_room', $dt->id_message_room]])->first();
+                $personal_user = User::select('full_name')->where('id_user', $data_personal->id_user)->first();
+                $dt->title = $personal_user->full_name;
+                $dt->image = $personal_user->profile_picture;
+            }
+            $last_chat = Message::select('id_user', 'text', 'date')->where('id_message_room', $dt->id_message_room)->orderBy('date', 'desc')->first();
+            if($last_chat){
+                $dt->time_last_chat = $last_chat->date;
+                $dt->last_chat_user = $last_chat->id_user;
+                $dt->last_chat = $last_chat->text;
+            }else{
+                $dt->time_last_chat = null;
+                $dt->last_chat_user = null;
+                $dt->last_chat = null;
+            }
+
+            $pinned_message = MessagePin::where([['id_message_room', $dt->id_message_room], ['id_user', $userId], ['deleted_at', null]])->first();
+
+            if($pinned_message){
+                $dt->pinned = true;
+            }else{
+                $dt->pinned = false;
+            }
+        }
+
+        return response()->json([
+            'code' => 200,
+            'status' => 'success',
+            'result' => $data
+        ], 200);
     }
 
     public function get_list_files(Request $request){
@@ -658,5 +731,40 @@ class MessageController extends Controller
                 ]
             ], 200);
         }
+    }
+
+    public function get_list_friend(Request $request){
+
+         // Get id_user from Bearer Token
+         $authorizationHeader = $request->header('Authorization');
+
+         $jwtParts = explode(' ', $authorizationHeader);
+         $jwtToken = $jwtParts[1];
+ 
+         $publicKey = env("JWT_PUBLIC_KEY"); 
+         $decoded = JWT::decode($jwtToken, new Key($publicKey, 'RS256'));
+         
+         $userId = $decoded->data->id_user;
+
+        $follower = Follow::select('followed_by')->where('id_user', $userId)->get();
+
+        $friend = Follow::select('id_user')->where('followed_by', $userId)->whereIn('id_user', $follower)->get();
+
+        $getDataUser = User::with(['job' => function($query){ $query->select('id_job','job_title');}])->with(['company' => function($query){ $query->select('id_company','company_name');}])->select('profile_picture', 'full_name', 'id_job', 'id_company')->whereIn('id_user', $friend)->get();
+
+        $getDataUser->makeHidden(['id_company','id_job']);
+
+        if($friend->count() != 0){
+            return response()->json([
+                "code" => 200,
+                "status" => "success",
+                "result" => $getDataUser
+            ], 200);
+        }
+
+        return response()->json([
+            "code" => 404,
+            "status" => "no friend"
+        ], 404);
     }
 }

@@ -1,6 +1,8 @@
 # Build stage
 FROM masrodjie/php81:slim AS build
 
+USER root 
+RUN apt-get update && apt-get install -y libmcrypt-dev libcurl4-openssl-dev libssl-dev libc-ares-dev php8.1-mongodb
 COPY --chown=www-data . /app/
 
 WORKDIR /app/
@@ -28,6 +30,7 @@ RUN /var/www/html/vendor/bin/rr get-binary -q
 
 USER root
 
+RUN apt-get update && apt-get install -y libmcrypt-dev libcurl4-openssl-dev libssl-dev libc-ares-dev php8.1-mongodb
 WORKDIR /var/www/html
 
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

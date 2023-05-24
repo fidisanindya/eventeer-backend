@@ -24,15 +24,7 @@ class CommunityController extends Controller
         $limit = $request->input('limit');
         $start = $request->input('start');
 
-        $authorizationHeader = $request->header('Authorization');
-
-        $jwtParts = explode(' ', $authorizationHeader);
-        $jwtToken = $jwtParts[1];
-
-        $publicKey = env("JWT_PUBLIC_KEY"); 
-        $decoded = JWT::decode($jwtToken, new Key($publicKey, 'RS256'));
-        
-        $userId = $decoded->data->id_user;
+        $userId = get_id_user_jwt($request);
 
         $result = new stdClass;
 
@@ -109,15 +101,7 @@ class CommunityController extends Controller
         $limit = $request->input('limit');
         $start = $request->input('start');
 
-        $authorizationHeader = $request->header('Authorization');
-
-        $jwtParts = explode(' ', $authorizationHeader);
-        $jwtToken = $jwtParts[1];
-
-        $publicKey = env("JWT_PUBLIC_KEY"); 
-        $decoded = JWT::decode($jwtToken, new Key($publicKey, 'RS256'));
-        
-        $userId = $decoded->data->id_user;
+        $userId = get_id_user_jwt($request);
 
         $interestUser = UserProfile::select('value')->where([['id_user', '=', $userId], ['key_name', '=', 'id_interest']])->get();
 
@@ -205,15 +189,7 @@ class CommunityController extends Controller
 
     public function getTopCommunity(Request $request){
         // Get id_user from Bearer Token
-        $authorizationHeader = $request->header('Authorization');
-
-        $jwtParts = explode(' ', $authorizationHeader);
-        $jwtToken = $jwtParts[1];
-
-        $publicKey = env("JWT_PUBLIC_KEY"); 
-        $decoded = JWT::decode($jwtToken, new Key($publicKey, 'RS256'));
-        
-        $userId = $decoded->data->id_user;
+        $userId = get_id_user_jwt($request);
 
         $communityTop = Community::select('id_community', 'title', 'image')->withCount(['community_user as total_members' => function ($query) {
             $query->where('status', '=', 'active')->whereOr('status', '=', 'running');
@@ -354,15 +330,7 @@ class CommunityController extends Controller
 
     public function getEventMightLike(Request $request){
         // Get id_user from Bearer Token
-        $authorizationHeader = $request->header('Authorization');
-
-        $jwtParts = explode(' ', $authorizationHeader);
-        $jwtToken = $jwtParts[1];
-
-        $publicKey = env("JWT_PUBLIC_KEY"); 
-        $decoded = JWT::decode($jwtToken, new Key($publicKey, 'RS256'));
-        
-        $userId = $decoded->data->id_user;
+        $userId = get_id_user_jwt($request);
 
         // Event Might Like
         $start = $request->input('start', 0);
@@ -493,15 +461,7 @@ class CommunityController extends Controller
 
     public function getYourEvent(Request $request){
         // Get id_user from Bearer Token
-        $authorizationHeader = $request->header('Authorization');
-
-        $jwtParts = explode(' ', $authorizationHeader);
-        $jwtToken = $jwtParts[1];
-
-        $publicKey = env("JWT_PUBLIC_KEY"); 
-        $decoded = JWT::decode($jwtToken, new Key($publicKey, 'RS256'));
-        
-        $userId = $decoded->data->id_user;
+        $userId = get_id_user_jwt($request);
         
         $result = new stdClass;
 

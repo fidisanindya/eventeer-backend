@@ -22,15 +22,7 @@ class HomepageController extends Controller
 {
     public function get_homepage(Request $request){
         // Get id_user from Bearer Token
-        $authorizationHeader = $request->header('Authorization');
-
-        $jwtParts = explode(' ', $authorizationHeader);
-        $jwtToken = $jwtParts[1];
-
-        $publicKey = env("JWT_PUBLIC_KEY"); 
-        $decoded = JWT::decode($jwtToken, new Key($publicKey, 'RS256'));
-        
-        $userId = $decoded->data->id_user;
+        $userId = get_id_user_jwt($request);
 
         $result = new stdClass;
 

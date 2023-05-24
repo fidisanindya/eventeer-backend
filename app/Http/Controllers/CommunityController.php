@@ -72,7 +72,7 @@ class CommunityController extends Controller
                 $profilePicture = User::whereIn('id_user', $followed_id)->whereNotNull('profile_picture')->select('profile_picture')->take(2)->get();
                 
                 $arrayProfile = [];
-                for ($i=0; $i < 2; $i++) { 
+                for ($i=0; $i < $profilePicture->count() ; $i++) { 
                     array_push($arrayProfile, $profilePicture[$i]->profile_picture);
                 }
                 
@@ -171,7 +171,7 @@ class CommunityController extends Controller
                 $profilePicture = User::whereIn('id_user', $followed_id)->whereNotNull('profile_picture')->select('profile_picture')->take(2)->get();
                 
                 $arrayProfile = [];
-                for ($i=0; $i < 2; $i++) { 
+                for ($i=0; $i < $profilePicture->count() ; $i++) { 
                     array_push($arrayProfile, $profilePicture[$i]->profile_picture);
                 }
                 
@@ -242,7 +242,7 @@ class CommunityController extends Controller
                 $profilePicture = User::whereIn('id_user', $followed_id)->whereNotNull('profile_picture')->select('profile_picture')->take(2)->get();
                 
                 $arrayProfile = [];
-                for ($i=0; $i < 2; $i++) { 
+                for ($i=0; $i < $profilePicture->count() ; $i++) { 
                     array_push($arrayProfile, $profilePicture[$i]->profile_picture);
                 }
                 

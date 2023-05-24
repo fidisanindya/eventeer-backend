@@ -344,7 +344,7 @@ class MessageController extends Controller
         $userId = $decoded->data->id_user;
 
         // Delete chat
-        $check_room_chat = MessageRoom::where('id_message_room', $request->id_message_room)->where('id_user', $userId)->whereNull('deleted_at')->first();
+        $check_room_chat = MessageUser::where('id_message_room', $request->id_message_room)->where('id_user', $userId)->whereNull('deleted_at')->first();
 
         if ($check_room_chat == null) {
             return response()->json([
@@ -658,5 +658,190 @@ class MessageController extends Controller
                 ]
             ], 200);
         }
+    }
+
+    public function post_make_dismiss_admin(Request $request){
+        $validator = Validator::make($request->all(), [
+            'id_user' => 'required|numeric',
+            'id_message_room' => 'required|numeric',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'code'      => 422,
+                'status'    => 'failed',
+                'result'    => $validator->messages(),
+            ], 422);
+        }
+
+        // Get id_user from Bearer Token
+        $authorizationHeader = $request->header('Authorization');
+
+        $jwtParts = explode(' ', $authorizationHeader);
+        $jwtToken = $jwtParts[1];
+
+        $publicKey = env("JWT_PUBLIC_KEY"); 
+        $decoded = JWT::decode($jwtToken, new Key($publicKey, 'RS256'));
+        
+        $userId = $decoded->data->id_user;
+
+        // Check user is admin
+        $check_admin = MessageUser::where('id_user', $userId)->where('id_message_room', $request->id_message_room)->whereNull('deleted_at')->first();
+        if($check_admin != null){
+            if($check_admin->role != 'admin'){
+                return response()->json([
+                    'code'  => 403,
+                    'status'=> 'failed',
+                    'result'=> 'User is not admin. Only admin can make/dismiss user as admin.'
+                ], 403);
+            } else if ($check_admin->role == 'admin'){
+                // Check is there any other admin role before dismiss
+                $check_other_admin = MessageUser::where('role', 'admin')->where('id_message_room', $request->id_message_room)->where('id_user', '!=', $userId)->whereNull('deleted_at')->first();
+                if($check_other_admin == null){
+                    return response()->json([
+                        'code'  => 403,
+                        'status'=> 'failed',
+                        'result'=> 'Please makes member in the group to admin.'
+                    ], 403);
+                }
+            }
+        } else if($check_admin == null) {
+            return response()->json([
+                'code'  => 403,
+                'status'=> 'failed',
+                'result'=> 'User is not joined in the room'
+            ], 403);
+        }
+
+        // Make/dismiss user as admin
+        $user = MessageUser::where('id_user', $request->id_user)->where('id_message_room', $request->id_message_room)->whereNull('deleted_at')->first();
+        if($user != null) {
+            if($user->role == 'admin'){
+                $user->update([
+                    'role' => 'member',
+                ]);
+    
+                return response()->json([
+                    'code'  => 200,
+                    'status'=> 'success',
+                    'result'=> 'User successfully updated as member'
+                ], 200);
+            } else if($user->role == 'member'){
+                $user->update([
+                    'role' => 'admin',
+                ]);
+    
+                return response()->json([
+                    'code'  => 200,
+                    'status'=> 'success',
+                    'result'=> 'User successfully updated as admin'
+                ], 200);
+            }
+        } else {
+            return response()->json([
+                'code'  => 403,
+                'status'=> 'failed',
+                'result'=> 'User is not joined in the room'
+            ], 403);
+        }
+    }
+    
+    public function post_update_group_info(Request $request){
+        $validator = Validator::make($request->all(), [
+            'id_message_room' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'code'      => 422,
+                'status'    => 'failed',
+                'result'    => $validator->messages(),
+            ], 422);
+        }
+
+        // Get id_user from Bearer Token
+        $authorizationHeader = $request->header('Authorization');
+        $jwtParts = explode(' ', $authorizationHeader);
+        $jwtToken = $jwtParts[1];
+        $publicKey = env("JWT_PUBLIC_KEY"); 
+        $decoded = JWT::decode($jwtToken, new Key($publicKey, 'RS256'));
+        $userId = $decoded->data->id_user;
+
+        // Check user is admin
+        $check_admin = MessageUser::where('id_user', $userId)->where('id_message_room', $request->id_message_room)->whereNull('deleted_at')->first();
+        if($check_admin != null){
+            if($check_admin->role != 'admin'){
+                return response()->json([
+                    'code'  => 403,
+                    'status'=> 'failed',
+                    'result'=> 'User is not admin. Only admin can update the group info.'
+                ], 403);
+            }
+        } else if($check_admin == null) {
+            return response()->json([
+                'code'  => 403,
+                'status'=> 'failed',
+                'result'=> 'User is not joined in the room'
+            ], 403);
+        }
+
+        if ($request->image == 'null'){
+            MessageRoom::where('id_message_room', $request->id_message_room)->update([
+                'image' => null
+            ]);
+
+            return response()->json([
+                "code" => 200,
+                "status" => "success",
+                "result" => 'Group Info updated successfully',
+            ], 200);
+        } else if($request->image){
+            $old_room = MessageRoom::where('id_message_room', $request->id_message_room)->first();
+            if($old_room->type != 'group'){
+                return response()->json([
+                    'code'   => 500,
+                    'status' => 'failed',
+                    'result' => 'The room is not group chat'
+                ], 500);
+            }
+
+            $image = Image::make($request->image)->resize(400, null, function ($constraint) {
+                $constraint->aspectRatio();
+            });
+            $filename = date('dmYhis') . '_group.' . $request->image->getClientOriginalExtension();
+            $data = $image->encode($request->image->getClientOriginalExtension())->__toString();
+            Storage::put('public/picture_queue/' . $filename, $data);
+            UploadImageGroup::dispatch($filename);
+            $key = "userfiles/chat/" . $filename;
+            $imageUrl = config('filesystems.disks.s3.bucketurl') . "/" . $key;
+            
+            $old_room->update([
+                'title' => $request->title ?? $old_room->title,
+                'image' => $imageUrl,
+                'description' => $request->description ?? $old_room->description,
+                'additional_data' => $request->additional_data ?? $old_room->additional_data
+            ]);
+        } else {
+            $old_room = MessageRoom::where('id_message_room', $request->id_message_room)->first();
+            if($old_room->type != 'group'){
+                return response()->json([
+                    'code'   => 500,
+                    'status' => 'failed',
+                    'result' => 'The room is not group chat'
+                ], 500);
+            }
+
+            $old_room->update([
+                'title' => $request->title ?? $old_room->title,
+                'description' => $request->description ?? $old_room->description,
+                'additional_data' => $request->additional_data ?? $old_room->additional_data
+            ]);
+        }
+
+        return response()->json([
+            "code" => 200,
+            "status" => "success",
+            "result" => 'Group Info updated successfully',
+        ], 200);
     }
 }

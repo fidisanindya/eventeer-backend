@@ -156,7 +156,8 @@ class MessageController extends Controller
                     "date" => date('Y-m-d h:i:s'),
                     "id_user" => $userId,
                     "with_id_user" => $request->with_id_user ?? null,
-                    "id_message_room" => (int)($request->id_message_room ?? $query->id_message_room)
+                    "id_message_room" => (int)($request->id_message_room ?? $query->id_message_room),
+                    "read" => [],
                 ]);
 
                 return response()->json([
@@ -186,7 +187,8 @@ class MessageController extends Controller
                     "date" => date('Y-m-d h:i:s'),
                     "id_user" => $userId,
                     "with_id_user" => $request->with_id_user ?? null,
-                    "id_message_room" => (int)($request->id_message_room ?? $query->id_message_room)
+                    "id_message_room" => (int)($request->id_message_room ?? $query->id_message_room),
+                    "read" => [],
                 ]);
 
                 return response()->json([
@@ -202,7 +204,8 @@ class MessageController extends Controller
             "date" => date('Y-m-d h:i:s'),
             "id_user" => $userId,
             "with_id_user" => $request->with_id_user ?? null,
-            "id_message_room" => (int)($request->id_message_room ?? $query->id_message_room)
+            "id_message_room" => (int)($request->id_message_room ?? $query->id_message_room),
+            "read" => [],
         ]);
 
          return response()->json([
@@ -275,7 +278,7 @@ class MessageController extends Controller
     public function get_detail_message(Request $request){
         $id_message_room = $request->input('id_message_room');
 
-        $list_message = Message::where('id_message_room', $id_message_room)->get();
+        $list_message = Message::where('id_message_room', (int)$id_message_room)->get();
 
         if($list_message){    
             return response()->json([
@@ -340,9 +343,9 @@ class MessageController extends Controller
         $id_message_room = $request->input('id_message_room');
 
         if($filter){
-            $list_files = Message::where([['id_message_room', $id_message_room], ['type', $filter]])->get();
+            $list_files = Message::where([['id_message_room', (int)$id_message_room], ['type', $filter]])->get();
         }else{
-            $list_files = Message::where([['id_message_room', $id_message_room], ['type', '!=', 'txt']])->get();
+            $list_files = Message::where([['id_message_room', (int)$id_message_room], ['type', '!=', 'txt']])->get();
         }
 
         if($list_files->count() != 0){
@@ -781,5 +784,19 @@ class MessageController extends Controller
         }
 
         return response_json(200, 'success', 'Group Info updated successfully');
+    }
+
+    public function read_message(Request $request){
+        $request->validate([
+            'id_message_room' => 'required',
+        ]);
+
+        $userId = get_id_user_jwt($request);
+
+        $data_message = Message::where("id_message_room", $request->id_message_room)->whereNotIn('read', [$userId])->get();
+
+        dd($data_message);
+
+        // not completed
     }
 }

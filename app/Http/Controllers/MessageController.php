@@ -18,6 +18,7 @@ use App\Models\Follow;
 use App\Models\Profession;
 use App\Models\User;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
@@ -793,9 +794,23 @@ class MessageController extends Controller
 
         $userId = get_id_user_jwt($request);
 
-        $data_message = Message::where("id_message_room", $request->id_message_room)->whereNotIn('read', [$userId])->get();
+        $message_unread = Message::where("id_message_room", (int)$request->id_message_room)->whereNotIn('read', [$userId])->get();
+        
+        foreach($message_unread as $mu){
+            if($mu->id_user != $userId){
+                $data = $mu->read;
+                array_push($data, $userId);
+                
+                Message::where("id_message_room", (int)$request->id_message_room)->whereNotIn('read', [$userId])->update([
+                    'read' => $data
+                ]);
+            }
+        }
 
-        dd($data_message);
+        return response()->json([
+            "code" =>  200,
+            "status" => "success read message"
+        ], 200);
 
         // not completed
     }

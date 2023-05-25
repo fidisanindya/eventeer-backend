@@ -172,7 +172,8 @@ class MessageController extends Controller
                     "date" => date('Y-m-d h:i:s'),
                     "id_user" => $userId,
                     "with_id_user" => $request->with_id_user ?? null,
-                    "id_message_room" => (int)($request->id_message_room ?? $query->id_message_room)
+                    "id_message_room" => (int)($request->id_message_room ?? $query->id_message_room),
+                    "read" => [],
                 ]);
 
                 return response()->json([
@@ -202,7 +203,8 @@ class MessageController extends Controller
                     "date" => date('Y-m-d h:i:s'),
                     "id_user" => $userId,
                     "with_id_user" => $request->with_id_user ?? null,
-                    "id_message_room" => (int)($request->id_message_room ?? $query->id_message_room)
+                    "id_message_room" => (int)($request->id_message_room ?? $query->id_message_room),
+                    "read" => [],
                 ]);
 
                 return response()->json([
@@ -218,7 +220,8 @@ class MessageController extends Controller
             "date" => date('Y-m-d h:i:s'),
             "id_user" => $userId,
             "with_id_user" => $request->with_id_user ?? null,
-            "id_message_room" => (int)($request->id_message_room ?? $query->id_message_room)
+            "id_message_room" => (int)($request->id_message_room ?? $query->id_message_room),
+            "read" => [],
         ]);
 
          return response()->json([
@@ -766,5 +769,15 @@ class MessageController extends Controller
             "code" => 404,
             "status" => "no friend"
         ], 404);
+    }
+
+    public function read_message(Request $request){
+        $request->Validate([
+            'id_message_room' => 'required'
+        ]);
+
+        Message::where("id_message_room", $request->id_message_room)->whereIn('read');
+
+        // not completed
     }
 }

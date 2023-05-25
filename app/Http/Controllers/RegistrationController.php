@@ -183,6 +183,10 @@ class RegistrationController extends Controller
                 'value' => 2,
             ]);
 
+            $registration_step = UserProfile::select('value')->where([['id_user', '=', $userRes->id_user], ['key_name', '=', 'registration_step']])->first();
+
+            $userRes->registration_step = (int)$registration_step->value;
+
             return response()->json([
                 'code' => 200,
                 'status' => 'Verification Succesfull',
@@ -533,11 +537,13 @@ class RegistrationController extends Controller
         $html = (new EmailVerification($details))->render();
         $this->logQueue($user->email, $html, 'Email Verification');
 
-        UserProfile::create([
+        $query = UserProfile::create([
             'id_user' => $user->id_user,
             'key_name' => 'registration_step',
             'value' => 1,
         ]);
+
+        $user->registration_step = $query->value;
         
         return response()->json([
             'code' => 200,

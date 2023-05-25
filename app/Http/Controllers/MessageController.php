@@ -278,7 +278,7 @@ class MessageController extends Controller
     public function get_detail_message(Request $request){
         $id_message_room = $request->input('id_message_room');
 
-        $list_message = Message::where('id_message_room', $id_message_room)->get();
+        $list_message = Message::where('id_message_room', (int)$id_message_room)->get();
 
         if($list_message){    
             return response()->json([
@@ -786,15 +786,17 @@ class MessageController extends Controller
         return response_json(200, 'success', 'Group Info updated successfully');
     }
 
-    // public function read_message(Request $request){
-    //     $request->Validate([
-    //         'id_message_room' => 'required'
-    //     ]);
+    public function read_message(Request $request){
+        $request->validate([
+            'id_message_room' => 'required',
+        ]);
 
-    //     $userId = get_id_user_jwt($request->)
+        $userId = get_id_user_jwt($request);
 
-    //     Message::where("id_message_room", $request->id_message_room)->whereIn('read');
+        $data_message = Message::where("id_message_room", $request->id_message_room)->whereNotIn('read', [$userId])->get();
 
-    //     // not completed
-    // }
+        dd($data_message);
+
+        // not completed
+    }
 }

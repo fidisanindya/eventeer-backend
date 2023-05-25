@@ -129,5 +129,6 @@ Route::prefix('chat')->group(function () {
         Route::post('/make_dismiss_admin', [MessageController::class, 'post_make_dismiss_admin']);
         Route::post('/update_group', [MessageController::class, 'post_update_group_info']);
         Route::get('/get_list_friend', [MessageController::class, 'get_list_friend']);
+        Route::post('/read_message', [MessageController::class, 'read_message']);
     });
 });

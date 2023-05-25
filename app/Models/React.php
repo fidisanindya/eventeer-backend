@@ -12,4 +12,5 @@ class React extends Model
     protected $table = 'module_react';
     protected $primaryKey = 'id_react';
     protected $guarded = ['id_react'];
+    public $timestamps = false;
 }

@@ -4,26 +4,29 @@ namespace App\Http\Controllers;
 
 use Image;
 use stdClass;
-use App\Jobs\UploadImage;
-use App\Models\Certificate;
-use App\Models\Community;
-use App\Models\CommunityUser;
-use App\Models\Company;
+use Carbon\Carbon;
+use App\Models\City;
+use App\Models\User;
+use App\Models\Event;
+use App\Models\React;
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 use App\Models\Follow;
+use App\Models\Company;
 use App\Models\Interest;
+use App\Models\Timeline;
+use App\Jobs\UploadImage;
+use App\Models\Community;
 use App\Models\Portofolio;
 use App\Models\Profession;
 use App\Models\Submission;
-use App\Models\User;
+use App\Models\Certificate;
 use App\Models\UserProfile;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
-use App\Models\Event;
-use Firebase\JWT\JWT;
-use Firebase\JWT\Key;
+use App\Models\CommunityUser;
 use App\Http\Controllers\Controller;
-use App\Models\City;
-use App\Models\Timeline;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 class ProfileController extends Controller
 {
@@ -587,5 +590,36 @@ class ProfileController extends Controller
             'status' => 'success',
             'result' => $result,
         ]);
+    }
+
+    public function post_like_unlike(Request $request){
+        $validator = Validator::make($request->all(), [
+            'id_post' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            return response_json(422, 'failed', $validator->messages());
+        }
+        
+        // Get id user from bearer token
+        $userId = get_id_user_jwt($request);
+
+        // Like Unlike post
+        $check_liked_post = React::where('related_to', 'id_timeline')->where('id_related_to', $request->id_post)->where('id_user', $userId)->first();
+
+        if($check_liked_post != null){
+            $check_liked_post->delete();
+
+            return response_json(200, 'success', 'Post unliked successfully');
+        } else {
+            React::create([
+                'related_to' => 'id_timeline',
+                'id_related_to' => $request->id_post,
+                'id_user' => $userId,
+                'created_at' => Carbon::now()->toDateTimeString()
+            ]);
+
+            return response_json(200, 'success','Post liked successfully');
+        }
     }
 }

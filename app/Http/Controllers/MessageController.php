@@ -28,15 +28,7 @@ class MessageController extends Controller
             'title' => 'required',
         ]);
 
-        $authorizationHeader = $request->header('Authorization');
-
-        $jwtParts = explode(' ', $authorizationHeader);
-        $jwtToken = $jwtParts[1];
-
-        $publicKey = env("JWT_PUBLIC_KEY"); 
-        $decoded = JWT::decode($jwtToken, new Key($publicKey, 'RS256'));
-        
-        $userId = $decoded->data->id_user;
+        $userId = get_id_user_jwt($request);
 
         if($request->image){
             $image = Image::make($request->image)->resize(400, null, function ($constraint) {
@@ -112,15 +104,7 @@ class MessageController extends Controller
         ]);
 
          // Get id_user from Bearer Token
-         $authorizationHeader = $request->header('Authorization');
-
-         $jwtParts = explode(' ', $authorizationHeader);
-         $jwtToken = $jwtParts[1];
- 
-         $publicKey = env("JWT_PUBLIC_KEY"); 
-         $decoded = JWT::decode($jwtToken, new Key($publicKey, 'RS256'));
-         
-         $userId = $decoded->data->id_user;
+         $userId = get_id_user_jwt($request);
  
          if(!$request->id_message_room){
             $validator = Validator::make($request->all(), [
@@ -236,20 +220,11 @@ class MessageController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'code'      => 422,
-                'status'    => 'failed',
-                'result'    => $validator->messages(),
-            ], 422);
+            return response_json(422, 'failed', $validator->messages());
         }
 
         // Get id_user from Bearer Token
-        $authorizationHeader = $request->header('Authorization');
-        $jwtParts = explode(' ', $authorizationHeader);
-        $jwtToken = $jwtParts[1];
-        $publicKey = env("JWT_PUBLIC_KEY"); 
-        $decoded = JWT::decode($jwtToken, new Key($publicKey, 'RS256'));
-        $userId = $decoded->data->id_user;
+        $userId = get_id_user_jwt($request);
 
         // Pin/Unpin message
         $check_pinned_message = MessagePin::where('id_message_room', $request->id_message_room)->where('id_user', $userId)->whereNull('deleted_at')->first();
@@ -321,15 +296,7 @@ class MessageController extends Controller
 
     public function get_list_message(Request $request){
         // Get id_user from Bearer Token
-        $authorizationHeader = $request->header('Authorization');
-
-        $jwtParts = explode(' ', $authorizationHeader);
-        $jwtToken = $jwtParts[1];
-
-        $publicKey = env("JWT_PUBLIC_KEY"); 
-        $decoded = JWT::decode($jwtToken, new Key($publicKey, 'RS256'));
-        
-        $userId = $decoded->data->id_user;
+        $userId = get_id_user_jwt($request);
 
         $room_user = MessageUser::select('id_message_room')->where('id_user', $userId)->whereNull('deleted_at')->get();
 
@@ -376,9 +343,9 @@ class MessageController extends Controller
         $id_message_room = $request->input('id_message_room');
 
         if($filter){
-            $list_files = Message::where([['id_message_room', $id_message_room], ['type', $filter]])->get();
+            $list_files = Message::where([['id_message_room', (int)$id_message_room], ['type', $filter]])->get();
         }else{
-            $list_files = Message::where([['id_message_room', $id_message_room], ['type', '!=', 'txt']])->get();
+            $list_files = Message::where([['id_message_room', (int)$id_message_room], ['type', '!=', 'txt']])->get();
         }
 
         if($list_files->count() != 0){
@@ -401,26 +368,14 @@ class MessageController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'code'      => 422,
-                'status'    => 'failed',
-                'result'    => $validator->messages(),
-            ], 422);
+            return response_json(422, 'failed', $validator->messages());
         }
 
         // Get id_user from Bearer Token
-        $authorizationHeader = $request->header('Authorization');
-
-        $jwtParts = explode(' ', $authorizationHeader);
-        $jwtToken = $jwtParts[1];
-
-        $publicKey = env("JWT_PUBLIC_KEY"); 
-        $decoded = JWT::decode($jwtToken, new Key($publicKey, 'RS256'));
-        
-        $userId = $decoded->data->id_user;
+        $userId = get_id_user_jwt($request);
 
         // Delete chat
-        $check_room_chat = MessageRoom::where('id_message_room', $request->id_message_room)->where('id_user', $userId)->whereNull('deleted_at')->first();
+        $check_room_chat = MessageUser::where('id_message_room', $request->id_message_room)->where('id_user', $userId)->whereNull('deleted_at')->first();
 
         if ($check_room_chat == null) {
             return response()->json([
@@ -452,23 +407,11 @@ class MessageController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'code'      => 422,
-                'status'    => 'failed',
-                'result'    => $validator->messages(),
-            ], 422);
+            return response_json(422, 'failed', $validator->messages());
         }
 
         // Get id_user from Bearer Token
-        $authorizationHeader = $request->header('Authorization');
-
-        $jwtParts = explode(' ', $authorizationHeader);
-        $jwtToken = $jwtParts[1];
-
-        $publicKey = env("JWT_PUBLIC_KEY"); 
-        $decoded = JWT::decode($jwtToken, new Key($publicKey, 'RS256'));
-        
-        $userId = $decoded->data->id_user;
+        $userId = get_id_user_jwt($request);
         
         // Check user is admin
         $check_admin = MessageUser::where('id_user', $userId)->where('id_message_room', $request->id_message_room)->whereNull('deleted_at')->first();
@@ -531,23 +474,11 @@ class MessageController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'code'      => 422,
-                'status'    => 'failed',
-                'result'    => $validator->messages(),
-            ], 422);
+            return response_json(422, 'failed', $validator->messages());
         }
 
         // Get id_user from Bearer Token
-        $authorizationHeader = $request->header('Authorization');
-
-        $jwtParts = explode(' ', $authorizationHeader);
-        $jwtToken = $jwtParts[1];
-
-        $publicKey = env("JWT_PUBLIC_KEY"); 
-        $decoded = JWT::decode($jwtToken, new Key($publicKey, 'RS256'));
-        
-        $userId = $decoded->data->id_user;
+        $userId = get_id_user_jwt($request);
 
         // Check if the user is admin or not
         $check_user = MessageUser::where('id_user', $userId)->where('id_message_room', $request->id_message_room)->whereNull('deleted_at')->first();
@@ -599,23 +530,11 @@ class MessageController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'code'      => 422,
-                'status'    => 'failed',
-                'result'    => $validator->messages(),
-            ], 422);
+            return response_json(422, 'failed', $validator->messages());
         }
 
         // Get id_user from Bearer Token
-        $authorizationHeader = $request->header('Authorization');
-
-        $jwtParts = explode(' ', $authorizationHeader);
-        $jwtToken = $jwtParts[1];
-
-        $publicKey = env("JWT_PUBLIC_KEY"); 
-        $decoded = JWT::decode($jwtToken, new Key($publicKey, 'RS256'));
-        
-        $userId = $decoded->data->id_user;
+        $userId = get_id_user_jwt($request);
         
         // Check user is admin
         $check_admin = MessageUser::where('id_user', $userId)->where('id_message_room', $request->id_message_room)->whereNull('deleted_at')->first();
@@ -671,23 +590,11 @@ class MessageController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'code'      => 422,
-                'status'    => 'failed',
-                'result'    => $validator->messages(),
-            ], 422);
+            return response_json(422, 'failed', $validator->messages());
         }
 
         // Get id_user from Bearer Token
-        $authorizationHeader = $request->header('Authorization');
-
-        $jwtParts = explode(' ', $authorizationHeader);
-        $jwtToken = $jwtParts[1];
-
-        $publicKey = env("JWT_PUBLIC_KEY"); 
-        $decoded = JWT::decode($jwtToken, new Key($publicKey, 'RS256'));
-        
-        $userId = $decoded->data->id_user;
+        $userId = get_id_user_jwt($request);
         
         // Check user is admin
         $check_admin = MessageUser::where('id_user', $userId)->where('id_message_room', $request->id_message_room)->whereNull('deleted_at')->first();
@@ -738,16 +645,8 @@ class MessageController extends Controller
 
     public function get_list_friend(Request $request){
 
-         // Get id_user from Bearer Token
-         $authorizationHeader = $request->header('Authorization');
-
-         $jwtParts = explode(' ', $authorizationHeader);
-         $jwtToken = $jwtParts[1];
- 
-         $publicKey = env("JWT_PUBLIC_KEY"); 
-         $decoded = JWT::decode($jwtToken, new Key($publicKey, 'RS256'));
-         
-         $userId = $decoded->data->id_user;
+        // Get id_user from Bearer Token
+        $userId = get_id_user_jwt($request);
 
         $follower = Follow::select('followed_by')->where('id_user', $userId)->get();
 
@@ -771,13 +670,131 @@ class MessageController extends Controller
         ], 404);
     }
 
-    public function read_message(Request $request){
-        $request->Validate([
-            'id_message_room' => 'required'
+    public function post_make_dismiss_admin(Request $request){
+        $validator = Validator::make($request->all(), [
+            'id_user' => 'required|numeric',
+            'id_message_room' => 'required|numeric',
         ]);
 
-        Message::where("id_message_room", $request->id_message_room)->whereIn('read');
+        if ($validator->fails()) {
+            return response_json(422, 'failed', $validator->messages());
+        }
 
-        // not completed
+        // Get id_user from Bearer Token
+        $userId = get_id_user_jwt($request);
+
+        // Check user is admin
+        $check_admin = MessageUser::where('id_user', $userId)->where('id_message_room', $request->id_message_room)->whereNull('deleted_at')->first();
+        if($check_admin != null){
+            if($check_admin->role != 'admin'){
+                return response_json(403, 'failed', 'User is not admin. Only admin can make/dismiss user as admin.');
+            } else if ($check_admin->role == 'admin'){
+                // Check is there any other admin role before dismiss
+                $check_other_admin = MessageUser::where('role', 'admin')->where('id_message_room', $request->id_message_room)->where('id_user', '!=', $userId)->whereNull('deleted_at')->first();
+                if($request->id_user == $userId && $check_other_admin == null){
+                    return response_json(403, 'failed', 'Please makes member in the group to admin.');
+                }
+            }
+        } else if($check_admin == null) {
+            return response_json(403, 'failed', 'User is not joined in the room');
+        }
+
+        // Make/dismiss user as admin
+        $user = MessageUser::where('id_user', $request->id_user)->where('id_message_room', $request->id_message_room)->whereNull('deleted_at')->first();
+        if($user != null) {
+            if($user->role == 'admin'){
+                $user->update([
+                    'role' => 'member',
+                ]);
+    
+                return response_json(200, 'success', 'User successfully updated as member');
+            } else if($user->role == 'member'){
+                $user->update([
+                    'role' => 'admin',
+                ]);
+    
+                return response_json(200, 'success', 'User successfully updated as admin');
+            }
+        } else {
+            return response_json(403, 'failed', 'User is not joined in the room');
+        }
     }
+    
+    public function post_update_group_info(Request $request){
+        $validator = Validator::make($request->all(), [
+            'id_message_room' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            return response_json(422, 'failed', $validator->messages());
+        }
+
+        // Get id_user from Bearer Token
+        $userId = get_id_user_jwt($request);
+
+        // Check user is admin
+        $check_admin = MessageUser::where('id_user', $userId)->where('id_message_room', $request->id_message_room)->whereNull('deleted_at')->first();
+        if($check_admin != null){
+            if($check_admin->role != 'admin'){
+                return response_json(403, 'failed', 'User is not admin. Only admin can update the group info.');
+            }
+        } else if($check_admin == null) {
+            return response_json(403, 'failed', 'User is not joined in the room');
+        }
+
+        if ($request->image == 'null'){
+            MessageRoom::where('id_message_room', $request->id_message_room)->update([
+                'image' => null
+            ]);
+
+            return response_json(200, 'success', 'Group Info updated successfully');
+        } else if($request->image){
+            $old_room = MessageRoom::where('id_message_room', $request->id_message_room)->first();
+            if($old_room->type != 'group'){
+                return response_json(500, 'failed', 'The room is not group chat');
+            }
+
+            $image = Image::make($request->image)->resize(400, null, function ($constraint) {
+                $constraint->aspectRatio();
+            });
+            $filename = date('dmYhis') . '_group.' . $request->image->getClientOriginalExtension();
+            $data = $image->encode($request->image->getClientOriginalExtension())->__toString();
+            Storage::put('public/picture_queue/' . $filename, $data);
+            UploadImageGroup::dispatch($filename);
+            $key = "userfiles/chat/" . $filename;
+            $imageUrl = config('filesystems.disks.s3.bucketurl') . "/" . $key;
+            
+            $old_room->update([
+                'title' => $request->title ?? $old_room->title,
+                'image' => $imageUrl,
+                'description' => $request->description ?? $old_room->description,
+                'additional_data' => $request->additional_data ?? $old_room->additional_data
+            ]);
+        } else {
+            $old_room = MessageRoom::where('id_message_room', $request->id_message_room)->first();
+            if($old_room->type != 'group'){
+                return response_json(500, 'failed', 'The room is not group chat');
+            }
+
+            $old_room->update([
+                'title' => $request->title ?? $old_room->title,
+                'description' => $request->description ?? $old_room->description,
+                'additional_data' => $request->additional_data ?? $old_room->additional_data
+            ]);
+        }
+
+        return response_json(200, 'success', 'Group Info updated successfully');
+    }
+
+    // public function read_message(Request $request){
+    //     $request->Validate([
+    //         'id_message_room' => 'required'
+    //     ]);
+
+    //     $userId = get_id_user_jwt($request->)
+
+    //     Message::where("id_message_room", $request->id_message_room)->whereIn('read');
+
+    //     // not completed
+    // }
 }

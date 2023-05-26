@@ -622,4 +622,51 @@ class ProfileController extends Controller
             return response_json(200, 'success','Post liked successfully');
         }
     }
+    
+    public function follow_user(Request $request){
+        $request->validate([
+            'follow_id_user' => 'required'
+        ]);
+
+        $userId = get_id_user_jwt($request);
+
+        $query = Follow::insert([
+            'id_user' => $request->follow_id_user,
+            'followed_by' => $userId
+        ]);
+
+        if($query){ 
+            return response()->json([
+                'code' => 200,
+                'status' => 'success follow user',
+            ]);
+        }
+
+        return response()->json([
+            'code' => 409,
+            'status' => 'failed follow user',
+        ]);
+    }
+
+    public function unfollow_user(Request $request){
+        $request->validate([
+            'unfollow_id_user' => 'required'
+        ]);
+
+        $userId = get_id_user_jwt($request);
+
+        $query = Follow::where([['id_user', $request->unfollow_id_user], ['followed_by', $userId]])->delete();
+
+        if($query){ 
+            return response()->json([
+                'code' => 200,
+                'status' => 'success unfollow user',
+            ]);
+        }
+
+        return response()->json([
+            'code' => 409,
+            'status' => 'failed unfollow user',
+        ]);
+    }
 }

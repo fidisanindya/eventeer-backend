@@ -104,6 +104,7 @@ Route::prefix('profile')->group(function () {
         Route::post('/edit_profile_picture', [ProfileController::class, 'edit_profile_picture']);
         Route::post('/edit_banner_picture', [ProfileController::class, 'edit_banner']);
         Route::post('/edit_profile', [ProfileController::class, 'edit_profile']);
+        Route::post('/like_unlike_post', [ProfileController::class, 'post_like_unlike']);
         Route::post('/follow_user', [ProfileController::class, 'follow_user']);
         Route::post('/unfollow_user', [ProfileController::class, 'unfollow_user']);
     });

@@ -23,8 +23,8 @@ class Timeline extends Model
         return $this->hasMany(Comment::class, 'id_related_to', 'id_timeline');
     }
     
-    public function event(){
-        return $this->hasOne(Event::class, 'id_event', 'id_event');
+    public function community(){
+        return $this->hasOne(Event::class, 'id_community', 'id_community');
     }
 
     public function user(){

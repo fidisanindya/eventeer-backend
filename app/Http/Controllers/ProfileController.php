@@ -511,8 +511,8 @@ class ProfileController extends Controller
         $result = new stdClass;
 
         // Get detail post user
-        $post = Timeline::with(['event' => function ($queryEvent) {
-            $queryEvent->select('id_event', 'title', 'image');
+        $post = Timeline::with(['community' => function ($queryCommunity) {
+            $queryCommunity->select('id_community', 'title', 'image');
         }, 'user' => function ($queryUser) {
             $queryUser->select('id_user', 'full_name', 'profile_picture', 'id_job', 'id_company')
             ->with(['job' => function ($queryJob) {
@@ -594,7 +594,7 @@ class ProfileController extends Controller
 
     public function post_like_unlike(Request $request){
         $validator = Validator::make($request->all(), [
-            'id_post' => 'required',
+            'id_timeline' => 'required',
         ]);
 
         if ($validator->fails()) {
@@ -605,7 +605,7 @@ class ProfileController extends Controller
         $userId = get_id_user_jwt($request);
 
         // Like Unlike post
-        $check_liked_post = React::where('related_to', 'id_timeline')->where('id_related_to', $request->id_post)->where('id_user', $userId)->first();
+        $check_liked_post = React::where('related_to', 'id_timeline')->where('id_related_to', $request->id_timeline)->where('id_user', $userId)->first();
 
         if($check_liked_post != null){
             $check_liked_post->delete();
@@ -614,7 +614,7 @@ class ProfileController extends Controller
         } else {
             React::create([
                 'related_to' => 'id_timeline',
-                'id_related_to' => $request->id_post,
+                'id_related_to' => $request->id_timeline,
                 'id_user' => $userId,
                 'created_at' => Carbon::now()->toDateTimeString()
             ]);

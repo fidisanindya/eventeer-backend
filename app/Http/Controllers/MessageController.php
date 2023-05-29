@@ -91,7 +91,9 @@ class MessageController extends Controller
         }
 
         $message_user = MessageUser::with(['user' => function ($query) {
-            $query->select('id_user', 'full_name', 'profile_picture');
+            $query->with(['job' => function($job){
+                $job->select('id_job', 'job_title');
+            }])->select('id_user', 'full_name', 'profile_picture', 'id_job');
         }])->select('id_user', 'role')->where('id_message_room', $id_group)->get();
 
         $message_user->makeHidden('id_user');

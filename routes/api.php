@@ -132,5 +132,6 @@ Route::prefix('chat')->group(function () {
         Route::post('/update_group', [MessageController::class, 'post_update_group_info']);
         Route::get('/get_list_friend', [MessageController::class, 'get_list_friend']);
         Route::post('/read_message', [MessageController::class, 'read_message']);
+        Route::get('/total_unread_message', [MessageController::class, 'total_unread_message']);
     });
 });

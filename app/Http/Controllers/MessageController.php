@@ -279,13 +279,19 @@ class MessageController extends Controller
     public function get_detail_message(Request $request){
         $id_message_room = $request->input('id_message_room');
 
-        $list_message = Message::where('id_message_room', (int)$id_message_room)->get();
+        $detail_message = Message::where('id_message_room', (int)$id_message_room)->get();
 
-        if($list_message){    
+        // foreach($detail_message as $dm){
+        //     $name_user = User::select('full_name')->where('id_user', $dm->id_user)->first();
+
+        //     $dm->name_user = $name_user->full_name;
+        // }
+
+        if($detail_message){    
             return response()->json([
                 "code" => 200,
                 "status" => "success",
-                "result" => $list_message
+                "result" => $detail_message
             ], 200);
         }
 
@@ -811,7 +817,19 @@ class MessageController extends Controller
             "code" =>  200,
             "status" => "success read message"
         ], 200);
+    }
 
-        // not completed
+    public function total_unread_message(Request $request){
+        $id_message_room = $request->input('id_message_room');
+        
+        $userId = get_id_user_jwt($request);
+
+        $total_unread = Message::where('id_message_room', (int)$id_message_room)->whereNotIn('read', [$userId])->count();
+
+        return response()->json([
+            "code" =>  200,
+            "status" => "success get total unread message",
+            "result" => $total_unread
+        ], 200);
     }
 }

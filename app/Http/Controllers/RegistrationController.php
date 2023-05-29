@@ -98,12 +98,14 @@ class RegistrationController extends Controller
         ],200);
     }
 
-    public function resend_verification_link(Request $request){
+    public function resend_verification_link(Request $request, JwtAuth $jwtAuth){
         $request->validate([
             'email' => 'required|email'
         ]);
 
         $user = User::where('email', $request->email)->first();
+
+        $token = $jwtAuth->createJwtToken($user);
 
         // Email Attempt
         if ($user){
@@ -136,9 +138,9 @@ class RegistrationController extends Controller
             ];
 
             if($request->hit_from == 'web') {
-                $details['link_to'] = env('LINK_EMAIL_WEB').'/register?activation_code='.$activation_code;
+                $details['link_to'] = env('LINK_EMAIL_WEB').'/register?activation_code='.$activation_code . '&token=' . $token;
             } elseif ($request->hit_from == 'mobile'){
-                $details['link_to'] = env('LINK_EMAIL_MOBILE').'/register?activation_code='.$activation_code;
+                $details['link_to'] = env('LINK_EMAIL_MOBILE').'/register?activation_code='.$activation_code . '&token=' . $token;
             } else {
                 return response()->json([
                     'code'      => 404,

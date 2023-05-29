@@ -90,6 +90,14 @@ class MessageController extends Controller
             ], 404);
         }
 
+        $message_user = MessageUser::with(['user' => function ($query) {
+            $query->select('id_user', 'full_name', 'profile_picture');
+        }])->select('id_user')->where('id_message_room', $id_group)->get();
+
+        $message_user->makeHidden('id_user');
+
+        $data->list_member = $message_user;
+
         return response()->json([
             "code" => 200,
             "status" => "success",

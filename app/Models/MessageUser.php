@@ -16,4 +16,8 @@ class MessageUser extends Model
     public function message_room(){
         return $this->belongsTo(MessageRoom::class, 'id_message_room', 'id_message_room');
     }
+
+    public function user(){
+        return $this->belongsTo(User::class, 'id_user', 'id_user');
+    }
 }

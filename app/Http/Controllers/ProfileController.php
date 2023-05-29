@@ -4,26 +4,29 @@ namespace App\Http\Controllers;
 
 use Image;
 use stdClass;
-use App\Jobs\UploadImage;
-use App\Models\Certificate;
-use App\Models\Community;
-use App\Models\CommunityUser;
-use App\Models\Company;
+use Carbon\Carbon;
+use App\Models\City;
+use App\Models\User;
+use App\Models\Event;
+use App\Models\React;
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 use App\Models\Follow;
+use App\Models\Company;
 use App\Models\Interest;
+use App\Models\Timeline;
+use App\Jobs\UploadImage;
+use App\Models\Community;
 use App\Models\Portofolio;
 use App\Models\Profession;
 use App\Models\Submission;
-use App\Models\User;
+use App\Models\Certificate;
 use App\Models\UserProfile;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
-use App\Models\Event;
-use Firebase\JWT\JWT;
-use Firebase\JWT\Key;
+use App\Models\CommunityUser;
 use App\Http\Controllers\Controller;
-use App\Models\City;
-use App\Models\Timeline;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 class ProfileController extends Controller
 {
@@ -508,8 +511,8 @@ class ProfileController extends Controller
         $result = new stdClass;
 
         // Get detail post user
-        $post = Timeline::with(['event' => function ($queryEvent) {
-            $queryEvent->select('id_event', 'title', 'image');
+        $post = Timeline::with(['community' => function ($queryCommunity) {
+            $queryCommunity->select('id_community', 'title', 'image');
         }, 'user' => function ($queryUser) {
             $queryUser->select('id_user', 'full_name', 'profile_picture', 'id_job', 'id_company')
             ->with(['job' => function ($queryJob) {
@@ -589,6 +592,37 @@ class ProfileController extends Controller
         ]);
     }
 
+    public function post_like_unlike(Request $request){
+        $validator = Validator::make($request->all(), [
+            'id_timeline' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            return response_json(422, 'failed', $validator->messages());
+        }
+        
+        // Get id user from bearer token
+        $userId = get_id_user_jwt($request);
+
+        // Like Unlike post
+        $check_liked_post = React::where('related_to', 'id_timeline')->where('id_related_to', $request->id_timeline)->where('id_user', $userId)->first();
+
+        if($check_liked_post != null){
+            $check_liked_post->delete();
+
+            return response_json(200, 'success', 'Post unliked successfully');
+        } else {
+            React::create([
+                'related_to' => 'id_timeline',
+                'id_related_to' => $request->id_timeline,
+                'id_user' => $userId,
+                'created_at' => Carbon::now()->toDateTimeString()
+            ]);
+
+            return response_json(200, 'success','Post liked successfully');
+        }
+    }
+    
     public function follow_user(Request $request){
         $request->validate([
             'follow_id_user' => 'required'

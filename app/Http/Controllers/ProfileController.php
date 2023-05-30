@@ -540,7 +540,7 @@ class ProfileController extends Controller
         }])
         ->where('id_user', $userId)
         ->whereNull('deleted_at')
-        ->select('id_timeline', 'id_event', 'id_user', 'description', 'additional_data', 'created_at')
+        ->select('id_timeline', 'id_community', 'id_user', 'description', 'additional_data', 'created_at')
         ->withCount(['react as total_like' => function ($query) {
             $query->where('related_to', '=', 'id_timeline');
         }])

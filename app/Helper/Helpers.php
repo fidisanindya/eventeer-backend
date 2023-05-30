@@ -2,6 +2,7 @@
 
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
+use App\Models\Notification;
 
 function get_id_user_jwt($request){
   $authorizationHeader = $request->header('Authorization');
@@ -23,6 +24,20 @@ function response_json($code, $status, $result){
     'status'=> $status,
     'result'=> $result
   ], $code);
+}
+
+function send_notification($content, $id_user, $notif_from, $url, $tab, $section, $additional_data){
+  Notification::create([
+    'status' => 'unread',
+    'content' => $content,
+    'id_user' => $id_user,
+    'notif_from' => $notif_from,
+    'url' => $url,
+    'tab' => $tab,
+    'section' => $section,
+    'additional_data' => $additional_data,
+    'created_at' => now(),
+  ]);
 }
 
 ?>

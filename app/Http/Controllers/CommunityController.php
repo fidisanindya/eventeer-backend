@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\EventVerfication;
 use stdClass;
 use Carbon\Carbon;
 use App\Models\User;
@@ -490,5 +491,192 @@ class CommunityController extends Controller
             'status' => 'success',
             'result' => $result,
         ]);
+    }
+
+    public function getDetailCommunity(Request $request){
+        $id_community = $request->input('id_community');
+
+        $userId = get_id_user_jwt($request);
+
+        $followed_id = Follow::where('followed_by', $userId)->pluck('id_user');
+
+        $data_community = Community::withCount(['community_user as total_friends' => function ($query) use ($followed_id) {
+            $query->whereIn('id_user', $followed_id)->where('status', '=', 'active')->whereOr('status', '=', 'running');
+        }])->where('id_community', $id_community)->first();
+
+        // Interest
+        $interest_community = CommunityInterest::with(['interest' => function ($query) {
+            $query->select('id_interest','interest_name');
+        }])->select('id_interest')->where('community_id', $data_community->id_community)->get(); 
+        $interest_community->makeHidden('id_interest');
+
+        // Total Member
+        $total_member = CommunityUser::where('id_community', $data_community->id_community)->where('status', 'active')->count();
+
+        // Friends
+        
+        $data_community->tag = $interest_community;
+        $data_community->total_member = $total_member;
+
+        return response()->json([
+            'code' => 200,
+            'status' => 'success get detail community',
+            'result' => $data_community
+        ]);
+    }
+
+    public function joinCommunity(Request $request){
+        $request->validate([
+            'id_community' => 'required',
+            'referral_code' => ''
+        ]);
+
+        $userId = get_id_user_jwt($request);
+
+        $check_join = CommunityUser::where('id_community', $request->id_community)->where('id_user', $userId)->first();
+
+        $community_type = Community::where('id_community', $request->id_community)->first();
+
+        if($check_join){
+            return response()->json([
+                'code' => 409,
+                'status' => 'you have joined this community'
+            ], 409);
+        }
+
+        if($community_type){
+            if($community_type->type == 'public'){
+                CommunityUser::create([
+                    'id_community' => $community_type->id_community,
+                    'id_user' => $userId,
+                    'status' => 'active'
+                ]);
+            }else{
+                if ($request->referral_code == $community_type->referral_code){   
+                    CommunityUser::create([
+                        'id_community' => $community_type->id_community,
+                        'id_user' => $userId,
+                        'status' => 'active'
+                    ]);
+                }else{
+                    return response()->json([
+                        "code" => 409,
+                        "status" => "referral code doesn't match"
+                    ], 409);
+                }
+            }
+
+            return response()->json([
+                'code' => 200,
+                'status' => 'success join community'
+            ], 200);
+        }
+
+        return response()->json([
+            'code' => 404,
+            'status' => 'community not found'
+        ], 404);
+    }
+
+    public function getDetailEvent(Request $request){
+        
+    }
+
+    public function joinEvent(Request $request){
+        $request->validate([
+            'id_event' => 'required',
+            'full_name' => '',
+            'email' => '',
+            'phone' => '',
+        ]);
+
+        if($request->hit_from == 'web') {
+            $link_to = env('LINK_EMAIL_WEB').'/register';
+        } elseif ($request->hit_from == 'mobile'){
+            $link_to = env('LINK_EMAIL_MOBILE').'/register';
+        } else {
+            return response()->json([
+                'code'      => 404,
+                'status'    => 'failed',
+                'result'    => 'hit_from body request not available',
+            ], 404);
+        } 
+
+        $event = Event::where('id_event', $request->id_event)->first();
+
+        if(!$event){
+            return response()->json([
+                'code' => 404,
+                'status' => 'event not found'
+            ], 404);
+        }
+
+        $authorizationHeader = $request->header('Authorization');
+
+        if($authorizationHeader){
+            $userId = get_id_user_jwt($request);
+
+            $check_join = Submission::where('id_event', $request->id_event)->where('id_user', $userId)->first();
+
+            if($check_join){
+                return response()->json([
+                    'code' => 409,
+                    'status' => 'you have joined this event'
+                ], 409);
+            }
+
+            Submission::create([
+                'id_event' => $request->id_event,
+                'id_user' => $userId,
+                'additional_data' => '',
+                'type' => 'submission',
+                'status' => 'confirmed'
+            ]);
+
+            return response()->json([
+                'code' => 200,
+                'status' => 'success join event'
+            ], 200);
+        }else{
+            $check_join = Submission::where('id_event', $request->id_event)->where('additional_data', 'LIKE', '%' . $request->email .   '%')->first();
+
+            if($check_join){
+                return response()->json([
+                    'code' => 409,
+                    'status' => 'your email have joined this event'
+                ], 409);
+            }
+
+            $additional_data = json_encode([
+                'full_name' => $request->full_name,
+                'email' => $request->email,
+                'phone' => $request->phone
+            ]);
+            
+            $query = Submission::create([
+                'id_event' => $request->id_event,
+                'id_user' => null,
+                'additional_data' => $additional_data,
+                'type' => 'submission',
+                'status' => 'pending'
+            ]);
+
+            if($query){
+                $details = [
+                    'full_name' => $request->full_name,
+                    'email' => $request->email,
+                    'phone' => $request->phone,
+                    'title' => $event->title,
+                    'link_to' => $link_to
+                ];
+
+                EventVerfication::dispatch($details);
+
+                return response()->json([
+                    'code' => 200,
+                    'status' => 'success join event'
+                ], 200);
+            }
+        }
     }
 }

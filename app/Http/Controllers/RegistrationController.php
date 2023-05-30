@@ -25,6 +25,7 @@ use Illuminate\Support\Facades\Mail;
 use App\Services\JwtAuth;
 use Illuminate\Http\File;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 class RegistrationController extends Controller
 {
@@ -273,12 +274,19 @@ class RegistrationController extends Controller
     public function submit_profile(Request $request){
         $dataValidate = $request->validate([
             'id_user' => 'required',
-            'profile_picture' => 'image',
             'full_name' => 'required|string',
             'bio' => '',
             'city' => 'required',
             'gender' => 'required',
         ]);
+
+        $maxSize = Validator::make($request->all(), [
+            'profile_picture' => 'image|max:10000',
+        ]);
+
+        if ($maxSize->fails()) {
+            return response_json(422, 'failed', $maxSize->messages());
+        }
 
         if($request->profile_picture){
             $image = Image::make($request->profile_picture)->resize(400, null, function ($constraint) {

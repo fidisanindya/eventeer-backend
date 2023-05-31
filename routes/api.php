@@ -136,3 +136,17 @@ Route::prefix('chat')->group(function () {
         Route::get('/total_unread_message', [MessageController::class, 'total_unread_message']);
     });
 });
+
+Route::prefix('community')->group(function () {
+    Route::middleware(['jwt.auth'])->group(function () {
+        Route::get('/get_detail_community', [CommunityController::class, 'getDetailCommunity']);
+        Route::post('/join_community', [CommunityController::class, 'joinCommunity']);
+    });
+});
+
+Route::prefix('event')->group(function () {
+    Route::post('/join_event', [CommunityController::class, 'joinEvent']);
+    Route::middleware(['jwt.auth'])->group(function () {
+        Route::get('/get_detail_event', [CommunityController::class, 'getDetailEvent']);
+    });
+});

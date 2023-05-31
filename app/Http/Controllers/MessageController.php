@@ -29,6 +29,14 @@ class MessageController extends Controller
             'title' => 'required',
         ]);
 
+        $maxSize = Validator::make($request->all(), [
+            'image' => 'image|max:10000',
+        ]);
+
+        if ($maxSize->fails()) {
+            return response_json(422, 'failed', $maxSize->messages());
+        }
+
         $userId = get_id_user_jwt($request);
 
         if($request->image){
@@ -151,6 +159,14 @@ class MessageController extends Controller
         
         if($request->hasFile('text')) {
             if($request->text->getClientOriginalExtension() == 'pdf'){
+                $maxSize = Validator::make($request->all(), [
+                    'text' => 'required|file|mimes:pdf|max:30000',
+                ]);
+        
+                if ($maxSize->fails()) {
+                    return response_json(422, 'failed', $maxSize->messages());
+                }
+        
                 $filename = date('dmYhis') . '_pdf.' . $request->text->getClientOriginalExtension();
 
                 Storage::put('public/pdf_queue/' . $filename, file_get_contents($request->text));
@@ -176,6 +192,14 @@ class MessageController extends Controller
                     "status" => "success send new message"
                 ], 200);   
             }else{
+                $maxSize = Validator::make($request->all(), [
+                    'text' => 'required|image|max:10000',
+                ]);
+        
+                if ($maxSize->fails()) {
+                    return response_json(422, 'failed', $maxSize->messages());
+                }
+
                 $image = Image::make($request->text)->resize(400, null, function ($constraint) {
                     $constraint->aspectRatio();
                 });
@@ -346,6 +370,9 @@ class MessageController extends Controller
             }else{
                 $dt->pinned = false;
             }
+            
+            $total_unread = Message::where('id_message_room', (int)$dt->id_message_room)->whereNotIn('read', [$userId])->count();
+            $dt->total_unread = $total_unread;
         }
 
         return response()->json([
@@ -740,6 +767,7 @@ class MessageController extends Controller
     public function post_update_group_info(Request $request){
         $validator = Validator::make($request->all(), [
             'id_message_room' => 'required',
+            'image' => 'image|max:10000',
         ]);
 
         if ($validator->fails()) {

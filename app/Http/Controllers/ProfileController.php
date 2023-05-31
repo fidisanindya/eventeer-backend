@@ -88,8 +88,15 @@ class ProfileController extends Controller
     public function edit_profile_picture(Request $request){
         $request->validate([
             'id_user' => 'required',
-            'profile_picture' => 'required'
         ]);
+
+        $maxSize = Validator::make($request->all(), [
+            'profile_picture' => 'required|image|max:10000',
+        ]);
+
+        if ($maxSize->fails()) {
+            return response_json(422, 'failed', $maxSize->messages());
+        }
 
         $image = Image::make($request->profile_picture)->resize(400, null, function ($constraint) {
             $constraint->aspectRatio();
@@ -122,8 +129,15 @@ class ProfileController extends Controller
     public function edit_banner(Request $request){
         $request->validate([
             'id_user' => 'required',
-            'banner' => 'required'
         ]);
+
+        $maxSize = Validator::make($request->all(), [
+            'banner' => 'required|image|max:10000',
+        ]);
+
+        if ($maxSize->fails()) {
+            return response_json(422, 'failed', $maxSize->messages());
+        }
 
         $image = Image::make($request->banner)->resize(600, null, function ($constraint) {
             $constraint->aspectRatio();

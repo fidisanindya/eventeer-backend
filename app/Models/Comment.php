@@ -12,4 +12,8 @@ class Comment extends Model
     protected $table = 'module_comment';
     protected $primaryKey = 'id_comment';
     protected $guarded = ['id_comment'];
+
+    public function user(){
+        return $this->belongsTo(User::class, 'id_user', 'id_user');
+    }
 }

@@ -166,8 +166,12 @@ class MessageController extends Controller
                 if ($maxSize->fails()) {
                     return response_json(422, 'failed', $maxSize->messages());
                 }
-        
-                $filename = date('dmYhis') . '_pdf.' . $request->text->getClientOriginalExtension();
+
+                // size pdf in kb
+
+                $sizePDF = round($request->text->getSize() / 1024, 2);
+
+                $filename = date('dmYhis') . '_' . $request->text->getClientOriginalName();
 
                 Storage::put('public/pdf_queue/' . $filename, file_get_contents($request->text));
 
@@ -180,6 +184,8 @@ class MessageController extends Controller
                 Message::insert([
                     "text" => $pdfUrl,
                     "type" => 'pdf',
+                    "name_file" => $filename,
+                    "size_file_kb" => $sizePDF,
                     "date" => date('Y-m-d h:i:s'),
                     "id_user" => $userId,
                     "with_id_user" => $request->with_id_user ?? null,
@@ -209,6 +215,10 @@ class MessageController extends Controller
                 $data = $image->encode($request->text->getClientOriginalExtension())->__toString();
     
                 Storage::put('public/picture_queue/' . $filename, $data);
+
+                // size image in kb
+
+                $sizeImg = round(Storage::size('public/picture_queue/' . $filename) / 1024 , 2);
     
                 UploadImageChat::dispatch($filename);
     
@@ -219,6 +229,8 @@ class MessageController extends Controller
                 Message::insert([
                     "text" => $imageUrl,
                     "type" => 'photo',
+                    "name_file" => $filename,
+                    "size_file_kb" => $sizeImg,
                     "date" => date('Y-m-d h:i:s'),
                     "id_user" => $userId,
                     "with_id_user" => $request->with_id_user ?? null,
@@ -236,6 +248,8 @@ class MessageController extends Controller
         Message::insert([
             "text" => $request->text,
             "type" => 'txt',
+            "name_file" => null,
+            "size_file_kb" => null,
             "date" => date('Y-m-d h:i:s'),
             "id_user" => $userId,
             "with_id_user" => $request->with_id_user ?? null,

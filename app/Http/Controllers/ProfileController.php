@@ -637,50 +637,41 @@ class ProfileController extends Controller
         }
     }
     
-    public function follow_user(Request $request){
+    public function follow_unfollow_user(Request $request){
         $request->validate([
-            'follow_id_user' => 'required'
+            'follow_id_user' => 'required|numeric'
         ]);
 
         $userId = get_id_user_jwt($request);
 
-        $query = Follow::insert([
-            'id_user' => $request->follow_id_user,
-            'followed_by' => $userId
-        ]);
+        $checkUser = User::where('id_user', $request->follow_id_user)->first();
 
-        if($query){ 
+        if($checkUser) {
+            $checkFollow = Follow::where([['id_user', $request->follow_id_user], ['followed_by', $userId]])->first();
+
+            if($checkFollow){
+                $checkFollow->delete();
+
+                return response()->json([
+                    'code' => 200,
+                    'status' => 'success unfollow user',
+                ], 200);
+            }
+
+            Follow::insert([
+                'id_user' => $request->follow_id_user,
+                'followed_by' => $userId
+            ]);
+
             return response()->json([
                 'code' => 200,
                 'status' => 'success follow user',
-            ]);
+            ], 200);
         }
 
         return response()->json([
-            'code' => 409,
-            'status' => 'failed follow user',
-        ]);
-    }
-
-    public function unfollow_user(Request $request){
-        $request->validate([
-            'unfollow_id_user' => 'required'
-        ]);
-
-        $userId = get_id_user_jwt($request);
-
-        $query = Follow::where([['id_user', $request->unfollow_id_user], ['followed_by', $userId]])->delete();
-
-        if($query){ 
-            return response()->json([
-                'code' => 200,
-                'status' => 'success unfollow user',
-            ]);
-        }
-
-        return response()->json([
-            'code' => 409,
-            'status' => 'failed unfollow user',
-        ]);
+            'code' => 404,
+            'status' => 'user not found',
+        ], 404);
     }
 }

@@ -105,8 +105,7 @@ Route::prefix('profile')->group(function () {
         Route::post('/edit_banner_picture', [ProfileController::class, 'edit_banner']);
         Route::post('/edit_profile', [ProfileController::class, 'edit_profile']);
         Route::post('/like_unlike_post', [ProfileController::class, 'post_like_unlike']);
-        Route::post('/follow_user', [ProfileController::class, 'follow_user']);
-        Route::post('/unfollow_user', [ProfileController::class, 'unfollow_user']);
+        Route::post('/follow_unfollow_user', [ProfileController::class, 'follow_unfollow_user']);
     });
     Route::get('/get_profile/{id}', [ProfileController::class, 'get_profile']);
     // Route::post('/add-portofolio', [ProfileController::class, 'add_portofolio']);
@@ -146,7 +145,11 @@ Route::prefix('community')->group(function () {
 
 Route::prefix('event')->group(function () {
     Route::post('/join_event', [CommunityController::class, 'joinEvent']);
+    Route::get('/get_list_comment_event', [CommunityController::class, 'getListCommentEvent']);
     Route::middleware(['jwt.auth'])->group(function () {
         Route::get('/get_detail_event', [CommunityController::class, 'getDetailEvent']);
+        Route::post('/like_unlike_comment_event', [CommunityController::class, 'likeUnlikeCommentEvent']);
+        Route::post('/create_comment_event', [CommunityController::class, 'createCommentEvent']);
+        Route::post('/reply_comment_event', [CommunityController::class, 'createReplyComment']);
     });
 });

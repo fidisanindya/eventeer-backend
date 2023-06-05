@@ -1,17 +1,18 @@
 <?php
 
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\CommunityController;
-use App\Http\Controllers\ForgotController;
-use App\Http\Controllers\GoogleController;
-use App\Http\Controllers\HomepageController;
-use App\Http\Controllers\MessageController;
-use App\Http\Controllers\MigrationController;
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\RegistrationController;
-use App\Http\Controllers\SettingController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ForgotController;
+use App\Http\Controllers\GoogleController;
+use App\Http\Controllers\MessageController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SettingController;
+use App\Http\Controllers\HomepageController;
+use App\Http\Controllers\CommunityController;
+use App\Http\Controllers\MigrationController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\RegistrationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -148,5 +149,16 @@ Route::prefix('event')->group(function () {
     Route::post('/join_event', [CommunityController::class, 'joinEvent']);
     Route::middleware(['jwt.auth'])->group(function () {
         Route::get('/get_detail_event', [CommunityController::class, 'getDetailEvent']);
+    });
+});
+
+// Notifications
+Route::prefix('notification')->group(function () {
+    Route::middleware(['jwt.auth'])->group(function () {
+        Route::get('/updates_notif', [NotificationController::class, 'get_updates_notif']);
+        Route::get('/activity_joined_community_notif', [NotificationController::class, 'get_activity_joined_community_notif']);
+        Route::get('/activity_managed_community_notif', [NotificationController::class, 'get_activity_managed_community_notif']);
+        Route::post('/read_notif', [NotificationController::class, 'post_read_notif']);
+        Route::post('/read_all_notif', [NotificationController::class, 'post_read_all_notif']);
     });
 });

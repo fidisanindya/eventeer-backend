@@ -13,4 +13,12 @@ class Notification extends Model
     protected $primaryKey = 'id_notif';
     protected $guarded = ['id_notif'];
     public $timestamps = false;
+
+    public function user(){
+        return $this->belongsTo(User::class, 'notif_from', 'id_user');
+    }
+
+    public function community(){
+        return $this->belongsTo(Community::class, 'notif_from', 'id_community');
+    }
 }

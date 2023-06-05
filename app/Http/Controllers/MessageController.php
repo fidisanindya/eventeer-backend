@@ -102,7 +102,7 @@ class MessageController extends Controller
             $query->with(['job' => function($job){
                 $job->select('id_job', 'job_title');
             }])->select('id_user', 'full_name', 'profile_picture', 'id_job');
-        }])->select('id_user', 'role')->where('id_message_room', $id_group)->get();
+        }])->select('id_user', 'role')->where('id_message_room', $id_group)->whereNull('deleted_at')->get();
 
         $message_user->makeHidden('id_user');
 
@@ -362,7 +362,8 @@ class MessageController extends Controller
         foreach($data as $dt){
             if($dt->type == "personal"){
                 $data_personal = MessageUser::select('id_user')->where([['id_user', '!=', $userId], ['id_message_room', $dt->id_message_room]])->first();
-                $personal_user = User::select('full_name')->where('id_user', $data_personal->id_user)->first();
+                $personal_user = User::select('id_user', 'full_name')->where('id_user', $data_personal->id_user)->first();
+                $dt->id_user = $personal_user->id_user;
                 $dt->title = $personal_user->full_name;
                 $dt->image = $personal_user->profile_picture;
             }
@@ -710,7 +711,7 @@ class MessageController extends Controller
 
         $friend = Follow::select('id_user')->where('followed_by', $userId)->whereIn('id_user', $follower)->get();
 
-        $getDataUser = User::with(['job' => function($query){ $query->select('id_job','job_title');}])->with(['company' => function($query){ $query->select('id_company','company_name');}])->select('profile_picture', 'full_name', 'id_job', 'id_company')->whereIn('id_user', $friend)->get();
+        $getDataUser = User::with(['job' => function($query){ $query->select('id_job','job_title');}])->with(['company' => function($query){ $query->select('id_company','company_name');}])->select('id_user', 'profile_picture', 'full_name', 'id_job', 'id_company')->whereIn('id_user', $friend)->get();
 
         $getDataUser->makeHidden(['id_company','id_job']);
 

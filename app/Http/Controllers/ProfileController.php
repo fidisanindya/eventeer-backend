@@ -64,7 +64,7 @@ class ProfileController extends Controller
 
             // Community 
             $communityUser = CommunityUser::select('id_community')->where('id_user', $data->id_user)->get();
-            $data->community = Community::select('title', 'start_date', 'end_date')->whereIn('id_community', $communityUser)->get();
+            $data->community = Community::select('id_community', 'image', 'title', 'start_date', 'end_date')->whereIn('id_community', $communityUser)->get();
 
             // Portofolio
             $data->portofolio = Portofolio::select('id_portofolio', 'project_name', 'project_url', 'start_date', 'end_date')->where('id_user', $data->id_user)->get();

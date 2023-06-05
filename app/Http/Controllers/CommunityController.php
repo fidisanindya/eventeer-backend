@@ -505,6 +505,10 @@ class CommunityController extends Controller
 
         $data_community = Community::withCount(['community_user as total_friends' => function ($query) use ($followed_id) {
             $query->whereIn('id_user', $followed_id)->where('status', '=', 'active')->whereOr('status', '=', 'running');
+        }])->with(['community_user' => function($queryComUs) use ($followed_id){
+            $queryComUs->with(['user' => function ($queryUser){
+                $queryUser->select('id_user', 'profile_picture');
+            }])->select('id_community_user', 'id_community', 'id_user')->whereIn('id_user', $followed_id)->where('status', '=', 'active')->whereOr('status', '=', 'running');
         }])->where('id_community', $id_community)->first();
 
         // Interest
@@ -517,7 +521,6 @@ class CommunityController extends Controller
         $total_member = CommunityUser::where('id_community', $data_community->id_community)->where('status', 'active')->count();
 
         // Friends
-        
         $data_community->tag = $interest_community;
         $data_community->total_member = $total_member;
 
@@ -582,7 +585,28 @@ class CommunityController extends Controller
     }
 
     public function getDetailEvent(Request $request){
-        
+        $id_event = $request->input('id_event');
+
+        $dataEvent = Event::where('id_event', $id_event)->whereNull('deleted_at')->first();
+
+        // Like Event
+        $likeEvent = React::where([['related_to', 'id_event'], ['id_related_to', $id_event]])->count();
+
+        // Participant
+
+
+
+        $dataEvent->like = $likeEvent;
+
+        if($dataEvent){
+            response_json(200, "success get detail event", $dataEvent);
+
+        }
+
+        return response()->json([
+            "code" => 404,
+            "status" => "event not found",
+        ], 404);
     }
 
     public function joinEvent(Request $request){
@@ -813,6 +837,42 @@ class CommunityController extends Controller
         return response()->json([
             'code' => 404,
             'status' => 'event not found'
+        ], 404);
+    }
+
+    public function getAllUserCommunity(Request $request){
+        $limit = $request->input('limit');
+        $start = $request->input('start');
+        $id_community = $request->input('id_community');
+
+        $query = CommunityUser::with(['user' => function($queryUser) {
+            $queryUser->with(['job' => function($queryJob) {
+                $queryJob->select('id_job', 'job_title');
+            }])->with(['company' => function($queryCompany){
+                $queryCompany->select('id_company', 'company_name');
+            }])->select('id_user', 'full_name', 'profile_picture', 'id_job', 'id_company');
+        }])->select('id_community_user', 'id_community', 'id_user')->where('id_community', $id_community)->where('status', '=', 'active');
+
+        if ($limit !== null) {
+            $query->limit($limit);
+            if ($start !== null) {
+                $query->offset($start);
+            }
+        }
+
+        $allUserCommunity = $query->get();
+
+        if($allUserCommunity->count() != 0){
+            return response()->json([
+                "code" => 200,
+                "status" => "success get all user in community",
+                "result" => $allUserCommunity
+            ], 200);
+        }
+
+        return response()->json([
+            "code" => 404,
+            "status" => "community has no members",
         ], 404);
     }
 }

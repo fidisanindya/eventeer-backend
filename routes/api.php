@@ -140,14 +140,15 @@ Route::prefix('community')->group(function () {
     Route::middleware(['jwt.auth'])->group(function () {
         Route::get('/get_detail_community', [CommunityController::class, 'getDetailCommunity']);
         Route::post('/join_community', [CommunityController::class, 'joinCommunity']);
+        Route::get('/get_all_user_community', [CommunityController::class, 'getAllUserCommunity']);
     });
 });
 
 Route::prefix('event')->group(function () {
+    Route::get('/get_detail_event', [CommunityController::class, 'getDetailEvent']);
     Route::post('/join_event', [CommunityController::class, 'joinEvent']);
     Route::get('/get_list_comment_event', [CommunityController::class, 'getListCommentEvent']);
     Route::middleware(['jwt.auth'])->group(function () {
-        Route::get('/get_detail_event', [CommunityController::class, 'getDetailEvent']);
         Route::post('/like_unlike_comment_event', [CommunityController::class, 'likeUnlikeCommentEvent']);
         Route::post('/create_comment_event', [CommunityController::class, 'createCommentEvent']);
         Route::post('/reply_comment_event', [CommunityController::class, 'createReplyComment']);

@@ -692,7 +692,7 @@ class ProfileController extends Controller
                 // Create notification followed user using helper
                 $user_name = User::where('id_user', $userId)->first()->full_name;
 
-                send_notification($user_name . ' started following you.', $request->follow_id_user, $userId, null, 'Updates', 'engagement', null);
+                send_notification('<b>' . $user_name . '</b> started following you.', $request->follow_id_user, $userId, null, 'Updates', 'engagement', null);
 
                 return response()->json([
                     'code' => 200,

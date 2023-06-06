@@ -80,7 +80,8 @@ class ForgotController extends Controller
             ForgotQueue::dispatch($details);
             
             $html = (new ForgotPasswordMail($details))->render();
-            $this->logQueue($checkEmail->email, $html, 'Reset Password');
+            // Log the queue from helper
+            logQueue($checkEmail->email, $html, 'Reset Password');
 
             User::where('id_user', $checkEmail->id_user)
                 ->update([
@@ -193,24 +194,5 @@ class ForgotController extends Controller
                 'result'    => 'User not found',
             ], 404);
         }
-    }
-
-    private function logQueue($to, $message, $subject, $cc='', $bcc='', $headers='', $attachment='0', $is_broadcast=0, $id_event=null, $id_broadcast=0) {
-        $logQueue = [
-            'to'            => $to,
-            'cc'            => $cc,
-            'bcc'           => $bcc,
-            'message'       => $message,
-            'status'        => 'sent',
-            'date'          => date('Y-m-d H:i:s'),
-            'headers'       => $headers,
-            'attachment'    => $attachment,
-            'subject'       => $subject,
-            'is_broadcast'  => $is_broadcast,
-            'id_event'      => $id_event,
-            'id_broadcast'  => $id_broadcast,
-        ];
-
-        EmailQueue::create($logQueue);
     }
 }

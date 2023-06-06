@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\EventVerfication;
+use App\Models\Comment;
 use stdClass;
 use Carbon\Carbon;
 use App\Models\User;
@@ -16,6 +17,8 @@ use App\Models\UserProfile;
 use Illuminate\Http\Request;
 use App\Models\CommunityUser;
 use App\Models\CommunityInterest;
+use App\Models\React;
+use DateTime;
 use Illuminate\Support\Facades\DB;
 
 class CommunityController extends Controller
@@ -502,6 +505,10 @@ class CommunityController extends Controller
 
         $data_community = Community::withCount(['community_user as total_friends' => function ($query) use ($followed_id) {
             $query->whereIn('id_user', $followed_id)->where('status', '=', 'active')->whereOr('status', '=', 'running');
+        }])->with(['community_user' => function($queryComUs) use ($followed_id){
+            $queryComUs->with(['user' => function ($queryUser){
+                $queryUser->select('id_user', 'profile_picture');
+            }])->select('id_community_user', 'id_community', 'id_user')->whereIn('id_user', $followed_id)->where('status', '=', 'active')->whereOr('status', '=', 'running');
         }])->where('id_community', $id_community)->first();
 
         // Interest
@@ -514,7 +521,6 @@ class CommunityController extends Controller
         $total_member = CommunityUser::where('id_community', $data_community->id_community)->where('status', 'active')->count();
 
         // Friends
-        
         $data_community->tag = $interest_community;
         $data_community->total_member = $total_member;
 
@@ -579,7 +585,28 @@ class CommunityController extends Controller
     }
 
     public function getDetailEvent(Request $request){
-        
+        $id_event = $request->input('id_event');
+
+        $dataEvent = Event::where('id_event', $id_event)->whereNull('deleted_at')->first();
+
+        // Like Event
+        $likeEvent = React::where([['related_to', 'id_event'], ['id_related_to', $id_event]])->count();
+
+        // Participant
+
+
+
+        $dataEvent->like = $likeEvent;
+
+        if($dataEvent){
+            response_json(200, "success get detail event", $dataEvent);
+
+        }
+
+        return response()->json([
+            "code" => 404,
+            "status" => "event not found",
+        ], 404);
     }
 
     public function joinEvent(Request $request){
@@ -678,5 +705,174 @@ class CommunityController extends Controller
                 ], 200);
             }
         }
+    }
+
+    public function likeUnlikeCommentEvent(Request $request){
+        $request->validate([
+            'id_comment' => 'required|numeric',
+        ]);
+
+        $userId = get_id_user_jwt($request);
+        
+        $check_comment = Comment::where('id_comment', $request->id_comment)->first();
+
+        if($check_comment){
+            $reaction = React::where([['related_to', 'id_comment'], ['id_related_to', $request->id_comment], ['id_user', $userId]])->first();
+            if($reaction){
+                $reaction->delete();
+
+                return response()->json([
+                    'code' => 200,
+                    'status' => 'success unlike comment'
+                ], 200);
+            }
+
+            React::create([
+                'related_to' => 'id_comment',
+                'id_related_to' => $request->id_comment,
+                'id_user' => $userId
+            ]);
+
+            return response()->json([
+                'code' => 200,
+                'status' => 'success like comment'
+            ], 200);
+        }
+
+        return response()->json([
+            'code' => 404,
+            'status' => 'comment not found'
+        ], 404);
+    }
+
+    public function createCommentEvent(Request $request){
+        $request->validate([
+            'id_event' => 'required|numeric',
+            'comment' => 'required|string'
+        ]);
+
+        $userId = get_id_user_jwt($request);
+
+        $checkEvent = Event::where('id_event', $request->id_event)->first();
+
+        if($checkEvent){
+            $current_time = new DateTime('now');
+
+            Comment::insert([
+                'related_to' => 'id_event',
+                'id_related_to' => $request->id_event,
+                'comment' => $request->comment,
+                'id_user' => $userId,
+                'created_at' => $current_time->format('Y-m-d H:i:s')
+            ]);
+
+            return response()->json([
+                'code' => 200,
+                'status' => 'success comment event'
+            ], 200);
+        }
+
+        return response()->json([
+            'code' => 404,
+            'status' => 'event not found'
+        ], 404);
+    }
+
+    public function createReplyComment(Request $request){
+        $request->validate([
+            'id_comment' => 'required|numeric',
+            'comment' => 'required|string'
+        ]);
+
+        $userId = get_id_user_jwt($request);
+
+        $checkComment = Comment::where('id_comment', $request->id_comment)->first();
+
+        if ($checkComment){
+            $current_time = new DateTime('now');
+
+            Comment::insert([
+                'related_to' => 'id_comment',
+                'id_related_to' => $request->id_comment,
+                'comment' => $request->comment,
+                'id_user' => $userId,
+                'created_at' => $current_time->format('Y-m-d H:i:s')
+            ]);
+
+            return response()->json([
+                'code' => 200,
+                'status' => 'success reply comment event'
+            ], 200);
+        }
+
+        return response()->json([
+            'code' => 404,
+            'status' => 'comment not found'
+        ], 404);
+    }
+
+    public function getListCommentEvent(Request $request){
+        $id_event = $request->input('id_event');
+
+        $checkEvent = Event::where('id_event', $id_event)->first();
+
+        if($checkEvent){
+            $commentEvent = Comment::with(['user' => function($query) {
+                $query->with(['job' => function($jobQuery){
+                    $jobQuery->select('id_job', 'job_title');
+                }])->with(['company' => function($companyQuery){
+                    $companyQuery->select('id_company', 'company_name');
+                }])->select('id_user', 'full_name', 'profile_picture', 'id_job', 'id_company');
+            }])->where([['related_to', 'id_event'], ['id_related_to', $id_event]])->get();
+
+            $commentEvent->makeHidden('id_user');
+
+            return response()->json([
+                'code' => 200,
+                'status' => 'success get list comment event',
+                'result' => $commentEvent
+            ], 200);
+        }
+
+        return response()->json([
+            'code' => 404,
+            'status' => 'event not found'
+        ], 404);
+    }
+
+    public function getAllUserCommunity(Request $request){
+        $limit = $request->input('limit');
+        $start = $request->input('start');
+        $id_community = $request->input('id_community');
+
+        $query = CommunityUser::with(['user' => function($queryUser) {
+            $queryUser->with(['job' => function($queryJob) {
+                $queryJob->select('id_job', 'job_title');
+            }])->with(['company' => function($queryCompany){
+                $queryCompany->select('id_company', 'company_name');
+            }])->select('id_user', 'full_name', 'profile_picture', 'id_job', 'id_company');
+        }])->select('id_community_user', 'id_community', 'id_user')->where('id_community', $id_community)->where('status', '=', 'active');
+
+        if ($limit !== null) {
+            $query->limit($limit);
+            if ($start !== null) {
+                $query->offset($start);
+            }
+        }
+
+        $allUserCommunity = $query->get();
+
+        if($allUserCommunity->count() != 0){
+            return response()->json([
+                "code" => 200,
+                "status" => "success get all user in community",
+                "result" => $allUserCommunity
+            ], 200);
+        }
+
+        return response()->json([
+            "code" => 404,
+            "status" => "community has no members",
+        ], 404);
     }
 }

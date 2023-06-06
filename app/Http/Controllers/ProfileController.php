@@ -65,7 +65,7 @@ class ProfileController extends Controller
 
             // Community 
             $communityUser = CommunityUser::select('id_community')->where('id_user', $data->id_user)->get();
-            $data->community = Community::select('title', 'start_date', 'end_date')->whereIn('id_community', $communityUser)->get();
+            $data->community = Community::select('id_community', 'image', 'title', 'start_date', 'end_date')->whereIn('id_community', $communityUser)->get();
 
             // Portofolio
             $data->portofolio = Portofolio::select('id_portofolio', 'project_name', 'project_url', 'start_date', 'end_date')->where('id_user', $data->id_user)->get();
@@ -662,55 +662,48 @@ class ProfileController extends Controller
         }
     }
     
-    public function follow_user(Request $request){
+    public function follow_unfollow_user(Request $request){
         $request->validate([
-            'follow_id_user' => 'required'
+            'follow_id_user' => 'required|numeric'
         ]);
 
         $userId = get_id_user_jwt($request);
 
-        $query = Follow::insert([
-            'id_user' => $request->follow_id_user,
-            'followed_by' => $userId
-        ]);
+        $checkUser = User::where('id_user', $request->follow_id_user)->first();
 
-        if($query){ 
-            // Create notification followed user using helper
-            $user_name = User::where('id_user', $userId)->first()->full_name;
+        if($checkUser) {
+            $checkFollow = Follow::where([['id_user', $request->follow_id_user], ['followed_by', $userId]])->first();
 
-            send_notification($user_name . ' started following you.', $request->follow_id_user, $userId, null, 'Updates', 'engagement', null);
+            if($checkFollow){
+                $checkFollow->delete();
 
-            return response()->json([
-                'code' => 200,
-                'status' => 'success follow user',
+                return response()->json([
+                    'code' => 200,
+                    'status' => 'success unfollow user',
+                ], 200);
+            }
+
+            $query = Follow::insert([
+                'id_user' => $request->follow_id_user,
+                'followed_by' => $userId
             ]);
+
+            if($query){ 
+                // Create notification followed user using helper
+                $user_name = User::where('id_user', $userId)->first()->full_name;
+
+                send_notification('<b>' . $user_name . '</b> started following you.', $request->follow_id_user, $userId, null, 'Updates', 'engagement', null);
+
+                return response()->json([
+                    'code' => 200,
+                    'status' => 'success follow user',
+                ], 200);
+            }
         }
-
+        
         return response()->json([
-            'code' => 409,
-            'status' => 'failed follow user',
-        ]);
-    }
-
-    public function unfollow_user(Request $request){
-        $request->validate([
-            'unfollow_id_user' => 'required'
-        ]);
-
-        $userId = get_id_user_jwt($request);
-
-        $query = Follow::where([['id_user', $request->unfollow_id_user], ['followed_by', $userId]])->delete();
-
-        if($query){ 
-            return response()->json([
-                'code' => 200,
-                'status' => 'success unfollow user',
-            ]);
-        }
-
-        return response()->json([
-            'code' => 409,
-            'status' => 'failed unfollow user',
-        ]);
+            'code' => 404,
+            'status' => 'user not found',
+        ], 404);
     }
 }

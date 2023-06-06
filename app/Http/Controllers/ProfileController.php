@@ -25,6 +25,7 @@ use App\Models\UserProfile;
 use Illuminate\Http\Request;
 use App\Models\CommunityUser;
 use App\Http\Controllers\Controller;
+use App\Models\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
@@ -633,6 +634,30 @@ class ProfileController extends Controller
                 'created_at' => Carbon::now()->toDateTimeString()
             ]);
 
+            // Create notification liked post using helper
+            $timeline = Timeline::with(['file_attachment' => function($queryAttachment){
+                $queryAttachment->where('related_to', 'id_timeline')->where('attachment_type', 'photo');
+            }])->where('id_timeline', $request->id_timeline)->first();
+            
+            if ($timeline->file_attachment->first() == null) {
+                $image = null;
+            } else {
+                $image = $timeline->file_attachment->first()->attachment_file;
+            }
+
+            $additional_data = [
+                'post' => [
+                    'id_timeline' => $timeline->id_timeline,
+                    'description' => $timeline->description,
+                    'image'       => $image,
+                ]
+            ];
+            $additional_data = json_encode($additional_data);
+
+            $user_name = User::where('id_user', $userId)->first()->full_name;
+            
+            send_notification($user_name . ' like your post.', $timeline->id_user, $userId, '/post/'. $timeline->id_timeline .'/detail', 'Updates', 'engagement', $additional_data);
+
             return response_json(200, 'success','Post liked successfully');
         }
     }
@@ -658,17 +683,24 @@ class ProfileController extends Controller
                 ], 200);
             }
 
-            Follow::insert([
+            $query = Follow::insert([
                 'id_user' => $request->follow_id_user,
                 'followed_by' => $userId
             ]);
 
-            return response()->json([
-                'code' => 200,
-                'status' => 'success follow user',
-            ], 200);
-        }
+            if($query){ 
+                // Create notification followed user using helper
+                $user_name = User::where('id_user', $userId)->first()->full_name;
 
+                send_notification($user_name . ' started following you.', $request->follow_id_user, $userId, null, 'Updates', 'engagement', null);
+
+                return response()->json([
+                    'code' => 200,
+                    'status' => 'success follow user',
+                ], 200);
+            }
+        }
+        
         return response()->json([
             'code' => 404,
             'status' => 'user not found',

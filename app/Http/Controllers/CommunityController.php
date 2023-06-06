@@ -587,9 +587,13 @@ class CommunityController extends Controller
     public function getDetailEvent(Request $request){
         $id_event = $request->input('id_event');
 
-        $dataEvent = Event::where('id_event', $id_event)->whereNull('deleted_at')->first();
+        $dataEvent = Event::with(['vendor' => function($queryVendor){
+            $queryVendor->select('id_vendor', 'vendor_name');
+        }])->where('id_event', $id_event)->whereNull('deleted_at')->first();
 
         if($dataEvent){
+            $dataEvent->additional_data = json_decode($dataEvent->additional_data);
+
             // Like Event
             $likeEvent = React::where([['related_to', 'id_event'], ['id_related_to', $id_event]])->count();
     
@@ -813,10 +817,12 @@ class CommunityController extends Controller
     public function getListCommentEvent(Request $request){
         $id_event = $request->input('id_event');
 
-        $checkEvent = Event::where('id_event', $id_event)->first();
+        $checkEvent = Event::where('id_event', $id_event)->whereNull('deleted_at')->first();
 
         if($checkEvent){
-            $commentEvent = Comment::with(['user' => function($query) {
+            $commentEvent = Comment::withCount(['react as like' => function ($query) {
+                $query->where('related_to', 'id_comment');
+            }])->with(['user' => function($query) {
                 $query->with(['job' => function($jobQuery){
                     $jobQuery->select('id_job', 'job_title');
                 }])->with(['company' => function($companyQuery){
@@ -826,10 +832,17 @@ class CommunityController extends Controller
 
             $commentEvent->makeHidden('id_user');
 
+            if($commentEvent->count() != 0){
+                return response()->json([
+                    'code' => 200,
+                    'status' => 'success get list comment event',
+                    'result' => $commentEvent
+                ], 200);
+            }
+
             return response()->json([
                 'code' => 200,
-                'status' => 'success get list comment event',
-                'result' => $commentEvent
+                'status' => 'no comments yet',
             ], 200);
         }
 

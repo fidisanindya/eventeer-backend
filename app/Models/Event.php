@@ -22,4 +22,8 @@ class Event extends Model
     public function submission(){
         return $this->hasMany(Submission::class, 'id_event', 'id_event');
     }
+
+    public function vendor(){
+        return $this->belongsTo(Vendor::class, 'vendor_id', 'id_vendor');
+    }
 }

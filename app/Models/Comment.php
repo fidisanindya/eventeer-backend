@@ -16,4 +16,8 @@ class Comment extends Model
     public function user(){
         return $this->belongsTo(User::class, 'id_user', 'id_user');
     }
+
+    public function react(){
+        return $this->belongsTo(React::class, 'id_comment', 'id_related_to');
+    }
 }

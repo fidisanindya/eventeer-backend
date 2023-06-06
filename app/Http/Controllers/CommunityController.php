@@ -589,18 +589,17 @@ class CommunityController extends Controller
 
         $dataEvent = Event::where('id_event', $id_event)->whereNull('deleted_at')->first();
 
-        // Like Event
-        $likeEvent = React::where([['related_to', 'id_event'], ['id_related_to', $id_event]])->count();
-
-        // Participant
-
-
-
-        $dataEvent->like = $likeEvent;
-
         if($dataEvent){
-            response_json(200, "success get detail event", $dataEvent);
+            // Like Event
+            $likeEvent = React::where([['related_to', 'id_event'], ['id_related_to', $id_event]])->count();
+    
+            $dataEvent->like_event = $likeEvent;
 
+            return response()->json([
+                "code" => 200,
+                "status" => "success get detail event",
+                "result" => $dataEvent
+            ], 200);
         }
 
         return response()->json([

@@ -149,6 +149,7 @@ Route::prefix('event')->group(function () {
     Route::get('/get_detail_event', [CommunityController::class, 'getDetailEvent']);
     Route::post('/join_event', [CommunityController::class, 'joinEvent']);
     Route::get('/get_list_comment_event', [CommunityController::class, 'getListCommentEvent']);
+    Route::get('/get_event_based_on_community', [CommunityController::class, 'getEventBasedOnCommunity']);
     Route::middleware(['jwt.auth'])->group(function () {
         Route::post('/like_unlike_comment_event', [CommunityController::class, 'likeUnlikeCommentEvent']);
         Route::post('/create_comment_event', [CommunityController::class, 'createCommentEvent']);

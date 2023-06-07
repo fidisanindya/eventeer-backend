@@ -353,47 +353,47 @@ class MessageController extends Controller
         // Get id_user from Bearer Token
         $userId = get_id_user_jwt($request);
 
-        $room_user = MessageUser::select('id_message_room')->where('id_user', $userId)->whereNull('deleted_at')->get();
+        $message = MessageUser::leftJoin('module_message_room', 'module_message_user.id_message_room', '=', 'module_message_room.id_message_room')
+        ->leftJoin('module_message_pin', function ($join) use ($userId) {
+            $join->on('module_message_room.id_message_room', '=', 'module_message_pin.id_message_room')
+                ->where('module_message_pin.id_user', $userId);
+        })
+        ->select('module_message_room.id_message_room', 'module_message_room.image', 'module_message_room.type')
+        ->selectRaw('
+            IF(module_message_room.type = "personal",
+                (SELECT system_users.full_name FROM system_users WHERE system_users.id_user = module_message_user.id_user),
+                module_message_room.title
+            ) AS title,
+            CASE
+                WHEN module_message_pin.id_user IS NOT NULL AND module_message_pin.deleted_at IS NULL THEN true
+                ELSE false
+            END AS pinned
+        ')
+        ->where('module_message_user.id_user', $userId)
+        ->whereNull('module_message_user.deleted_at')
+        ->whereNull('module_message_room.deleted_at')
+        ->get();
 
-        $data = MessageRoom::select('id_message_room', 'title', 'image', 'type')->whereIn('id_message_room', $room_user)->whereNull('deleted_at')->get();
-
-        // $data_personal = MessageRoom::select('id_message_room', 'title', 'image', 'type')->where('type', 'personal')->whereIn('id_message_room', $room_user)->whereNull('deleted_at')->get();
-
-        foreach($data as $dt){
-            if($dt->type == "personal"){
-                $data_personal = MessageUser::select('id_user')->where([['id_user', '!=', $userId], ['id_message_room', $dt->id_message_room]])->first();
-                $personal_user = User::select('id_user', 'full_name')->where('id_user', $data_personal->id_user)->first();
-                $dt->id_user = $personal_user->id_user;
-                $dt->title = $personal_user->full_name;
-                $dt->image = $personal_user->profile_picture;
-            }
-            $last_chat = Message::select('id_user', 'text', 'date')->where('id_message_room', $dt->id_message_room)->orderBy('date', 'desc')->first();
+        foreach($message as $msg){
+            $last_chat = Message::select('id_user', 'text', 'date')->where('id_message_room', $msg->id_message_room)->orderBy('date', 'desc')->first();
             if($last_chat){
-                $dt->time_last_chat = $last_chat->date;
-                $dt->last_chat_user = $last_chat->id_user;
-                $dt->last_chat = $last_chat->text;
+                $msg->time_last_chat = $last_chat->date;
+                $msg->last_chat_user = $last_chat->id_user;
+                $msg->last_chat = $last_chat->text;
             }else{
-                $dt->time_last_chat = null;
-                $dt->last_chat_user = null;
-                $dt->last_chat = null;
+                $msg->time_last_chat = null;
+                $msg->last_chat_user = null;
+                $msg->last_chat = null;
             }
 
-            $pinned_message = MessagePin::where([['id_message_room', $dt->id_message_room], ['id_user', $userId], ['deleted_at', null]])->first();
-
-            if($pinned_message){
-                $dt->pinned = true;
-            }else{
-                $dt->pinned = false;
-            }
-            
-            $total_unread = Message::where('id_message_room', (int)$dt->id_message_room)->whereNotIn('read', [$userId])->count();
-            $dt->total_unread = $total_unread;
+            $total_unread = Message::where('id_message_room', (int)$msg->id_message_room)->whereNotIn('read', [$userId])->count();
+            $msg->total_unread = $total_unread;
         }
 
         return response()->json([
             'code' => 200,
             'status' => 'success',
-            'result' => $data
+            'result' => $message
         ], 200);
     }
 
@@ -420,6 +420,54 @@ class MessageController extends Controller
             "status" => "no files"
         ], 404);
     }
+    
+    public function get_list_message_v2(Request $request){
+               // Get id_user from Bearer Token
+               $userId = get_id_user_jwt($request);
+
+               $room_user = MessageUser::select('id_message_room')->where('id_user', $userId)->whereNull('deleted_at')->get();
+       
+               $data = MessageRoom::select('id_message_room', 'title', 'image', 'type')->whereIn('id_message_room', $room_user)->whereNull('deleted_at')->get();
+       
+               // $data_personal = MessageRoom::select('id_message_room', 'title', 'image', 'type')->where('type', 'personal')->whereIn('id_message_room', $room_user)->whereNull('deleted_at')->get();
+       
+               foreach($data as $dt){
+                   if($dt->type == "personal"){
+                       $data_personal = MessageUser::select('id_user')->where([['id_user', '!=', $userId], ['id_message_room', $dt->id_message_room]])->first();
+                       $personal_user = User::select('id_user', 'full_name')->where('id_user', $data_personal->id_user)->first();
+                       $dt->id_user = $personal_user->id_user;
+                       $dt->title = $personal_user->full_name;
+                       $dt->image = $personal_user->profile_picture;
+                   }
+                   $last_chat = Message::select('id_user', 'text', 'date')->where('id_message_room', $dt->id_message_room)->orderBy('date', 'desc')->first();
+                   if($last_chat){
+                       $dt->time_last_chat = $last_chat->date;
+                       $dt->last_chat_user = $last_chat->id_user;
+                       $dt->last_chat = $last_chat->text;
+                   }else{
+                       $dt->time_last_chat = null;
+                       $dt->last_chat_user = null;
+                       $dt->last_chat = null;
+                   }
+       
+                   $pinned_message = MessagePin::where([['id_message_room', $dt->id_message_room], ['id_user', $userId], ['deleted_at', null]])->first();
+       
+                   if($pinned_message){
+                       $dt->pinned = true;
+                   }else{
+                       $dt->pinned = false;
+                   }
+                   
+                   $total_unread = Message::where('id_message_room', (int)$dt->id_message_room)->whereNotIn('read', [$userId])->count();
+                   $dt->total_unread = $total_unread;
+               }
+       
+               return response()->json([
+                   'code' => 200,
+                   'status' => 'success',
+                   'result' => $data
+               ], 200);       
+    }   
 
     public function delete_chat(Request $request){
         $validator = Validator::make($request->all(), [

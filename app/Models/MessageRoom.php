@@ -20,4 +20,8 @@ class MessageRoom extends Model
     public function message_pin(){
         return $this->hasMany(MessagePin::class, 'id_message_room', 'id_message_room');
     }
+
+    public function message(){
+        return $this->hasMany(Message::class, 'id_message_room', 'id_message_room');
+    }
 }

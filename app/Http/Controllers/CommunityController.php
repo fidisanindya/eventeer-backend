@@ -887,4 +887,32 @@ class CommunityController extends Controller
             "status" => "community has no members",
         ], 404);
     }
+
+    public function getEventBasedOnCommunity(Request $request){
+        $id_community = $request->input('id_community');
+
+        $event = Event::where('id_community', (int)$id_community)->where('status', 'active')->whereNull('deleted_at')->get();
+
+        foreach($event as $evn){
+            $evn->additional_data = json_decode($evn->additional_data);
+            // Like Event
+            $likeEvent = React::where([['related_to', 'id_event'], ['id_related_to', $evn->id_event]])->count();
+    
+            $evn->like_event = $likeEvent;
+
+            // Comment Event
+            $commentEvent = Comment::where([['related_to', 'id_event'], ['id_related_to', $evn->id_event]])->count();
+    
+            $evn->comment_event = $commentEvent;
+        }
+
+        if($event->count() != 0){
+            return response_json(200, "success get event based on community", $event);
+        }
+
+        return response()->json([
+            'code' => 404,
+            'status' => 'There are no events in this community',
+        ], 404);
+    }
 }

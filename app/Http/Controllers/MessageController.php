@@ -361,9 +361,13 @@ class MessageController extends Controller
         ->select('module_message_room.id_message_room', 'module_message_room.image', 'module_message_room.type')
         ->selectRaw('
             IF(module_message_room.type = "personal",
-                (SELECT system_users.full_name FROM system_users WHERE system_users.id_user = module_message_user.id_user),
+                (SELECT system_users.full_name FROM system_users WHERE system_users.id_user = (SELECT id_user FROM module_message_user WHERE id_user != ' . $userId . ' AND id_message_room = module_message_room.id_message_room LIMIT 1)),
                 module_message_room.title
             ) AS title,
+            IF(module_message_room.type = "personal",
+                (SELECT system_users.id_user FROM system_users WHERE system_users.id_user = (SELECT id_user FROM module_message_user WHERE id_user != ' . $userId . ' AND id_message_room = module_message_room.id_message_room LIMIT 1)),
+                null
+            ) AS id_user,
             CASE
                 WHEN module_message_pin.id_user IS NOT NULL AND module_message_pin.deleted_at IS NULL THEN true
                 ELSE false

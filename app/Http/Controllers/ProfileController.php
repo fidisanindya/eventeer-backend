@@ -656,7 +656,7 @@ class ProfileController extends Controller
 
             $user_name = User::where('id_user', $userId)->first()->full_name;
             
-            send_notification($user_name . ' like your post.', $timeline->id_user, $userId, '/post/'. $timeline->id_timeline .'/detail', 'Updates', 'engagement', $additional_data);
+            send_notification('<b>' . $user_name . '</b> like your post.', $timeline->id_user, $userId, '/post/'. $timeline->id_timeline .'/detail', 'Updates', 'engagement', $additional_data);
 
             return response_json(200, 'success','Post liked successfully');
         }

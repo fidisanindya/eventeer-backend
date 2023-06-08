@@ -190,7 +190,7 @@ class MessageController extends Controller
                     "id_user" => $userId,
                     "with_id_user" => $request->with_id_user ?? null,
                     "id_message_room" => (int)($request->id_message_room ?? $query->id_message_room),
-                    "read" => [],
+                    "read" => [$userId],
                 ]);
 
                 return response()->json([
@@ -235,7 +235,7 @@ class MessageController extends Controller
                     "id_user" => $userId,
                     "with_id_user" => $request->with_id_user ?? null,
                     "id_message_room" => (int)($request->id_message_room ?? $query->id_message_room),
-                    "read" => [],
+                    "read" => [$userId],
                 ]);
 
                 return response()->json([
@@ -254,7 +254,7 @@ class MessageController extends Controller
             "id_user" => $userId,
             "with_id_user" => $request->with_id_user ?? null,
             "id_message_room" => (int)($request->id_message_room ?? $query->id_message_room),
-            "read" => [],
+            "read" => [$userId],
         ]);
 
          return response()->json([

@@ -26,4 +26,14 @@ class Event extends Model
     public function vendor(){
         return $this->belongsTo(Vendor::class, 'vendor_id', 'id_vendor');
     }
+
+    public function react()
+    {
+        return $this->hasMany(React::class, 'id_related_to', 'id_event');
+    }
+
+    public function comment()
+    {
+        return $this->hasMany(Comment::class, 'id_related_to', 'id_event');
+    }
 }

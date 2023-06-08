@@ -15,4 +15,9 @@ class Message extends EloquentModel
     protected $fillable = ['text', 'type', 'id_user', 'id_message_room']; 
 
     protected $primaryKey = '_id';
+
+    public function message_room()
+    {
+        return $this->belongsTo(MessageRoom::class, 'id_message_room', 'id_message_room');
+    }
 }

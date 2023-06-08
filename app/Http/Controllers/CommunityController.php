@@ -272,7 +272,7 @@ class CommunityController extends Controller
                 } else if ($date == 'monthly') {
                     $query->whereBetween('additional_data->date->start', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()]);
                 } else if ($date != 'anytime') {
-                    $query->whereDate('additional_data->date->start', $date);
+                    $query->whereBetween('additional_data->date->start', [$date, request()->input('end_date')]);
                 }
             }
         })
@@ -310,7 +310,7 @@ class CommunityController extends Controller
                 } else if ($date == 'monthly') {
                     $query->whereBetween('additional_data->date->start', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()]);
                 } else if ($date != 'anytime') {
-                    $query->whereDate('additional_data->date->start', $date);
+                    $query->whereBetween('additional_data->date->start', [$date, request()->input('end_date')]);
                 }
             }
         })
@@ -379,7 +379,7 @@ class CommunityController extends Controller
                 } else if ($date == 'monthly') {
                     $query->whereBetween('additional_data->date->start', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()]);
                 } else if ($date != 'anytime') {
-                    $query->whereDate('additional_data->date->start', $date);
+                    $query->whereBetween('additional_data->date->start', [$date, request()->input('end_date')]);
                 }
             }
         })
@@ -416,7 +416,7 @@ class CommunityController extends Controller
                 } else if ($date == 'monthly') {
                     $query->whereBetween('additional_data->date->start', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()]);
                 } else if ($date != 'anytime') {
-                    $query->whereDate('additional_data->date->start', $date);
+                    $query->whereBetween('additional_data->date->start', [$date, request()->input('end_date')]);
                 }
             }
         })

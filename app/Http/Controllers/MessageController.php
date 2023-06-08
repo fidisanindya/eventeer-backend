@@ -122,6 +122,8 @@ class MessageController extends Controller
             "with_id_user" => ""
         ]);
 
+        date_default_timezone_set('Asia/Jakarta');
+
          // Get id_user from Bearer Token
          $userId = get_id_user_jwt($request);
  
@@ -181,7 +183,7 @@ class MessageController extends Controller
 
                 $pdfUrl = config('filesystems.disks.s3.bucketurl') . "/" . $key;
 
-                Message::insert([
+                $insertedId = Message::insertGetId([
                     "text" => $pdfUrl,
                     "type" => 'pdf',
                     "name_file" => $filename,
@@ -193,10 +195,22 @@ class MessageController extends Controller
                     "read" => [$userId],
                 ]);
 
+                $insertedRecord = Message::find($insertedId);
+
                 return response()->json([
                     "code" => 200,
-                    "status" => "success send new message"
-                ], 200);   
+                    "status" => "success send new message",
+                    "result" => [
+                       "text" => $insertedRecord->text,
+                       "type" => $insertedRecord->type,
+                       "name_file" => $insertedRecord->name_file,
+                       "size_file_kb" => $insertedRecord->size_file_kb,
+                       "date" => $insertedRecord->date,
+                       "id_user" => $insertedRecord->id_user,
+                       "with_id_user" => $insertedRecord->with_id_user,
+                       "id_message_room" => $insertedRecord->id_message_room,
+                    ]
+                ], 200);
             }else{
                 $maxSize = Validator::make($request->all(), [
                     'text' => 'required|image|max:10000',
@@ -226,7 +240,7 @@ class MessageController extends Controller
     
                 $imageUrl = config('filesystems.disks.s3.bucketurl') . "/" . $key;
 
-                Message::insert([
+                $insertedId = Message::insertGetId([
                     "text" => $imageUrl,
                     "type" => 'photo',
                     "name_file" => $filename,
@@ -238,14 +252,26 @@ class MessageController extends Controller
                     "read" => [$userId],
                 ]);
 
+                $insertedRecord = Message::find($insertedId);
+
                 return response()->json([
                     "code" => 200,
-                    "status" => "success send new message"
-                ], 200);   
+                    "status" => "success send new message",
+                    "result" => [
+                        "text" => $insertedRecord->text,
+                        "type" => $insertedRecord->type,
+                        "name_file" => $insertedRecord->name_file,
+                        "size_file_kb" => $insertedRecord->size_file_kb,
+                        "date" => $insertedRecord->date,
+                        "id_user" => $insertedRecord->id_user,
+                        "with_id_user" => $insertedRecord->with_id_user,
+                        "id_message_room" => $insertedRecord->id_message_room,
+                    ]
+                ], 200);
             }
         }
 
-        Message::insert([
+        $insertedId = Message::insertGetId([
             "text" => $request->text,
             "type" => 'txt',
             "name_file" => null,
@@ -257,9 +283,21 @@ class MessageController extends Controller
             "read" => [$userId],
         ]);
 
+        $insertedRecord = Message::find($insertedId);
+
          return response()->json([
              "code" => 200,
-             "status" => "success send new message"
+             "status" => "success send new message",
+             "result" => [
+                "text" => $insertedRecord->text,
+                "type" => $insertedRecord->type,
+                "name_file" => $insertedRecord->name_file,
+                "size_file_kb" => $insertedRecord->size_file_kb,
+                "date" => $insertedRecord->date,
+                "id_user" => $insertedRecord->id_user,
+                "with_id_user" => $insertedRecord->with_id_user,
+                "id_message_room" => $insertedRecord->id_message_room,
+             ]
          ], 200);
     }
 
@@ -327,13 +365,22 @@ class MessageController extends Controller
     public function get_detail_message(Request $request){
         $id_message_room = $request->input('id_message_room');
 
+        $userId = get_id_user_jwt($request);
+
+        $message_unread = Message::where("id_message_room", (int)$request->id_message_room)->whereNotIn('read', [$userId])->get();
+
+        foreach($message_unread as $mu){
+            if($mu->id_user != $userId){
+                $data = $mu->read;
+                array_push($data, $userId);
+                
+                Message::where("id_message_room", (int)$request->id_message_room)->whereNotIn('read', [$userId])->update([
+                    'read' => $data
+                ]);
+            }
+        }
+
         $detail_message = Message::where('id_message_room', (int)$id_message_room)->get();
-
-        // foreach($detail_message as $dm){
-        //     $name_user = User::select('full_name')->where('id_user', $dm->id_user)->first();
-
-        //     $dm->name_user = $name_user->full_name;
-        // }
 
         if($detail_message){    
             return response()->json([
@@ -376,18 +423,29 @@ class MessageController extends Controller
         ->where('module_message_user.id_user', $userId)
         ->whereNull('module_message_user.deleted_at')
         ->whereNull('module_message_room.deleted_at')
+        ->orderBy('pinned', 'desc')
         ->get();
 
         foreach($message as $msg){
-            $last_chat = Message::select('id_user', 'text', 'date')->where('id_message_room', $msg->id_message_room)->orderBy('date', 'desc')->first();
+            $last_chat = Message::select('id_user', 'text', 'date', 'type')->where('id_message_room', 51)->orderBy('date', 'desc')->first();
+            $user = User::select('id_user', 'full_name')->where('id_user', $last_chat->id_user)->first();
+            
             if($last_chat){
-                $msg->time_last_chat = $last_chat->date;
-                $msg->last_chat_user = $last_chat->id_user;
-                $msg->last_chat = $last_chat->text;
+                $msg->last_chat = [
+                    "id_user" => $user->id_user,
+                    "full_name" => $user->full_name,
+                    "text" => $last_chat->text,
+                    "message_type" => $last_chat->type,
+                    "time" => $last_chat->date,
+                ];
             }else{
-                $msg->time_last_chat = null;
-                $msg->last_chat_user = null;
-                $msg->last_chat = null;
+                $msg->last_chat = [
+                    "id_user" => null,
+                    "full_name" => null,
+                    "text" => null,
+                    "message_type" => null,
+                    "time" => null,
+                ];
             }
 
             $total_unread = Message::where('id_message_room', (int)$msg->id_message_room)->whereNotIn('read', [$userId])->count();

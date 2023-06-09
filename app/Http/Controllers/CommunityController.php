@@ -632,7 +632,7 @@ class CommunityController extends Controller
             ], 404);
         } 
 
-        $event = Event::where('id_event', $request->id_event)->first();
+        $event = Event::where('id_event', $request->id_event)->whereNull('deleted_at')->first();
 
         if(!$event){
             return response()->json([

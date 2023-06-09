@@ -427,10 +427,17 @@ class MessageController extends Controller
         ->get();
 
         foreach($message as $msg){
-            $last_chat = Message::select('id_user', 'text', 'date', 'type')->where('id_message_room', 51)->orderBy('date', 'desc')->first();
-            $user = User::select('id_user', 'full_name')->where('id_user', $last_chat->id_user)->first();
+            if($msg->type == "personal"){
+                $data_personal = MessageUser::select('id_user')->where([['id_user', '!=', $userId], ['id_message_room', $msg->id_message_room]])->first();
+                $personal_user = User::select('id_user', 'full_name')->where('id_user', $data_personal->id_user)->first();
+                $msg->id_user = $personal_user->id_user;
+            }
+ 
+            $last_chat = Message::select('id_user', 'text', 'date', 'type')->where('id_message_room', $msg->id_message_room)->orderBy('date', 'desc')->first();
             
             if($last_chat){
+                $user = User::select('id_user', 'full_name')->where('id_user', $last_chat->id_user)->first();
+                
                 $msg->last_chat = [
                     "id_user" => $user->id_user,
                     "full_name" => $user->full_name,

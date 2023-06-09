@@ -20,10 +20,10 @@ class NotificationController extends Controller
         ->where('tab', 'Updates')
         ->where('section', 'reminder')
         ->whereNull('deleted_at')
-        ->select('id_notif', 'id_user', 'status', 'content', 'tab', 'section', 'created_at')
         ->orderBy('created_at', 'DESC')
         ->limit(5)
         ->get();
+        $reminder->makeHidden(['notif_from', 'url', 'additional_data', 'deleted_at']);
         $result->reminder = $reminder;
 
         // Get Invitation and Request Notification
@@ -31,10 +31,15 @@ class NotificationController extends Controller
         ->where('tab', 'Updates')
         ->where('section', 'invitation')
         ->whereNull('deleted_at')
-        ->select('id_notif', 'id_user', 'status', 'content', 'tab', 'section', 'created_at')
         ->orderBy('created_at', 'DESC')
         ->limit(5)
         ->get();
+        $invitation->makeHidden(['notif_from', 'url', 'deleted_at']);
+        foreach ($invitation as $item) {
+            if($item->additional_data != null) {
+                $item->additional_data = json_decode($item->additional_data);
+            }
+        }
         $result->invitation = $invitation;
 
         // Get Engagement Notification
@@ -69,10 +74,15 @@ class NotificationController extends Controller
         ->where('tab', 'Activity')
         ->where('section', 'reminder')
         ->whereNull('deleted_at')
-        ->select('id_notif', 'id_user', 'status', 'content', 'tab', 'section', 'created_at')
         ->orderBy('created_at', 'DESC')
         ->limit(5)
         ->get();
+        $reminder->makeHidden('deleted_at');
+        foreach ($reminder as $item) {
+            if($item->additional_data != null) {
+                $item->additional_data = json_decode($item->additional_data);
+            }
+        }
         $result->reminder = $reminder;
 
         // Get Invitation Notification
@@ -80,15 +90,20 @@ class NotificationController extends Controller
         ->where('tab', 'Activity')
         ->where('section', 'invitation')
         ->whereNull('deleted_at')
-        ->select('id_notif', 'id_user', 'status', 'content', 'tab', 'section', 'created_at')
         ->orderBy('created_at', 'DESC')
         ->limit(5)
         ->get();
+        $invitation->makeHidden('deleted_at');
+        foreach ($invitation as $item) {
+            if($item->additional_data != null) {
+                $item->additional_data = json_decode($item->additional_data);
+            }
+        }
         $result->invitation = $invitation;
 
         // Get New For You Notification
-        $new_activity = Notification::with(['user' => function($user){
-            $user->select('id_user', 'profile_picture');
+        $new_activity = Notification::with(['community' => function($queryCommunity){
+            $queryCommunity->select('id_community', 'image');
         }])
         ->where('id_user', $user_id)
         ->where('tab', 'Activity')
@@ -114,14 +129,22 @@ class NotificationController extends Controller
         $result = new stdClass;
 
         // Get New Members Notification
-        $reminder = Notification::where('id_user', $user_id)
+        $reminder = Notification::with(['community' => function ($queryCommunity) {
+            $queryCommunity->select('id_community', 'image');
+        }])
+        ->where('id_user', $user_id)
         ->where('tab', 'Activity')
         ->where('section', 'new_member')
         ->whereNull('deleted_at')
-        ->select('id_notif', 'id_user', 'status', 'content', 'tab', 'section', 'created_at')
         ->orderBy('created_at', 'DESC')
         ->limit(5)
         ->get();
+        $reminder->makeHidden('deleted_at');
+        foreach ($reminder as $item) {
+            if($item->additional_data != null) {
+                $item->additional_data = json_decode($item->additional_data);
+            }
+        }
         $result->reminder = $reminder;
 
         // Get Action Notification

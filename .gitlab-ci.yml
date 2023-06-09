@@ -52,8 +52,8 @@ deploy:development:
     - ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP "docker pull $IMAGE_TAG"
     - ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP "docker container rm -f $CONTAINER_NAME || true"
     - ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP "docker run --network=$DOCKER_NETWORK -e APP_BUILD_ID=$APP_BUILD_ID -d --restart unless-stopped -v /data/www/html/dev.v2.api.eventeer.id/storage:/var/www/html/storage --name $CONTAINER_NAME $IMAGE_TAG"
-    - ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP "docker exec --user nobody $CONTAINER_NAME php artisan storage:link"
-    - ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP "docker exec --user nobody $CONTAINER_NAME php artisan migrate"
+    - ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP "docker exec --user www-data $CONTAINER_NAME php artisan storage:link"
+    - ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP "docker exec --user www-data $CONTAINER_NAME php artisan migrate"
   environment:
     name: development
   only:

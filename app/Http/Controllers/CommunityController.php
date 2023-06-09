@@ -891,19 +891,25 @@ class CommunityController extends Controller
     public function getEventBasedOnCommunity(Request $request){
         $id_community = $request->input('id_community');
 
-        $event = Event::where('id_community', (int)$id_community)->where('status', 'active')->whereNull('deleted_at')->get();
+        $event = Event::withCount(['react as like_event' => function($query){
+            $query->where('related_to', 'id_event');
+        }])
+        ->withCount(['comment as comment_event' => function($query){
+            $query->where('related_to', 'id_event');
+        }])
+        ->withCount(['submission as participant_joined' => function($query){
+            $query->where('status', 'confirmed');
+        }])->where('id_community', (int)$id_community)->where('status', 'active')->whereNull('deleted_at')->get();
 
         foreach($event as $evn){
             $evn->additional_data = json_decode($evn->additional_data);
-            // Like Event
-            $likeEvent = React::where([['related_to', 'id_event'], ['id_related_to', $evn->id_event]])->count();
-    
-            $evn->like_event = $likeEvent;
 
-            // Comment Event
-            $commentEvent = Comment::where([['related_to', 'id_event'], ['id_related_to', $evn->id_event]])->count();
-    
-            $evn->comment_event = $commentEvent;
+            // ticket available
+            if(isset($evn->additional_data->total_seats)){
+                $evn->ticket_available = $evn->additional_data->total_seats - $evn->participant_joined;
+            }else{
+                $evn->ticket_available = 0;
+            }
         }
 
         if($event->count() != 0){

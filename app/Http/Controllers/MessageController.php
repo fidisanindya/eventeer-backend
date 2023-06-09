@@ -423,6 +423,7 @@ class MessageController extends Controller
         ->where('module_message_user.id_user', $userId)
         ->whereNull('module_message_user.deleted_at')
         ->whereNull('module_message_room.deleted_at')
+        ->whereNull('module_message_pin.deleted_at')
         ->orderBy('pinned', 'desc')
         ->get();
 
@@ -437,7 +438,7 @@ class MessageController extends Controller
             
             if($last_chat){
                 $user = User::select('id_user', 'full_name')->where('id_user', $last_chat->id_user)->first();
-                
+
                 $msg->last_chat = [
                     "id_user" => $user->id_user,
                     "full_name" => $user->full_name,

@@ -347,9 +347,7 @@ class MessageController extends Controller
                 ]
             ], 200);
         } else {
-            $check_pinned_message->update([
-                'deleted_at' => Carbon::now()->format('Y-m-d H:i:s'),
-            ]);
+            $check_pinned_message->delete();
             return response()->json([
                 'code'  => 200,
                 'status'=> 'success',
@@ -423,7 +421,6 @@ class MessageController extends Controller
         ->where('module_message_user.id_user', $userId)
         ->whereNull('module_message_user.deleted_at')
         ->whereNull('module_message_room.deleted_at')
-        ->whereNull('module_message_pin.deleted_at')
         ->orderBy('pinned', 'desc')
         ->get();
 

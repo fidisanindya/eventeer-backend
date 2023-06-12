@@ -72,6 +72,31 @@ class MessageController extends Controller
                 'id_message_room' => $query->id_message_room,
                 'role' => 'admin',
             ]);
+            
+            // Add member
+            $id_user = json_decode($request->id_user_join);
+
+            foreach($id_user as $user){
+                $check_user = MessageUser::where('id_user', $user)->where('id_message_room', $query->id_message_room)->whereNull('deleted_at')->first();
+        
+                $check_message_room = MessageRoom::where('id_message_room', $query->id_message_room)->whereNull('deleted_at')->first();
+        
+                if($check_user == null) {
+                    if($check_message_room == null) {
+                        return response()->json([
+                            'code'  => 404,
+                            'status'=> 'failed',
+                            'result'=> 'Message room does not exist'
+                        ], 404);
+                    }
+        
+                    MessageUser::create([
+                        'id_user' => $user,
+                        'id_message_room' => $query->id_message_room,
+                        'role' => 'member',
+                    ]);
+                }
+            }
         }else{
             return response()->json([
                 "code" => 409,
@@ -79,10 +104,12 @@ class MessageController extends Controller
             ], 409);
         }
 
-        return response()->json([
-            "code" => 200,
-            "status" => "success create group message",
-        ], 200);
+        $result = [
+            'message'       => 'Successfully create group message',
+            'id_user_joined'=> $request->id_user_joined,
+        ];
+
+        return response_json(200, 'success', $result);
     }
 
     public function get_detail_group(Request $request){

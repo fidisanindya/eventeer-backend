@@ -3,8 +3,12 @@
 namespace App\Http\Controllers;
 
 use stdClass;
+use App\Models\User;
+use App\Models\Community;
 use App\Models\Notification;
 use Illuminate\Http\Request;
+use App\Models\CommunityUser;
+use App\Models\CommunityManager;
 use Illuminate\Support\Facades\Validator;
 
 class NotificationController extends Controller
@@ -234,5 +238,141 @@ class NotificationController extends Controller
         ]);
         
         return response_json(200, 'success', 'Successfully marked all as read');
+    }
+
+    public function post_invitation_confirmation(Request $request){
+        $validator = Validator::make($request->all(), [
+            'id_community' => 'required',
+            'id_user' => 'required',
+            'tab' => 'required',
+            'confirmation' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            return response_json(422, 'failed', $validator->messages());
+        }
+
+        // Join confirmation
+        if ($request->tab == 'updates') {
+            $community_user = CommunityUser::with('community')->where('id_user', $request->id_user)->where('id_community', $request->id_community)->where('status', 'pending')->first();
+
+            if ($request->confirmation == 'accept') {
+                if ($community_user != null) {
+                    $community_user->update([
+                        'status' => 'active',
+                    ]);
+
+                    // Send Notification
+                    $id_manager_community = CommunityManager::where('id_community', $community_user->community->id_community)->pluck('id_user');
+
+                    $user = User::where('id_user', $request->id_user)->first();
+                    $additional_data = [
+                        'type' => 'null',
+                        'post' => 'null',
+                        'modal' => [
+                            'id_user' => $request->id_user,
+                            'full_name' => $user->full_name,
+                            'profile_picture' => $user->profile_picture,
+                        ],
+                    ];
+
+                    foreach ($id_manager_community as $value) {
+                        $check_notification_exists = Notification::where('id_user', $value)->where('tab', 'Activity')->where('section', 'new_member')->first();
+                        
+                        if ($check_notification_exists == null) {
+                            send_notification('<b>' . $community_user->community->title . '</b> has some new members', $value, $community_user->community->id_community, null, 'Activity', 'new_member', json_encode($additional_data) );
+                        } else {
+                            $check_notification_exists->update([
+                                'status' => 'unread',
+                                'additional_data' => json_encode($additional_data),
+                            ]);
+                        }
+                    }
+
+                    return response_json(200, 'success', 'User successfully joined to this community');
+                }
+
+                return response_json(404, 'failed', 'User is not invited to this community/User already joined this community');
+
+            } elseif ($request->confirmation == 'deny') {
+                if ($community_user != null) {
+                    $community_user->delete();
+
+                    return response_json(200, 'success', 'User successfully denied to join this community');
+                }
+
+                return response_json(404, 'failed', 'User is not invited to this community');
+            }
+        } elseif ($request->tab == 'managed') {
+            $community_user = CommunityUser::where('id_user', $request->id_user)->where('id_community', $request->id_community)->where('status', 'pending')->first();
+
+            if ($request->confirmation == 'accept') {
+                if ($community_user != null) {
+                    $community_user->update([
+                        'status' => 'active'
+                    ]);
+
+                    // Send Notification
+                    $check_notification_exists = Notification::where('id_user', $request->id_user)->where('tab', 'Updates')->where('section', 'invitation')->first();
+
+                    $community = Community::where('id_community', $request->id_community)->first();
+
+                    $additional_data = [
+                        'type'  => 'null',
+                        'post'  => 'null',
+                        'modal' => [
+                            'id_community' => $community->id_community,
+                            'title' => $community->title,
+                            'status' => 'accepted'
+                        ]
+                    ];
+
+                    if($check_notification_exists == null) {
+                        send_notification('Your request to join a community has responded to. Check this out!', $request->id_user, null, null, 'Updates', 'invitation', json_encode($additional_data));
+                    } else {
+                        $check_notification_exists->update([
+                            'status' => 'unread',
+                            'additional_data' => json_encode($additional_data)
+                        ]);
+                    }
+
+                    return response_json(200, 'success', 'User successfully joined to this community');
+                }
+
+                return response_json(404, 'failed', 'User is not requested to join this community/User already joined this community');
+            } elseif ($request->confirmation == 'deny') {
+                if ($community_user != null) {
+                    $community_user->delete();
+
+                    // Send Notification
+                    $check_notification_exists = Notification::where('id_user', $request->id_user)->where('tab', 'Updates')->where('section', 'invitation')->first();
+
+                    $community = Community::where('id_community', $request->id_community)->first();
+
+                    $additional_data = [
+                        'type'  => 'null',
+                        'post'  => 'null',
+                        'modal' => [
+                            'id_community' => $community->id_community,
+                            'title' => $community->title,
+                            'status' => 'denied'
+                        ]
+                    ];
+
+                    if($check_notification_exists == null) {
+                        send_notification('Your request to join a community has responded to. Check this out!', $request->id_user, null, null, 'Updates', 'invitation', json_encode($additional_data));
+                    } else {
+                        $check_notification_exists->update([
+                            'status' => 'unread',
+                            'additional_data' => json_encode($additional_data)
+                        ]);
+                    }
+
+                    return response_json(200, 'success', 'User successfully denied to join this community');
+                }
+
+                return response_json(404, 'failed', 'User is not requested to join this community/User already joined this community');
+            }
+        }
     }
 }

@@ -165,5 +165,6 @@ Route::prefix('notification')->group(function () {
         Route::get('/activity_managed_community_notif', [NotificationController::class, 'get_activity_managed_community_notif']);
         Route::post('/read_notif', [NotificationController::class, 'post_read_notif']);
         Route::post('/read_all_notif', [NotificationController::class, 'post_read_all_notif']);
+        Route::post('/invitation_confirmation', [NotificationController::class, 'post_invitation_confirmation']);
     });
 });

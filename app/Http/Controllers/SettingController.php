@@ -16,33 +16,29 @@ class SettingController extends Controller
         $partner = Setting::where('setting_name', 'landing_page')->where('key_name', 'partner')->first();
         $testimonial = Setting::where('setting_name', 'landing_page')->where('key_name', 'testimonial')->first();
 
-        return response()->json([
-            'code'      => 200,
-            'status'    => 'success',
-            'result'    => [
-                'total_users'   => $total_users,
-                'partners'      => json_decode($partner->value),
-                'achievements'  => [
-                    'total_users'       => $total_users,
-                    'connected_users'   => 10000,
-                    'bulit_communities' => 500,
-                    'successful_events' => 7000,
-                ],
-                'testimonial'   => json_decode($testimonial->value),
-                'about'         => json_decode($about->value),
+        $result = [
+            'total_users'   => $total_users,
+            'partners'      => json_decode($partner->value),
+            'achievements'  => [
+                'total_users'       => $total_users,
+                'connected_users'   => 10000,
+                'bulit_communities' => 500,
+                'successful_events' => 7000,
             ],
-        ], 200);
+            'testimonial'   => json_decode($testimonial->value),
+            'about'         => json_decode($about->value),
+        ];
+
+        return response_json(200, 'success', $result);
     }
 
     public function get_translate_landing_page(){
         $translate = Setting::where('setting_name', 'landing_page')->where('key_name', 'translate')->first();
 
-        return response()->json([
-            'code'      => 200,
-            'status'    => 'success',
-            'result'    => [
-                'translate_testimonial'   => json_decode($translate->value),
-            ],
-        ], 200);
+        $result = [
+            'translate_testimonial' => json_decode($translate->value)
+        ];
+
+        return response_json(200, 'success', $result);
     }
 }

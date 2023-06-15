@@ -106,10 +106,6 @@ class HomepageController extends Controller
 
         $result->featured_event = $event;
 
-        return response()->json([
-            'code'      => 200,
-            'status'    => 'success',
-            'result'    => $result,
-        ]);
+        return response_json(200, 'success', $result);
     }
 }

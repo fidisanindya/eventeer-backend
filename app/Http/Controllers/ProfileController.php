@@ -73,17 +73,10 @@ class ProfileController extends Controller
             $submissionUser = Submission::select('id_submission')->where('id_user', $data->id_user)->get();
             $data->certificate = Certificate::whereIn('id_submission', $submissionUser)->get();
 
-            return response()->json([
-                'code' => 200,
-                'status' => 'success',
-                'result' => $data,
-            ]);
+            return response_json(200, 'success', $data);
         }
 
-        return response()->json([
-            'code' => 404,
-            'status' => 'user not found',
-        ], 404);
+        return response_json(404, 'failed', 'User not found');
     }
 
     public function edit_profile_picture(Request $request){
@@ -120,10 +113,7 @@ class ProfileController extends Controller
         ]);
 
         if($query){
-            return response()->json([
-                'code' => 200,
-                'status' => 'success edit profile picture',
-            ]);
+            return response_json(200, 'success', 'Success edit profile picture');
         }
     }
 
@@ -161,10 +151,7 @@ class ProfileController extends Controller
         ]);
 
         if($query){
-            return response()->json([
-                'code' => 200,
-                'status' => 'success edit banner picture',
-            ]);
+            return response_json(200, 'success', 'Success edit banner picture');
         }
     }
 
@@ -349,10 +336,7 @@ class ProfileController extends Controller
             'id_job' => $profession->id_job
         ]);
 
-        return response()->json([
-            'code' => 200,
-            'status' => 'success edit profile'
-        ]);
+        return response_json(200, 'success', 'Success edit profile');
     }
 
     public function add_portofolio(Request $request){
@@ -371,10 +355,7 @@ class ProfileController extends Controller
             ]);
         }
      
-        return response()->json([
-            'code' => 200,
-            'status' => 'success'
-        ]);
+        return response_json(200, 'success', 'Success add portfolio');
     }
 
     public function edit_portofolio(Request $request){
@@ -395,10 +376,7 @@ class ProfileController extends Controller
             }
         }
      
-        return response()->json([
-            'code' => 200,
-            'status' => 'success'
-        ]);
+        return response_json(200, 'success', 'Portfolio edited successfully');
     }
 
     public function delete_portofolio(Request $request){
@@ -409,10 +387,7 @@ class ProfileController extends Controller
         $query = Portofolio::whereIn('id_portofolio', $request->id_portofolio)->delete();
 
         if ($query){
-            return response()->json([
-                'code' => 200,
-                'status' => 'success'
-            ]); 
+            return response_json(200, 'success', 'Portofolio deleted successfully');
         }
     }
 
@@ -440,11 +415,7 @@ class ProfileController extends Controller
             'limit' => request()->input('limit', null),
         ];
 
-        return response()->json([
-            'code' => 200,
-            'status' => 'success',
-            'result' => $result,
-        ]);
+        return response_json(200, 'success', $result);
     }
 
     public function detailCertificate(Request $request){
@@ -479,11 +450,7 @@ class ProfileController extends Controller
             'limit' => request()->input('limit', null),
         ];
 
-        return response()->json([
-            'code' => 200,
-            'status' => 'success',
-            'result' => $result,
-        ]);
+        return response_json(200, 'success', $result);
     }
 
     public function detailCommunity(Request $request){
@@ -512,11 +479,7 @@ class ProfileController extends Controller
             'limit' => request()->input('limit', null),
         ];
 
-        return response()->json([
-            'code' => 200,
-            'status' => 'success',
-            'result' => $result,
-        ]);
+        return response_json(200, 'success', $result);
     }
 
     public function detailPost(Request $request){
@@ -563,11 +526,7 @@ class ProfileController extends Controller
             'limit' => request()->input('limit', null),
         ];
 
-        return response()->json([
-            'code' => 200,
-            'status' => 'success',
-            'result' => $result,
-        ]);
+        return response_json(200, 'success', $result);
     }
     
     public function detailActivity(Request $request){
@@ -600,11 +559,7 @@ class ProfileController extends Controller
 
         $result->activity = $event;
 
-        return response()->json([
-            'code' => 200,
-            'status' => 'success',
-            'result' => $result,
-        ]);
+        return response_json(200, 'success', $result);
     }
 
     public function post_like_unlike(Request $request){
@@ -677,10 +632,7 @@ class ProfileController extends Controller
             if($checkFollow){
                 $checkFollow->delete();
 
-                return response()->json([
-                    'code' => 200,
-                    'status' => 'success unfollow user',
-                ], 200);
+                return response_json(200, 'success', 'User unfollowed successfully');
             }
 
             $query = Follow::insert([
@@ -694,16 +646,10 @@ class ProfileController extends Controller
 
                 send_notification('<b>' . $user_name . '</b> started following you.', $request->follow_id_user, $userId, null, 'Updates', 'engagement', null);
 
-                return response()->json([
-                    'code' => 200,
-                    'status' => 'success follow user',
-                ], 200);
+                return response_json(200, 'success', 'User followed successfully');
             }
         }
         
-        return response()->json([
-            'code' => 404,
-            'status' => 'user not found',
-        ], 404);
+        return response_json(404, 'success', 'User not found');
     }
 }

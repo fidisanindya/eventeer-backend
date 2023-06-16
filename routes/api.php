@@ -117,11 +117,12 @@ Route::prefix('profile')->group(function () {
 // Chat
 Route::prefix('chat')->group(function () {
     Route::middleware(['jwt.auth'])->group(function () {
-        Route::post('/create_group_chat', [MessageController::class, 'create_group_message']);
+        Route::post('/create_group_chat', [MessageController::class , 'create_group_message']);
         Route::get('/detail_group_chat', [MessageController::class, 'get_detail_group']);
         Route::post('/send_message', [MessageController::class, 'send_message']);
         Route::get('/get_detail_message', [MessageController::class, 'get_detail_message']);
         Route::get('/get_list_message', [MessageController::class, 'get_list_message']);
+        Route::get('/get_list_message_v2', [MessageController::class, 'get_list_message_v2']);
         Route::get('/get_list_files', [MessageController::class, 'get_list_files']);
         Route::post('/pin_unpin', [MessageController::class, 'post_pin_unpin_chat']);
         Route::delete('/delete_chat', [MessageController::class, 'delete_chat']);
@@ -141,6 +142,7 @@ Route::prefix('community')->group(function () {
     Route::middleware(['jwt.auth'])->group(function () {
         Route::get('/get_detail_community', [CommunityController::class, 'getDetailCommunity']);
         Route::post('/join_community', [CommunityController::class, 'joinCommunity']);
+        Route::post('/leave_community', [CommunityController::class, 'leaveCommunity']);
         Route::get('/get_all_user_community', [CommunityController::class, 'getAllUserCommunity']);
     });
 });

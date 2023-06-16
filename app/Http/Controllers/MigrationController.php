@@ -30,10 +30,7 @@ class MigrationController extends Controller
             }
         }
 
-        return response()->json([
-            'code' => 200,
-            'status' => 'success migration',
-        ], 200);
+        return response_json(200, 'success', 'Success Migration');
     }
 
     public function migrate_id_job(Request $request){
@@ -42,11 +39,7 @@ class MigrationController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'code'      => 422,
-                'status'    => 'failed',
-                'result'    => $validator->messages(),
-            ], 422);
+            return response_json(422, 'failed', $validator->messages());
         }
 
         $limit = $request->limit;
@@ -62,18 +55,10 @@ class MigrationController extends Controller
                 UserProfile::where('id_user_profile', $up->id_user_profile)->delete();
             }
     
-            return response()->json([
-                'code'  => 200,
-                'status'=> 'success',
-                'result'=> 'Migrated ' . $limit . ' data  successfully'
-            ], 200);
+            return response_json(200, 'success', 'Migrated ' . $limit . ' data successfully');
         }
 
-        return response()->json([
-            'code'  => 500,
-            'status'=> 'failed',
-            'result'=> 'No data to migrate'
-        ], 500);
+        return response_json(500, 'failed', 'No data to migrate');
     }
 
     public function migrate_id_company(Request $request){
@@ -82,11 +67,7 @@ class MigrationController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'code'      => 422,
-                'status'    => 'failed',
-                'result'    => $validator->messages(),
-            ], 422);
+            return response_json(422, 'failed', $validator->messages());
         }
         
         $limit = $request->limit;
@@ -102,18 +83,10 @@ class MigrationController extends Controller
                 UserProfile::where('id_user_profile', $up->id_user_profile)->delete();
             }
     
-            return response()->json([
-                'code'  => 200,
-                'status'=> 'success',
-                'result'=> 'Migrated ' . $limit . ' data successfully'
-            ]);
+            return response_json(200, 'success', 'Migrated ' . $limit . ' data successfully');
         }
 
-        return response()->json([
-            'code'  => 500,
-            'status'=> 'failed',
-            'result'=> 'No data to migrate'
-        ], 500);
+        return response_json(500, 'failed', 'No data to migrate');
     }
 
     public function migrate_group_message_to_message_room(Request $request){
@@ -122,11 +95,7 @@ class MigrationController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'code'      => 422,
-                'status'    => 'failed',
-                'result'    => $validator->messages(),
-            ], 422);
+            return response_json(422, 'failed', $validator->messages());
         }
         
         $limit = $request->limit;
@@ -146,11 +115,7 @@ class MigrationController extends Controller
 
             GroupMessage::where('id_groupmessage', $gm->id_groupmessage)->delete();
         }
-        return response()->json([
-            'code'  => 200,
-            'status'=> 'success',
-            'result'=> 'Migrated ' . $limit . ' data successfully'
-        ]);
+        return response_json(200, 'success', 'Migrated ' . $limit . ' data successfully');
     }
 
     public function migrate_group_message_rolemember_to_message_user(Request $request){
@@ -159,11 +124,7 @@ class MigrationController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'code'      => 422,
-                'status'    => 'failed',
-                'result'    => $validator->messages(),
-            ], 422);
+            return response_json(422, 'failed', $validator->messages());
         }
         
         $limit = $request->limit;
@@ -181,10 +142,6 @@ class MigrationController extends Controller
 
             GroupMessageRolemember::where('id_groupmessage', $gm->id_groupmessage)->delete();
         }
-        return response()->json([
-            'code'  => 200,
-            'status'=> 'success',
-            'result'=> 'Migrated ' . $limit . ' data successfully'
-        ]);
+        return response_json(200, 'success', 'Migrated ' . $limit . ' data successfully');
     }
 }

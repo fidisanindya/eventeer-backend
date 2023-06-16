@@ -253,9 +253,8 @@ class NotificationController extends Controller
         }
 
         // Join confirmation
+        $community_user = CommunityUser::with('community')->where('id_user', $request->id_user)->where('id_community', $request->id_community)->where('status', 'pending')->first();
         if ($request->tab == 'updates') {
-            $community_user = CommunityUser::with('community')->where('id_user', $request->id_user)->where('id_community', $request->id_community)->where('status', 'pending')->first();
-
             if ($request->confirmation == 'accept') {
                 if ($community_user != null) {
                     $community_user->update([
@@ -266,28 +265,62 @@ class NotificationController extends Controller
                     $id_manager_community = CommunityManager::where('id_community', $community_user->community->id_community)->pluck('id_user');
 
                     $user = User::where('id_user', $request->id_user)->first();
-                    $additional_data = [
-                        'type' => 'null',
-                        'post' => 'null',
-                        'modal' => [
-                            'id_user' => $request->id_user,
-                            'full_name' => $user->full_name,
-                            'profile_picture' => $user->profile_picture,
-                        ],
-                    ];
 
                     foreach ($id_manager_community as $value) {
                         $check_notification_exists = Notification::where('id_user', $value)->where('tab', 'Activity')->where('section', 'new_member')->first();
                         
                         if ($check_notification_exists == null) {
+                            $additional_data = [
+                                'type' => 'null',
+                                'post' => 'null',
+                                'modal' => [
+                                    [
+                                        'id_user' => $request->id_user,
+                                        'full_name' => $user->full_name,
+                                        'profile_picture' => $user->profile_picture,
+                                    ],
+                                ],
+                            ];
+
                             send_notification('<b>' . $community_user->community->title . '</b> has some new members', $value, $community_user->community->id_community, null, 'Activity', 'new_member', json_encode($additional_data) );
-                        } else {
+                        } else {  
+                            $new_additional_data = [
+                                'id_user' => $request->id_user,
+                                'full_name' => $user->full_name,
+                                'profile_picture' => $user->profile_picture,
+                            ];
+                            $additional_data = json_decode($check_notification_exists->additional_data);
+                            $additional_data->modal[] = $new_additional_data;
+
                             $check_notification_exists->update([
                                 'status' => 'unread',
                                 'additional_data' => json_encode($additional_data),
                             ]);
                         }
                     }
+
+                    // Update additional data in notification
+                    $notification = Notification::where('id_notif', $request->id_notif)->first();
+
+                    $additional_data_notif = json_decode($notification->additional_data, true);
+
+                    $index_to_delete = null;
+                    foreach ($additional_data_notif['modal'] as $index => $modal) {
+                        if ($modal['id_community'] == $request->id_community) {
+                            $index_to_delete = $index;
+                            break;
+                        }
+                    }
+
+                    if ($index_to_delete !== null) {
+                        unset($additional_data_notif['modal'][$index_to_delete]);
+                        $additional_data_notif['modal'] = array_values($additional_data_notif['modal']); 
+                    }
+
+                    $updatedAdditionalData = json_encode($additional_data_notif);
+
+                    $notification->additional_data = $updatedAdditionalData;
+                    $notification->save();
 
                     return response_json(200, 'success', 'User successfully joined to this community');
                 }
@@ -298,14 +331,35 @@ class NotificationController extends Controller
                 if ($community_user != null) {
                     $community_user->delete();
 
+                    // Update additional data in notification
+                    $notification = Notification::where('id_notif', $request->id_notif)->first();
+
+                    $additional_data_notif = json_decode($notification->additional_data, true);
+
+                    $index_to_delete = null;
+                    foreach ($additional_data_notif['modal'] as $index => $modal) {
+                        if ($modal['id_community'] == $request->id_community) {
+                            $index_to_delete = $index;
+                            break;
+                        }
+                    }
+
+                    if ($index_to_delete !== null) {
+                        unset($additional_data_notif['modal'][$index_to_delete]);
+                        $additional_data_notif['modal'] = array_values($additional_data_notif['modal']); 
+                    }
+
+                    $updatedAdditionalData = json_encode($additional_data_notif);
+
+                    $notification->additional_data = $updatedAdditionalData;
+                    $notification->save();
+
                     return response_json(200, 'success', 'User successfully denied to join this community');
                 }
 
                 return response_json(404, 'failed', 'User is not invited to this community');
             }
         } elseif ($request->tab == 'managed') {
-            $community_user = CommunityUser::where('id_user', $request->id_user)->where('id_community', $request->id_community)->where('status', 'pending')->first();
-
             if ($request->confirmation == 'accept') {
                 if ($community_user != null) {
                     $community_user->update([
@@ -317,24 +371,57 @@ class NotificationController extends Controller
 
                     $community = Community::where('id_community', $request->id_community)->first();
 
-                    $additional_data = [
-                        'type'  => 'null',
-                        'post'  => 'null',
-                        'modal' => [
-                            'id_community' => $community->id_community,
-                            'title' => $community->title,
-                            'status' => 'accepted'
-                        ]
-                    ];
-
                     if($check_notification_exists == null) {
+                        $additional_data = [
+                            'type'  => 'null',
+                            'post'  => 'null',
+                            'modal' => [
+                                [
+                                'id_community' => $community->id_community,
+                                'title' => $community->title,
+                                'status' => 'accepted'
+                                ],
+                            ]
+                        ];
+
                         send_notification('Your request to join a community has responded to. Check this out!', $request->id_user, null, null, 'Updates', 'invitation', json_encode($additional_data));
                     } else {
+                        $new_additional_data = [
+                            'id_community' => $community->id_community,
+                            'title' => $community->full_name,
+                            'status' => 'accepted',
+                        ];
+                        $additional_data = json_decode($check_notification_exists->additional_data);
+                        $additional_data->modal[] = $new_additional_data;
+
                         $check_notification_exists->update([
                             'status' => 'unread',
                             'additional_data' => json_encode($additional_data)
                         ]);
                     }
+
+                    // Update additional data in notification
+                    $notification = Notification::where('id_notif', $request->id_notif)->first();
+
+                    $additional_data_notif = json_decode($notification->additional_data, true);
+
+                    $index_to_delete = null;
+                    foreach ($additional_data_notif['modal'] as $index => $modal) {
+                        if ($modal['id_user'] == $request->id_user) {
+                            $index_to_delete = $index;
+                            break;
+                        }
+                    }
+
+                    if ($index_to_delete !== null) {
+                        unset($additional_data_notif['modal'][$index_to_delete]);
+                        $additional_data_notif['modal'] = array_values($additional_data_notif['modal']); 
+                    }
+
+                    $updatedAdditionalData = json_encode($additional_data_notif);
+
+                    $notification->additional_data = $updatedAdditionalData;
+                    $notification->save();
 
                     return response_json(200, 'success', 'User successfully joined to this community');
                 }
@@ -349,24 +436,57 @@ class NotificationController extends Controller
 
                     $community = Community::where('id_community', $request->id_community)->first();
 
-                    $additional_data = [
-                        'type'  => 'null',
-                        'post'  => 'null',
-                        'modal' => [
-                            'id_community' => $community->id_community,
-                            'title' => $community->title,
-                            'status' => 'denied'
-                        ]
-                    ];
-
                     if($check_notification_exists == null) {
+                        $additional_data = [
+                            'type'  => 'null',
+                            'post'  => 'null',
+                            'modal' => [
+                                [
+                                'id_community' => $community->id_community,
+                                'title' => $community->title,
+                                'status' => 'denied'
+                                ],
+                            ]
+                        ];
+
                         send_notification('Your request to join a community has responded to. Check this out!', $request->id_user, null, null, 'Updates', 'invitation', json_encode($additional_data));
                     } else {
+                        $new_additional_data = [
+                            'id_community' => $community->id_community,
+                            'title' => $community->full_name,
+                            'status' => 'accepted',
+                        ];
+                        $additional_data = json_decode($check_notification_exists->additional_data);
+                        $additional_data->modal[] = $new_additional_data;
+                        
                         $check_notification_exists->update([
                             'status' => 'unread',
                             'additional_data' => json_encode($additional_data)
                         ]);
                     }
+
+                    // Update additional data in notification
+                    $notification = Notification::where('id_notif', $request->id_notif)->first();
+
+                    $additional_data_notif = json_decode($notification->additional_data, true);
+
+                    $index_to_delete = null;
+                    foreach ($additional_data_notif['modal'] as $index => $modal) {
+                        if ($modal['id_user'] == $request->id_user) {
+                            $index_to_delete = $index;
+                            break;
+                        }
+                    }
+
+                    if ($index_to_delete !== null) {
+                        unset($additional_data_notif['modal'][$index_to_delete]);
+                        $additional_data_notif['modal'] = array_values($additional_data_notif['modal']); 
+                    }
+
+                    $updatedAdditionalData = json_encode($additional_data_notif);
+
+                    $notification->additional_data = $updatedAdditionalData;
+                    $notification->save();
 
                     return response_json(200, 'success', 'User successfully denied to join this community');
                 }

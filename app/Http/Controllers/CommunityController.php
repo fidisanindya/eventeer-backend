@@ -989,4 +989,66 @@ class CommunityController extends Controller
             'status' => 'There are no events in this community',
         ], 404);
     }
+
+    public function getEventTopBasedOnCommunity(Request $request){
+        $id_community = $request->input('id_community');
+
+        $result = new stdClass;
+
+        $topEvent = Event::select('id_event', 'id_community', 'title', 'image', 'category', 'additional_data', 'status')
+        ->whereNull('deleted_at')
+        ->where('status', 'active')
+        ->where('category', 'event')
+        ->where('id_community', $id_community)
+        ->withCount('submission as people_joined')
+        ->orderBy('people_joined', 'DESC')->limit(3)->get();
+
+        foreach ($topEvent as $item){
+            $item->additional_data = json_decode($item->additional_data);
+        }
+
+        $result->top_event = $topEvent;
+
+        return response()->json([
+            'code' => 200,
+            'status' => 'success',
+            'result' => $result,
+        ]);
+    }
+
+    public function getYourEventBasedOnCommunity(Request $request){
+          $id_community = $request->input('id_community');
+
+          // Get id_user from Bearer Token
+          $userId = get_id_user_jwt($request);
+        
+          $result = new stdClass;
+  
+          // Your event
+          $submission = Submission::where('id_user', $userId)->pluck('id_event');
+          $event = Event::whereIn('id_event', $submission)
+          ->whereNull('deleted_at')
+          ->where('status', 'active')
+          ->where('category', 'event')
+          ->where('id_community', $id_community)
+          ->select('id_event', 'id_community', 'title', 'image', 'category', 'additional_data', 'status')
+          ->withCount('submission as people_joined')
+          ->orderBy('additional_data->date->start', 'ASC')->get();
+  
+          foreach ($event as $item){
+              $item->additional_data = json_decode($item->additional_data);
+          }
+  
+          if($event->first() != null){
+              $result->your_event = $event;
+          } else {
+              $result->your_event = null;
+          }
+  
+          return response()->json([
+              'code' => 200,
+              'status' => 'success',
+              'result' => $result,
+          ]);
+    }
 }

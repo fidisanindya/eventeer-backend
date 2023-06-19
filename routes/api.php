@@ -144,6 +144,8 @@ Route::prefix('community')->group(function () {
         Route::post('/join_community', [CommunityController::class, 'joinCommunity']);
         Route::post('/leave_community', [CommunityController::class, 'leaveCommunity']);
         Route::get('/get_all_user_community', [CommunityController::class, 'getAllUserCommunity']);
+        Route::get('/get_top_event_community', [CommunityController::class, 'getEventTopBasedOnCommunity']);
+        Route::get('/get_your_event_community', [CommunityController::class, 'getYourEventBasedOnCommunity']);
     });
 });
 

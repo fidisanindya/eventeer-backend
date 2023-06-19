@@ -32,11 +32,11 @@ class CommunityController extends Controller
 
         $result = new stdClass;
 
-        $query = Community::select('id_community', 'title', 'image', 'banner', 'type')->where([['type', '=', 'public'], ['status', '=', 'active']])->withCount(['community_user as total_members' => function ($query) {
+        $query = Community::select('id_community', 'title', 'image', 'banner', 'type')->where([['type', '!=', 'private_whitelist'], ['status', '=', 'active']])->withCount(['community_user as total_members' => function ($query) {
             $query->where('status', '=', 'active')->whereOr('status', '=', 'running');
         }]);
 
-        $totalData = Community::select('id_community', 'title', 'image', 'banner', 'type')->where([['type', '=', 'public'], ['status', '=', 'active']])->count();
+        $totalData = Community::select('id_community', 'title', 'image', 'banner', 'type')->where([['type', '!=', 'private_whitelist'], ['status', '=', 'active']])->count();
 
         if ($limit !== null) {
             $query->limit($limit);
@@ -524,6 +524,19 @@ class CommunityController extends Controller
         $data_community->tag = $interest_community;
         $data_community->total_member = $total_member;
 
+        // Check Joined
+        $checkJoin = CommunityUser::select('status')->where([['id_community', $data_community->id_community], ['id_user', $userId]])->first();
+
+        if(!$checkJoin){
+            $data_community->status_joined = "not_joined";
+        }else{
+            if($checkJoin->status == "pending"){
+                $data_community->status_joined = "requested";
+            }else if($checkJoin->status == "active"){
+                $data_community->status_joined = "joined";
+            }
+        }
+
         return response()->json([
             'code' => 200,
             'status' => 'success get detail community',
@@ -557,7 +570,7 @@ class CommunityController extends Controller
                     'id_user' => $userId,
                     'status' => 'active'
                 ]);
-            }else{
+            }else if($community_type->type == 'private_code'){
                 if ($request->referral_code == $community_type->referral_code){   
                     CommunityUser::create([
                         'id_community' => $community_type->id_community,
@@ -570,12 +583,53 @@ class CommunityController extends Controller
                         "status" => "referral code doesn't match"
                     ], 409);
                 }
+            }else if($community_type->type == 'private_request'){
+                CommunityUser::create([
+                    'id_community' => $community_type->id_community,
+                    'id_user' => $userId,
+                    'status' => 'pending'
+                ]);
             }
 
             return response()->json([
                 'code' => 200,
-                'status' => 'success join community'
+                'status' => 'success request join community'
             ], 200);
+        }
+
+        return response()->json([
+            'code' => 404,
+            'status' => 'community not found'
+        ], 404);
+    }
+
+    public function leaveCommunity(Request $request){
+        $request->validate([
+            'id_community' => 'required',
+        ]);
+
+        $userId = get_id_user_jwt($request);
+
+        $check_join = CommunityUser::where('id_community', $request->id_community)->where('id_user', $userId)->first();
+
+        if(!$check_join){
+            return response()->json([
+                "code" => 409,
+                "status" => "you haven't joined the community yet"
+            ], 409);
+        }
+
+        $community = Community::where('id_community', $request->id_community)->first();
+
+        if($community){
+            $deleteQuery = CommunityUser::where([['id_community', $community->id_community], ['id_user', $userId]])->delete();
+
+            if($deleteQuery){
+                return response()->json([
+                    'code' => 200,
+                    'status' => 'leave the community successfully'
+                ], 200);
+            }
         }
 
         return response()->json([
@@ -789,7 +843,7 @@ class CommunityController extends Controller
 
         $userId = get_id_user_jwt($request);
 
-        $checkComment = Comment::where('id_comment', $request->id_comment)->first();
+        $checkComment = Comment::where([['id_comment', $request->id_comment], ['related_to', '!=', 'id_comment']])->first();
 
         if ($checkComment){
             $current_time = new DateTime('now');
@@ -833,6 +887,20 @@ class CommunityController extends Controller
             $commentEvent->makeHidden('id_user');
 
             if($commentEvent->count() != 0){
+                foreach($commentEvent as $ce){
+                    $commentReply = Comment::withCount(['react as like' => function ($query) {
+                        $query->where('related_to', 'id_comment');
+                    }])->with(['user' => function($query) {
+                        $query->with(['job' => function($jobQuery){
+                            $jobQuery->select('id_job', 'job_title');
+                        }])->with(['company' => function($companyQuery){
+                            $companyQuery->select('id_company', 'company_name');
+                        }])->select('id_user', 'full_name', 'profile_picture', 'id_job', 'id_company');
+                    }])->where([['related_to', 'id_comment'], ['id_related_to', $ce->id_comment]])->get();
+
+                    $ce->comment_reply = $commentReply;
+                }
+                
                 return response()->json([
                     'code' => 200,
                     'status' => 'success get list comment event',

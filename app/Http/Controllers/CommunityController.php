@@ -123,7 +123,7 @@ class CommunityController extends Controller
         $idCommunity = collect($idCommunity);
         $uniqueId = $idCommunity->unique();
         
-        $query = Community::select('id_community', 'title', 'image', 'banner', 'type')->whereIn('id_community', $uniqueId)->where('status', 'active')->withCount(['community_user as total_members' => function ($query) {
+        $query = Community::select('id_community', 'title', 'image', 'banner', 'type')->whereIn('id_community', $uniqueId)->where('status', 'active')->where('type', '!=', 'private_whitelist')->withCount(['community_user as total_members' => function ($query) {
             $query->where('status', '=', 'active')->whereOr('status', '=', 'running');
         }]);
 
@@ -195,7 +195,7 @@ class CommunityController extends Controller
         // Get id_user from Bearer Token
         $userId = get_id_user_jwt($request);
 
-        $communityTop = Community::select('id_community', 'title', 'image')->withCount(['community_user as total_members' => function ($query) {
+        $communityTop = Community::select('id_community', 'title', 'image', 'type')->where('type', '!=', 'private_whitelist')->withCount(['community_user as total_members' => function ($query) {
             $query->where('status', '=', 'active')->whereOr('status', '=', 'running');
         }])
         ->where('status', 'active')

@@ -54,6 +54,7 @@ class HomepageController extends Controller
                         ->select('id_user', 'profile_picture')->take(2)->get();
                     }]);
                 }])
+                ->where('type', '!=', 'private_whitelist')
                 ->where('status', 'active')
                 ->limit(8)
                 ->get();
@@ -81,6 +82,7 @@ class HomepageController extends Controller
                     ->select('id_user', 'profile_picture')->take(2)->get();
                 }]);
             }])
+            ->where('type', '!=', 'private_whitelist')
             ->where('status', 'active')
             ->limit(8)
             ->get();

@@ -601,17 +601,27 @@ class ProfileController extends Controller
             }
 
             $additional_data = [
+                'type' => 'null',
                 'post' => [
                     'id_timeline' => $timeline->id_timeline,
                     'description' => $timeline->description,
                     'image'       => $image,
-                ]
+                ],
+                'modal' => 'null'
             ];
             $additional_data = json_encode($additional_data);
 
             $user_name = User::where('id_user', $userId)->first()->full_name;
             
-            send_notification('<b>' . $user_name . '</b> like your post.', $timeline->id_user, $userId, '/post/'. $timeline->id_timeline .'/detail', 'Updates', 'engagement', $additional_data);
+            $check_notif_exists = Notification::where('tab', 'Updates')->where('section', 'engagement')->where('notif_from', $userId)->where('id_user', $timeline->id_user)->where('content', '<b>' . $user_name . '</b> like your post.')->first();
+
+            if($check_notif_exists == null) {
+                send_notification('<b>' . $user_name . '</b> like your post.', $timeline->id_user, $userId, '/post/'. $timeline->id_timeline .'/detail', 'Updates', 'engagement', $additional_data);
+            } else {
+                $check_notif_exists->update([
+                    'status' => 'unread'
+                ]);
+            }
 
             return response_json(200, 'success','Post liked successfully');
         }
@@ -644,7 +654,23 @@ class ProfileController extends Controller
                 // Create notification followed user using helper
                 $user_name = User::where('id_user', $userId)->first()->full_name;
 
-                send_notification('<b>' . $user_name . '</b> started following you.', $request->follow_id_user, $userId, null, 'Updates', 'engagement', null);
+                // Send Notification
+                $additional_data = [
+                    'type' => 'null',
+                    'post' => 'null',
+                    'modal' => 'null'
+                ];
+                $additional_data = json_encode($additional_data);
+
+                $check_notif_exists = Notification::where('tab', 'Updates')->where('section', 'engagement')->where('notif_from', $userId)->where('id_user', $request->follow_id_user)->where('content', '<b>' . $user_name . '</b> started following you.')->first();
+
+                if($check_notif_exists == null) {
+                    send_notification('<b>' . $user_name . '</b> started following you.', $request->follow_id_user, $userId, null, 'Updates', 'engagement', $additional_data);
+                } else {
+                    $check_notif_exists->update([
+                        'status' => 'unread',
+                    ]);
+                }
 
                 return response_json(200, 'success', 'User followed successfully');
             }

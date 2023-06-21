@@ -502,6 +502,15 @@ class ProfileController extends Controller
         ->with(['file_attachment' => function ($queryFileAttachment) {
             $queryFileAttachment->where('related_to', 'id_timeline');
         }])
+        ->with(['comment' => function($queryComment){
+            $queryComment->with(['user' => function($queryUser){
+                $queryUser->with(['job' => function($queryJob){
+                    $queryJob->select('id_job', 'job_title');
+                }])->with(['company' => function($queryCompany){
+                    $queryCompany->select('id_company', 'company_name');
+                }])->select('id_user', 'full_name', 'profile_picture', 'id_job', 'id_company');
+            }])->select('id_comment', 'id_related_to', 'comment', 'id_user')->where('related_to', 'id_timeline');
+        }])
         ->where('id_user', $userId)
         ->whereNull('deleted_at')
         ->select('id_timeline', 'id_community', 'id_user', 'description', 'additional_data', 'created_at')
@@ -519,6 +528,19 @@ class ProfileController extends Controller
         })
         ->orderBy('created_at', 'DESC')
         ->get();
+
+        $post->map(function ($timeline) use ($userId) {
+            $liked = $timeline->react()
+                ->where('related_to', 'id_timeline')
+                ->where('id_user', $userId)
+                ->exists();
+
+            if($liked){
+                $timeline->status_like = $liked;
+            }else{
+                $timeline->status_like = false;
+            }
+        });
 
         $result->post = $post;
 

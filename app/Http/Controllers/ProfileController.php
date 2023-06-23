@@ -25,6 +25,7 @@ use App\Models\UserProfile;
 use Illuminate\Http\Request;
 use App\Models\CommunityUser;
 use App\Http\Controllers\Controller;
+use App\Models\Comment;
 use App\Models\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -509,7 +510,10 @@ class ProfileController extends Controller
                 }])->with(['company' => function($queryCompany){
                     $queryCompany->select('id_company', 'company_name');
                 }])->select('id_user', 'full_name', 'profile_picture', 'id_job', 'id_company');
-            }])->select('id_comment', 'id_related_to', 'comment', 'id_user')->where('related_to', 'id_timeline');
+            }])->select('id_comment', 'id_related_to', 'comment', 'id_user')->where('related_to', 'id_timeline')
+            ->withCount(['react as like' => function ($query) {
+                $query->where('related_to', 'id_comment');
+            }]);
         }])
         ->where('id_user', $userId)
         ->whereNull('deleted_at')
@@ -528,6 +532,37 @@ class ProfileController extends Controller
         })
         ->orderBy('created_at', 'DESC')
         ->get();
+
+        foreach($post as $ps){
+            foreach($ps->comment as $pc){
+                if($pc->count() != 0){
+                    $replyComment = Comment::withCount(['react as like' => function ($query) {
+                        $query->where('related_to', 'id_comment');
+                    }])->with(['user' => function($query) {
+                        $query->with(['job' => function($jobQuery){
+                            $jobQuery->select('id_job', 'job_title');
+                        }])->with(['company' => function($companyQuery){
+                            $companyQuery->select('id_company', 'company_name');
+                        }])->select('id_user', 'full_name', 'profile_picture', 'id_job', 'id_company');
+                    }])->where([['related_to', 'id_comment'], ['id_related_to', $pc->id_comment]])->get();
+    
+                    $pc->comment_reply = $replyComment;
+                    // status like comment 
+                    $replyComment->map(function ($comment) use ($userId) {
+                        $liked = $comment->react()
+                            ->where('related_to', 'id_timeline')
+                            ->where('id_user', $userId)
+                            ->exists();
+            
+                        if($liked){
+                            $comment->status_like = $liked;
+                        }else{
+                            $comment->status_like = false;
+                        }
+                    });
+                }
+            }
+        }
 
         $post->map(function ($timeline) use ($userId) {
             $liked = $timeline->react()

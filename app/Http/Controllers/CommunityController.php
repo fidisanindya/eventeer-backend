@@ -957,6 +957,11 @@ class CommunityController extends Controller
     }
 
     public function getEventBasedOnCommunity(Request $request){
+        $start = $request->input('start', 0);
+        $limit = $request->input('limit', 5);
+
+        $result = new stdClass;
+
         $id_community = $request->input('id_community');
 
         $event = Event::withCount(['react as like_event' => function($query){
@@ -967,7 +972,9 @@ class CommunityController extends Controller
         }])
         ->withCount(['submission as participant_joined' => function($query){
             $query->where('status', 'confirmed');
-        }])->where('id_community', (int)$id_community)->where('status', 'active')->whereNull('deleted_at')->get();
+        }])->where('id_community', (int)$id_community)->where('status', 'active')->whereNull('deleted_at')
+        ->offset($start)->limit($limit)
+        ->get();
 
         foreach($event as $evn){
             $evn->additional_data = json_decode($evn->additional_data);
@@ -980,8 +987,25 @@ class CommunityController extends Controller
             }
         }
 
+        if ($event != null) {
+            $result->event = $event;
+        } else {
+            $result->event = null;
+        }
+
+        $allEvent = Event::where('id_community', (int)$id_community)
+        ->where('status', 'active')
+        ->whereNull('deleted_at')
+        ->count();
+
+        $result->meta = [
+            'start' => $start,
+            'limit' => $limit,
+            'total_data' => $allEvent,
+        ];
+
         if($event->count() != 0){
-            return response_json(200, "success get event based on community", $event);
+            return response_json(200, "success get event based on community", $result);
         }
 
         return response()->json([

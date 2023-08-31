@@ -17,6 +17,7 @@ use App\Models\UserProfile;
 use Illuminate\Http\Request;
 use App\Models\CommunityUser;
 use App\Models\CommunityInterest;
+use App\Models\CommunityManager;
 use App\Models\React;
 use DateTime;
 use Illuminate\Support\Facades\DB;
@@ -1074,5 +1075,47 @@ class CommunityController extends Controller
               'status' => 'success',
               'result' => $result,
           ]);
+    }
+
+    public function getCommunityByUser(Request $request)
+    {
+        $user_id = get_id_user_jwt($request);
+
+        $communities = CommunityUser::where('id_user', $user_id)->pluck('id_community');
+
+        $query = Community::select('id_community', 'title', 'image', 'type', 'status')
+            ->whereIn('id_community', $communities)
+            ->withCount(['community_user' => function ($query) {
+                $query->where('status', 'active');
+            }])
+            ->where('status', 'active');
+
+        if ($request->input('community') !== null) {
+            $query->where('title', $request->input('community'));
+        }
+
+        $result = $query->get();
+
+        return response_json(200, 'success', $result);
+    }
+
+    public function getManagedCommunityByUser(Request $request)
+    {
+        $user_id = get_id_user_jwt($request);
+
+        $communities = CommunityManager::where('id_user', $user_id)->pluck('id_community');
+
+        $query = Community::select('id_community', 'title', 'image', 'type', 'status')
+            ->whereIn('id_community', $communities)
+            ->withCount('community_user')
+            ->where('status', 'active');
+
+        if ($request->input('community') !== null) {
+            $query->where('title', $request->input('community'));
+        }
+
+        $result = $query->get();
+
+        return response_json(200, 'success', $result);
     }
 }

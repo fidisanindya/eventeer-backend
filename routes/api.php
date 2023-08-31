@@ -88,6 +88,8 @@ Route::prefix('community_list')->group(function () {
         Route::get('/community_public', [CommunityController::class, 'getCommunityPublic']);
         Route::get('/community_interest', [CommunityController::class, 'getCommunityInterest']);
         Route::get('/community_top', [CommunityController::class, 'getTopCommunity']);
+        Route::get('/my_community', [CommunityController::class, 'getCommunityByUser']);
+        Route::get('/managed_community', [CommunityController::class, 'getManagedCommunityByUser']);
     });
 });
 
@@ -146,6 +148,8 @@ Route::prefix('community')->group(function () {
         Route::get('/get_all_user_community', [CommunityController::class, 'getAllUserCommunity']);
         Route::get('/get_top_event_community', [CommunityController::class, 'getEventTopBasedOnCommunity']);
         Route::get('/get_your_event_community', [CommunityController::class, 'getYourEventBasedOnCommunity']);
+        Route::get('/my_community', [CommunityController::class, 'getCommunityByUser']);
+        Route::get('/managed_community', [CommunityController::class, 'getManagedCommunityByUser']);
     });
 });
 

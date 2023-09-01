@@ -19,6 +19,8 @@ use App\Models\CommunityUser;
 use App\Models\CommunityInterest;
 use App\Models\CommunityManager;
 use App\Models\React;
+use App\Models\Timeline;
+use App\Models\TimelineShare;
 use DateTime;
 use Illuminate\Support\Facades\DB;
 
@@ -1117,5 +1119,37 @@ class CommunityController extends Controller
         $result = $query->get();
 
         return response_json(200, 'success', $result);
+    }
+
+    public function postShareCommunity(Request $request)
+    {
+        $request->validate([
+            'id_community' => 'required|numeric',
+            'description' => 'required|string',
+            'id_related_to' => 'required|numeric'
+        ]);
+        
+        $user_id = get_id_user_jwt($request);
+        $current_time = new DateTime('now');
+        $timeline = Timeline::insertGetId([
+            'id_user' => $user_id,
+            'id_community' => $request->id_community,
+            'description' => $request->description,
+            'additional_data' => $request->additional_data,
+            'created_at' => $current_time->format('Y-m-d H:i:s')
+        ]);
+
+        TimelineShare::insert([
+            'id_timeline' => $timeline,
+            'related_to' => 'id_community',
+            'id_related_to' => $request->id_related_to,
+            'created_at' => $current_time->format('Y-m-d H:i:s'),
+            'updated_at' => $current_time->format('Y-m-d H:i:s')
+        ]);
+
+        return response()->json([
+            'code' => 200,
+            'status' => 'share community success'
+        ], 200);
     }
 }

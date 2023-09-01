@@ -1091,7 +1091,7 @@ class CommunityController extends Controller
             ->where('status', 'active');
 
         if ($request->input('community') !== null) {
-            $query->where('title', $request->input('community'));
+            $query->where('title', 'like', '%' . $request->input('community') . '%');
         }
 
         $result = $query->get();
@@ -1111,7 +1111,7 @@ class CommunityController extends Controller
             ->where('status', 'active');
 
         if ($request->input('community') !== null) {
-            $query->where('title', $request->input('community'));
+            $query->where('title', 'like', '%' . $request->input('community') . '%');
         }
 
         $result = $query->get();

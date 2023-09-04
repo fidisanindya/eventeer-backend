@@ -146,6 +146,9 @@ Route::prefix('community')->group(function () {
         Route::get('/get_all_user_community', [CommunityController::class, 'getAllUserCommunity']);
         Route::get('/get_top_event_community', [CommunityController::class, 'getEventTopBasedOnCommunity']);
         Route::get('/get_your_event_community', [CommunityController::class, 'getYourEventBasedOnCommunity']);
+        Route::get('/my_community', [CommunityController::class, 'getCommunityByUser']);
+        Route::get('/managed_community', [CommunityController::class, 'getManagedCommunityByUser']);
+        Route::post('/post_share_community', [CommunityController::class, 'postShareCommunity']);
     });
 });
 

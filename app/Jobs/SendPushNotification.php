@@ -47,9 +47,29 @@ class SendPushNotification implements ShouldQueue
         ]);
 
         $pusherData = [
-            "notification" => [
-                "title" => "Notification",
-                "body" => $this->content,
+            //android
+            "fcm" => [
+                "notification" => [
+                    "title" => "Notification",
+                    "body" => $this->content,
+                ],
+            ],
+            //ios
+            "apns" => [
+                "aps" => [
+                    "alert" => [
+                      "title" => "Notification",
+                      "body" => $this->content
+                    ]
+                ]
+            ],
+            //web
+            "web" => [
+                "notification" => [
+                    "title" => "Notification",
+                    "body" => $this->content,
+                    "deep_link" => $this->url
+                ],
             ],
         ];
 

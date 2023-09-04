@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "ca8e68d8af79be5eadf74857293467ec",
+    "content-hash": "58701764760c85c1775fc6b12f04b16f",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -1412,12 +1412,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/mongodb/laravel-mongodb.git",
-                "reference": "25c73e28d1b0a8491ec61450ccf59465cdbffeaa"
+                "reference": "ad79fb19faf6be454bc22e54b05346e4829f38db"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/mongodb/laravel-mongodb/zipball/25c73e28d1b0a8491ec61450ccf59465cdbffeaa",
-                "reference": "25c73e28d1b0a8491ec61450ccf59465cdbffeaa",
+                "url": "https://api.github.com/repos/mongodb/laravel-mongodb/zipball/ad79fb19faf6be454bc22e54b05346e4829f38db",
+                "reference": "ad79fb19faf6be454bc22e54b05346e4829f38db",
                 "shasum": ""
             },
             "require": {
@@ -1490,7 +1490,7 @@
                 "security": "https://www.mongodb.com/security",
                 "source": "https://github.com/mongodb/laravel-mongodb/tree/master"
             },
-            "time": "2023-08-30T10:16:38+00:00"
+            "time": "2023-09-01T08:51:56+00:00"
         },
         {
             "name": "laminas/laminas-diactoros",
@@ -10268,5 +10268,5 @@
         "php": "^8.1"
     },
     "platform-dev": [],
-    "plugin-api-version": "2.3.0"
+    "plugin-api-version": "2.6.0"
 }

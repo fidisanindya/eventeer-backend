@@ -282,7 +282,7 @@ class NotificationController extends Controller
                                 ],
                             ];
 
-                            send_notification('<b>' . $community_user->community->title . '</b> has some new members', $value, $community_user->community->id_community, null, 'Activity', 'new_member', json_encode($additional_data) );
+                            send_notification('<b>' . $community_user->community->title . '</b> has some new members', $value, $community_user->community->id_community, null, null, 'Activity', 'new_member', json_encode($additional_data) );
                         } else {  
                             $new_additional_data = [
                                 'id_user' => $request->id_user,
@@ -384,7 +384,7 @@ class NotificationController extends Controller
                             ]
                         ];
 
-                        send_notification('Your request to join a community has responded to. Check this out!', $request->id_user, null, null, 'Updates', 'invitation', json_encode($additional_data));
+                        send_notification('Your request to join a community has responded to. Check this out!', $request->id_user, null, null, null, 'Updates', 'invitation', json_encode($additional_data));
                     } else {
                         $new_additional_data = [
                             'id_community' => $community->id_community,
@@ -449,7 +449,7 @@ class NotificationController extends Controller
                             ]
                         ];
 
-                        send_notification('Your request to join a community has responded to. Check this out!', $request->id_user, null, null, 'Updates', 'invitation', json_encode($additional_data));
+                        send_notification('Your request to join a community has responded to. Check this out!', $request->id_user, null, null, null, 'Updates', 'invitation', json_encode($additional_data));
                     } else {
                         $new_additional_data = [
                             'id_community' => $community->id_community,

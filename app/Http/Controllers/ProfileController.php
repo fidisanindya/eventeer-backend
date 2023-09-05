@@ -673,7 +673,7 @@ class ProfileController extends Controller
             $check_notif_exists = Notification::where('tab', 'Updates')->where('section', 'engagement')->where('notif_from', $userId)->where('id_user', $timeline->id_user)->where('content', '<b>' . $user_name . '</b> like your post.')->first();
 
             if($check_notif_exists == null) {
-                send_notification('<b>' . $user_name . '</b> like your post.', $timeline->id_user, $userId, '/post/'. $timeline->id_timeline .'/detail', 'Updates', 'engagement', $additional_data);
+                send_notification('<b>' . $user_name . '</b> like your post.', $timeline->id_user, $userId, '/post/'. $timeline->id_timeline .'/detail', null, 'Updates', 'engagement', $additional_data);
             } else {
                 $check_notif_exists->update([
                     'status' => 'unread'
@@ -722,7 +722,7 @@ class ProfileController extends Controller
                 $check_notif_exists = Notification::where('tab', 'Updates')->where('section', 'engagement')->where('notif_from', $userId)->where('id_user', $request->follow_id_user)->where('content', '<b>' . $user_name . '</b> started following you.')->first();
 
                 if($check_notif_exists == null) {
-                    send_notification('<b>' . $user_name . '</b> started following you.', $request->follow_id_user, $userId, null, 'Updates', 'engagement', $additional_data);
+                    send_notification('<b>' . $user_name . '</b> started following you.', $request->follow_id_user, $userId, null, null, 'Updates', 'engagement', $additional_data);
                 } else {
                     $check_notif_exists->update([
                         'status' => 'unread',

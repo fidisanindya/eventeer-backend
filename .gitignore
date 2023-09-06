@@ -19,3 +19,4 @@ yarn-error.log
 /.vscode
 public.pem
 private.pem
+/composer.phar

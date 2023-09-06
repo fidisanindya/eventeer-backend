@@ -44,7 +44,6 @@ function send_notification($content, $id_user, $notif_from, $url,  $url_mobile, 
 
   SendPushNotification::dispatch($content, $id_user, $notif_from, $url, $url_mobile, $tab, $section, $additional_data);
 }
-//tambah url_mobile
 
 function logQueue($to, $message, $subject, $cc='', $bcc='', $headers='', $attachment='0', $is_broadcast=0, $id_event=null, $id_broadcast=0) {
   $logQueue = [

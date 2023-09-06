@@ -57,7 +57,7 @@ class SendPushNotification implements ShouldQueue
                 ],
                 "data" => [
                     "deep_link" => $this->url_mobile
-                ],
+                ]
             ],
             //ios
             "apns" => [
@@ -66,7 +66,9 @@ class SendPushNotification implements ShouldQueue
                       "title" => "Notification",
                       "body" => $this->content
                     ],
-                    "url" => $this->url_mobile
+                    "data" => [
+                        "url" => $this->url_mobile
+                    ]
                 ]
             ],
             //web
@@ -75,8 +77,8 @@ class SendPushNotification implements ShouldQueue
                     "title" => "Notification",
                     "body" => $this->content,
                     "deep_link" => $this->url
-                ],
-            ],
+                ]
+            ]
         ];
 
         $publishResponse = $beamsClient->publishToUsers([env('PUSHER_PREFIX') . '-' . $this->id_user], $pusherData);

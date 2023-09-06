@@ -28,20 +28,21 @@ function response_json($code, $status, $result){
   ], $code);
 }
 
-function send_notification($content, $id_user, $notif_from, $url, $tab, $section, $additional_data){
+function send_notification($content, $id_user, $notif_from, $url,  $url_mobile, $tab, $section, $additional_data){
   Notification::create([
     'status' => 'unread',
     'content' => $content,
     'id_user' => $id_user,
     'notif_from' => $notif_from,
     'url' => $url,
+    'url_mobile' => $url_mobile,
     'tab' => $tab,
     'section' => $section,
     'additional_data' => $additional_data,
     'created_at' => now(),
   ]);
 
-  SendPushNotification::dispatch($content, $id_user, $notif_from, $url, $tab, $section, $additional_data);
+  SendPushNotification::dispatch($content, $id_user, $notif_from, $url, $url_mobile, $tab, $section, $additional_data);
 }
 
 function logQueue($to, $message, $subject, $cc='', $bcc='', $headers='', $attachment='0', $is_broadcast=0, $id_event=null, $id_broadcast=0) {

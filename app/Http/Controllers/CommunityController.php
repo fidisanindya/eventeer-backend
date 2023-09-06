@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\EventVerfication;
+use App\Jobs\UploadImageFeeds;
 use App\Models\Comment;
 use stdClass;
 use Carbon\Carbon;
@@ -18,11 +19,18 @@ use Illuminate\Http\Request;
 use App\Models\CommunityUser;
 use App\Models\CommunityInterest;
 use App\Models\CommunityManager;
+use App\Models\FileAttachment;
 use App\Models\React;
 use App\Models\Timeline;
 use App\Models\TimelineShare;
+use Aws\Credentials\Credentials;
+use Aws\S3\S3Client;
 use DateTime;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
+use Image;
 
 class CommunityController extends Controller
 {
@@ -1124,32 +1132,89 @@ class CommunityController extends Controller
     public function postShareCommunity(Request $request)
     {
         $request->validate([
-            'id_community' => 'required|numeric',
+            'id_community' => 'numeric',
             'description' => 'required|string',
-            'id_related_to' => 'required|numeric'
-        ]);
-        
-        $user_id = get_id_user_jwt($request);
-        $current_time = new DateTime('now');
-        $timeline = Timeline::insertGetId([
-            'id_user' => $user_id,
-            'id_community' => $request->id_community,
-            'description' => $request->description,
-            'additional_data' => $request->additional_data,
-            'created_at' => $current_time->format('Y-m-d H:i:s')
+            'id_related_to' => 'numeric'
         ]);
 
-        TimelineShare::insert([
-            'id_timeline' => $timeline,
-            'related_to' => 'id_community',
-            'id_related_to' => $request->id_related_to,
-            'created_at' => $current_time->format('Y-m-d H:i:s'),
-            'updated_at' => $current_time->format('Y-m-d H:i:s')
-        ]);
+        $user_id = get_id_user_jwt($request);
+        $current_time = now();
+        $imageUrls = [];
+
+        if ($request->hasFile('additional_data')) {
+            foreach ($request->file('additional_data') as $imageData) {
+                $imageUrl = $this->processImage($imageData);
+                if ($imageUrl) {
+                    $imageUrls[] = $imageUrl;
+                }
+            }
+        }
+
+        $timeline = $this->createTimeline($user_id, $request->id_community, $request->description, $current_time);
+
+        foreach ($imageUrls as $imageUrl) {
+            $this->attachFileToTimeline($timeline, $imageUrl);
+        }
+
+        if ($request->id_related_to !== null) {
+            $this->shareToCommunity($timeline, $request->id_related_to, $current_time);
+        }
 
         return response()->json([
             'code' => 200,
             'status' => 'share community success'
         ], 200);
     }
+
+    private function processImage($imageData)
+    {
+        if (!$imageData) {
+            return null;
+        }
+
+        $image = Image::make($imageData)->resize(400, null, function ($constraint) {
+            $constraint->aspectRatio();
+        });
+
+        $filename = date('dmYhis') . '_feeds.' . $imageData->getClientOriginalExtension();
+        $data = $image->encode($imageData->getClientOriginalExtension())->__toString();
+        Storage::put('public/picture_queue/' . $filename, $data);
+        UploadImageFeeds::dispatch($filename);
+        $key = "userfiles/images/journey/" . $filename;
+        $imageUrl = config('filesystems.disks.s3.bucketurl') . "/" . $key;
+
+        return $imageUrl;
+    }
+
+    private function createTimeline($userId, $communityId, $description, $createdAt)
+    {
+        return Timeline::insertGetId([
+            'id_user' => $userId,
+            'id_community' => $communityId,
+            'description' => $description,
+            'created_at' => $createdAt
+        ]);
+    }
+
+    private function attachFileToTimeline($timelineId, $imageUrl)
+    {
+        FileAttachment::insert([
+            'related_to' => 'id_timeline',
+            'id_related_to' => $timelineId,
+            'attachment_type' => 'photo',
+            'attachment_file' => $imageUrl,
+            'created_at' => now()
+        ]);
+    }
+
+    private function shareToCommunity($timelineId, $relatedToId, $current_time)
+    {
+        TimelineShare::insert([
+            'id_timeline' => $timelineId,
+            'related_to' => 'id_community',
+            'id_related_to' => $relatedToId,
+            'created_at' => $current_time,
+            'updated_at' => $current_time
+        ]);
+    }   
 }

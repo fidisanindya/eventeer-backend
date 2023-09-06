@@ -4,6 +4,7 @@ use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use App\Models\EmailQueue;
 use App\Models\Notification;
+use App\Jobs\SendPushNotification;
 
 function get_id_user_jwt($request){
   $authorizationHeader = $request->header('Authorization');
@@ -39,6 +40,8 @@ function send_notification($content, $id_user, $notif_from, $url, $tab, $section
     'additional_data' => $additional_data,
     'created_at' => now(),
   ]);
+
+  SendPushNotification::dispatch($content, $id_user, $notif_from, $url, $tab, $section, $additional_data);
 }
 
 function logQueue($to, $message, $subject, $cc='', $bcc='', $headers='', $attachment='0', $is_broadcast=0, $id_event=null, $id_broadcast=0) {

@@ -11,6 +11,7 @@
         "guzzlehttp/guzzle": "^7.2",
         "intervention/image": "^2.7",
         "jenssegers/mongodb": "dev-master",
+        "laravel-notification-channels/pusher-push-notifications": "^4.1",
         "laravel/framework": "^10.0",
         "laravel/octane": "^1.5",
         "laravel/sanctum": "^3.2",
@@ -18,7 +19,8 @@
         "laravel/tinker": "^2.8",
         "league/flysystem-aws-s3-v3": "3.0",
         "mongodb/mongodb": "^1.15",
-        "predis/predis": "^2.2",
+        "predis/predis": "^2.1",
+        "pusher/pusher-push-notifications": "^2.0",
         "spatie/image-optimizer": "*",
         "spiral/roadrunner": "2.8.2"
     },
@@ -33,7 +35,7 @@
         "spatie/laravel-ignition": "^2.0"
     },
     "autoload": {
-        "files":[
+        "files": [
             "app/Helper/Helpers.php"
         ],
         "psr-4": {

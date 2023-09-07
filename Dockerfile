@@ -2,7 +2,7 @@
 FROM masrodjie/php81:slim AS build
 
 USER root 
-RUN apt-get update && apt-get install -y libmcrypt-dev libcurl4-openssl-dev libssl-dev libc-ares-dev php8.1-mongodb
+RUN apt-get update && apt-get install -y libmcrypt-dev libcurl4-openssl-dev libssl-dev libc-ares-dev
 COPY --chown=www-data . /app/
 
 WORKDIR /app/

@@ -1,10 +1,9 @@
 <?php
 
 namespace App\Models;
+use MongoDB\Laravel\Eloquent\Model;
 
-use Jenssegers\Mongodb\Eloquent\Model as EloquentModel;
-
-class Message extends EloquentModel
+class Message extends Model
 {
     protected $connection = 'mongodb';
     

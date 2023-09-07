@@ -10,9 +10,24 @@ use Illuminate\Http\Request;
 use App\Models\CommunityUser;
 use App\Models\CommunityManager;
 use Illuminate\Support\Facades\Validator;
+use Pusher\PushNotifications\PushNotifications; 
 
 class NotificationController extends Controller
 {
+    public function generate_token(Request $request){
+        // Get user id from jwt
+        $user_id = get_id_user_jwt($request);
+
+        $beamsClient = new PushNotifications([
+            "instanceId" => env('PUSHER_APP_ID'),
+            "secretKey" => env('PUSHER_APP_KEY'),
+        ]);
+
+        $beamsToken = $beamsClient->generateToken($user_id);
+
+        return response_json(200, 'success', $beamsToken);
+    }
+
     public function get_updates_notif(Request $request){
         // Get user id from jwt
         $user_id = get_id_user_jwt($request);

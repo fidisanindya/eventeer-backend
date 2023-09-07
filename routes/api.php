@@ -173,5 +173,6 @@ Route::prefix('notification')->group(function () {
         Route::post('/read_notif', [NotificationController::class, 'post_read_notif']);
         Route::post('/read_all_notif', [NotificationController::class, 'post_read_all_notif']);
         Route::post('/invitation_confirmation', [NotificationController::class, 'post_invitation_confirmation']);
+        Route::get('/pusher_token', [NotificationController::class, 'generate_token']);
     });
 });

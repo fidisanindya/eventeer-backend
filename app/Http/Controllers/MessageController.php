@@ -15,6 +15,8 @@ use Illuminate\Http\Request;
 use App\Jobs\UploadImageGroup;
 use App\Models\Company;
 use App\Models\Follow;
+use App\Models\Job;
+use App\Models\JobUser;
 use App\Models\Profession;
 use App\Models\User;
 use Illuminate\Support\Carbon;
@@ -457,8 +459,10 @@ class MessageController extends Controller
                 $personal_user = User::select('id_user', 'full_name')->where('id_user', $data_personal->id_user)->first();
                 $msg->id_user = $personal_user->id_user;
             }
- 
+            
             $last_chat = Message::select('id_user', 'text', 'date', 'type')->where('id_message_room', $msg->id_message_room)->orderBy('date', 'desc')->first();
+            $jobUser = JobUser::with('job')->where('id_user', $userId)->first();
+            $msg->job_title = $jobUser->job->job_title;
             
             if($last_chat){
                 $user = User::select('id_user', 'full_name')->where('id_user', $last_chat->id_user)->first();

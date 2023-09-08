@@ -23,7 +23,7 @@ class NotificationController extends Controller
             "secretKey" => env('PUSHER_APP_KEY'),
         ]);
 
-        $beamsToken = $beamsClient->generateToken($user_id);
+        $beamsToken = $beamsClient->generateToken(env('PUSHER_PREFIX') . '-' . $user_id);
 
         return response_json(200, 'success', $beamsToken);
     }

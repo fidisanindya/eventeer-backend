@@ -15,6 +15,8 @@ use Illuminate\Http\Request;
 use App\Jobs\UploadImageGroup;
 use App\Models\Company;
 use App\Models\Follow;
+use App\Models\Job;
+use App\Models\JobUser;
 use App\Models\Profession;
 use App\Models\User;
 use Illuminate\Support\Carbon;
@@ -463,9 +465,12 @@ class MessageController extends Controller
             if($last_chat){
                 $user = User::select('id_user', 'full_name')->where('id_user', $last_chat->id_user)->first();
 
+                $jobUser = JobUser::with('job')->where('id_user', $user->id_user)->get();
+                $jobUser->makeHidden(['id_job_user','id_job','id_company','id_user','created_at']);
                 $msg->last_chat = [
                     "id_user" => $user->id_user,
                     "full_name" => $user->full_name,
+                    "job_title" => $jobUser,
                     "text" => $last_chat->text,
                     "message_type" => $last_chat->type,
                     "time" => $last_chat->date,
@@ -474,6 +479,7 @@ class MessageController extends Controller
                 $msg->last_chat = [
                     "id_user" => null,
                     "full_name" => null,
+                    "job_title" => null,
                     "text" => null,
                     "message_type" => null,
                     "time" => null,

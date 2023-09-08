@@ -459,18 +459,17 @@ class MessageController extends Controller
                 $personal_user = User::select('id_user', 'full_name')->where('id_user', $data_personal->id_user)->first();
                 $msg->id_user = $personal_user->id_user;
             }
- 
+            
             $last_chat = Message::select('id_user', 'text', 'date', 'type')->where('id_message_room', $msg->id_message_room)->orderBy('date', 'desc')->first();
+            $jobUser = JobUser::with('job')->where('id_user', $userId)->first();
+            $msg->job_title = $jobUser->job->job_title;
             
             if($last_chat){
                 $user = User::select('id_user', 'full_name')->where('id_user', $last_chat->id_user)->first();
 
-                $jobUser = JobUser::with('job')->where('id_user', $user->id_user)->get();
-                $jobUser->makeHidden(['id_job_user','id_job','id_company','id_user','created_at']);
                 $msg->last_chat = [
                     "id_user" => $user->id_user,
                     "full_name" => $user->full_name,
-                    "job_title" => $jobUser,
                     "text" => $last_chat->text,
                     "message_type" => $last_chat->type,
                     "time" => $last_chat->date,
@@ -479,7 +478,6 @@ class MessageController extends Controller
                 $msg->last_chat = [
                     "id_user" => null,
                     "full_name" => null,
-                    "job_title" => null,
                     "text" => null,
                     "message_type" => null,
                     "time" => null,

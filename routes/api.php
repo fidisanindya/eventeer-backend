@@ -150,6 +150,7 @@ Route::prefix('community')->group(function () {
         Route::get('/my_community', [CommunityController::class, 'getCommunityByUser']);
         Route::get('/managed_community', [CommunityController::class, 'getManagedCommunityByUser']);
         Route::post('/post_share_community', [CommunityController::class, 'postShareCommunity']);
+        Route::post('/create_community', [CommunityController::class, 'createCommunity']);
     });
 });
 
@@ -182,5 +183,6 @@ Route::prefix('notification')->group(function () {
 Route::prefix('submission')->group(function () {
     Route::middleware(['jwt.auth'])->group(function () {
         Route::get('/list_submission', [SubmissionController::class, 'get_list_submission']);
+        Route::get('/detail-submission/{id}', [SubmissionController::class, 'getDetailSubmission']);
     });
 });

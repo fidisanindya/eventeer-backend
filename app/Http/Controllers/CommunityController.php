@@ -1217,4 +1217,32 @@ class CommunityController extends Controller
             'updated_at' => $current_time
         ]);
     }   
+
+    public function createCommunity(Request $request)
+    {
+        $current_time = now();
+        
+        $community_id = Community::insertGetId([
+            'title' => $request->title,
+            'description' => $request->description,
+            'type' => $request->type,
+            'status' => 'active',
+            'created_at' => $current_time,
+            'updated_at' => $current_time   
+        ]);
+        
+        $interest = $request->id_interest;
+        foreach($interest as $result){
+            CommunityInterest::insert([
+                'community_id' => $community_id,
+                'id_interest' => $result,
+                'created_at' => $current_time
+            ]);
+        }
+
+        return response()->json([
+            'code' => 200,
+            'status' => 'create community success'
+        ], 200);
+    }
 }

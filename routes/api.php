@@ -150,6 +150,7 @@ Route::prefix('community')->group(function () {
         Route::get('/my_community', [CommunityController::class, 'getCommunityByUser']);
         Route::get('/managed_community', [CommunityController::class, 'getManagedCommunityByUser']);
         Route::post('/post_share_community', [CommunityController::class, 'postShareCommunity']);
+        Route::post('/create_community', [CommunityController::class, 'createCommunity']);
     });
 });
 

@@ -13,6 +13,7 @@ use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\MigrationController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\RegistrationController;
+use App\Http\Controllers\SubmissionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -174,5 +175,12 @@ Route::prefix('notification')->group(function () {
         Route::post('/read_all_notif', [NotificationController::class, 'post_read_all_notif']);
         Route::post('/invitation_confirmation', [NotificationController::class, 'post_invitation_confirmation']);
         Route::get('/pusher_token', [NotificationController::class, 'generate_token']);
+    });
+});
+
+//Submission
+Route::prefix('submission')->group(function () {
+    Route::middleware(['jwt.auth'])->group(function () {
+        Route::get('/detail-submission/{id}', [SubmissionController::class, 'getDetailSubmission']);
     });
 });

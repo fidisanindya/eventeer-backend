@@ -148,7 +148,7 @@ class NotificationController extends Controller
         $result = new stdClass;
 
         // Get New Members Notification
-        $reminder = Notification::with(['community' => function ($queryCommunity) {
+        $new_member = Notification::with(['community' => function ($queryCommunity) {
             $queryCommunity->select('id_community', 'image');
         }])
         ->where('id_user', $user_id)
@@ -158,13 +158,13 @@ class NotificationController extends Controller
         ->orderBy('created_at', 'DESC')
         ->limit(5)
         ->get();
-        $reminder->makeHidden('deleted_at');
-        foreach ($reminder as $item) {
+        $new_member->makeHidden('deleted_at');
+        foreach ($new_member as $item) {
             if($item->additional_data != null) {
                 $item->additional_data = json_decode($item->additional_data);
             }
         }
-        $result->reminder = $reminder;
+        $result->new_member = $new_member;
 
         // Get Action Notification
         $action = Notification::where('id_user', $user_id)

@@ -6,6 +6,7 @@ use stdClass;
 use App\Models\Event;
 use App\Models\Submission;
 use App\Models\CommunityUser;
+use App\Models\LogEvent;
 use Illuminate\Http\Request;
 
 class SubmissionController extends Controller
@@ -92,7 +93,11 @@ class SubmissionController extends Controller
                 }
 
                 // Status
-                if ($currentTime < $startDate) {
+                $existingLog = LogEvent::where('id_event', $item->id_event)
+                ->where('id_user', $user_id)
+                ->first();
+
+                if (!$existingLog) {
                     $item->sub_status = "New";
                 } else {
                     $submissionData = Submission::where('id_event', $item->id_event)
@@ -114,7 +119,7 @@ class SubmissionController extends Controller
             }
         }
 
-        // Pemanggilan fungsi sorting berdasarkan sort_by_time
+        // sort_by_time
         if ($sort_by_time === 'newest_assigned') {
             $submission = $this->sort_by_newest_assigned($submission);
         } elseif ($sort_by_time === 'nearest_deadline') {
@@ -125,7 +130,7 @@ class SubmissionController extends Controller
             return response_json(400, 'error', 'Invalid value for sort_by_time.');
         }
 
-        // Pemanggilan fungsi sorting berdasarkan sort_by_status
+        // sort_by_status
         if ($sort_by_status === 'all') {
             // Tidak ada sorting tambahan untuk "all"
         } elseif ($sort_by_status === 'new') {
@@ -217,6 +222,19 @@ class SubmissionController extends Controller
         $data_event->my_submission =  json_decode($my_submission->additional_data) ?? null;
         $data_event->total_submitted = Submission::where('id_event', $data_event->id_event)->count();
         $data_event->additional_data = json_decode($data_event->additional_data);
+
+        // Add Log Event
+        $existingLog = LogEvent::where('id_event', $data_event->id_event)
+        ->where('id_user', $user_id)
+        ->first();
+
+        if (!$existingLog) {
+            $log = new LogEvent();
+            $log->id_event = $data_event->id_event;
+            $log->id_user = $user_id;
+            $log->created_at = now();
+            $log->save();
+        }
     
         return response()->json([
             "code" => 200,

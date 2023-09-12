@@ -1220,6 +1220,7 @@ class CommunityController extends Controller
 
     public function createCommunity(Request $request)
     {
+        $user_id = get_id_user_jwt($request);
         $current_time = now();
         
         $community_id = Community::insertGetId([
@@ -1239,6 +1240,11 @@ class CommunityController extends Controller
                 'created_at' => $current_time
             ]);
         }
+
+        CommunityManager::insert([
+            'id_user' => $user_id,
+            'id_community' => $community_id
+        ]);
 
         return response()->json([
             'code' => 200,

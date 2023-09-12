@@ -184,5 +184,6 @@ Route::prefix('submission')->group(function () {
     Route::middleware(['jwt.auth'])->group(function () {
         Route::get('/list_submission', [SubmissionController::class, 'get_list_submission']);
         Route::get('/detail-submission/{id}', [SubmissionController::class, 'getDetailSubmission']);
+        Route::post('/assign-submission/{id}', [SubmissionController::class, 'assignSubmission']);
     });
 });

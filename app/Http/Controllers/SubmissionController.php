@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\UploadFileSubmission;
 use stdClass;
 use App\Models\Event;
 use App\Models\Submission;
 use App\Models\CommunityUser;
 use App\Models\LogEvent;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 class SubmissionController extends Controller
 {
@@ -238,6 +241,73 @@ class SubmissionController extends Controller
             "result" => $data_event
         ], 200);
     }
+
+    public function assignSubmission(Request $request, $id_event)
+    {
+        $user_id = get_id_user_jwt($request);
+        $current_time = now();
+
+        $event = Event::where('id_event', $id_event)->first();
+        $submission_form = json_decode($event->additional_data)->submission_form;
+
+        $submission_data = [];
+        foreach($submission_form as $form){
+            $field_name = $form->form_name;
+            if ($request->hasFile($field_name)) {
+                $fileUrl = $this->processFile($request->file($field_name));
+                $submission_data[$field_name] = $fileUrl;
+            }else{
+                $submission_data[$field_name] = $request->input($field_name);
+            }
+        }
+
+        $status = '';
+        $data = [
+            'id_event' => $id_event,
+            'id_user' => $user_id,
+            'additional_data' => json_encode($submission_data, JSON_UNESCAPED_SLASHES),
+            'type' => 'submission',
+            'status' => 'confirmed',
+            'updated_at' => $current_time,
+        ];
+
+        if($request->type == 'submit'){
+            $data['created_at'] = $current_time;
+            Submission::insert($data);
+            $status = 'submission success assigned';
+        }else{
+            Submission::where('id_event', $id_event)->where('id_user', $user_id)->update($data);
+            $status = 'submission updated';
+        }
+
+        return response()->json([
+            'code' => 200,
+            'status' => $status
+        ], 200);
+    }
+
+    private function processFile($file)
+    {     
+        if (!$file) {
+            return null;
+        }else if($file->getClientOriginalExtension() == 'pdf'){
+            $maxSize = Validator::make(['file' => $file], [
+                'file' => 'required|file|mimes:pdf|max:30000', 
+            ]);
+    
+            if ($maxSize->fails()) {
+                return response_json(422, 'failed', $maxSize->messages());
+            }
+
+            $filename = date('dmYhis') . '_' . $file->getClientOriginalName();
+            Storage::put('public/pdf_queue/' . $filename, file_get_contents($file));
+            UploadFileSubmission::dispatch($filename);
+            $key = "userfiles/file_submission/" . $filename;
+            $pdfUrl = config('filesystems.disks.s3.bucketurl') . "/" . $key;
+            return $pdfUrl;
+        }
+    }
+
 }
 
     

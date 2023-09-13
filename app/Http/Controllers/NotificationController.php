@@ -25,7 +25,7 @@ class NotificationController extends Controller
 
         $beamsToken = $beamsClient->generateToken(env('PUSHER_PREFIX') . '-' . $user_id);
 
-        return response_json(200, 'success', $beamsToken);
+        return response($beamsToken);
     }
 
     public function get_updates_notif(Request $request){

@@ -19,8 +19,10 @@ class SubmissionController extends Controller
         $id_community = $request->input('id_community');
         $sort_by_status = $request->input('sort_by_status', 'all');
         $sort_by_time = $request->input('sort_by_time', 'newest_assigned');
+        
         $limit = $request->input('limit') ?? 5;
-        $start = $request->input('start') ?? 0;
+        $page = $request->input('page', 1); 
+        $start = ($page - 1) * $limit;
 
         $result = new stdClass;
 
@@ -39,23 +41,15 @@ class SubmissionController extends Controller
             ->whereNull('deleted_at')
             ->orderBy('created_at', 'DESC');
 
-        if ($limit !== null) {
-            $submissionQuery->limit($limit);
-            if ($start !== null) {
-                $submissionQuery->offset($start);
-            }
-        }
+        $totalData = $submissionQuery->count();
+        $submission = $submissionQuery->paginate($limit);
 
-        $submission = $submissionQuery->get();
-
-        $submission->makeHidden(['image', 'category', 'additional_data', 'status', 'id_user', 'deleted_at']);
+        $submission->makeHidden(['description', 'image', 'category', 'additional_data', 'status', 'id_user', 'deleted_at']);
         foreach ($submission as $item) {
             if ($item->additional_data !== null) {
                 $item->additional_data = json_decode($item->additional_data);
             }
         }
-
-        $totalData = $submissionQuery->count();
 
         foreach ($submission as $item) {
             if (isset($item->additional_data->date) && isset($item->additional_data->date->start) && isset($item->additional_data->date->end)) {
@@ -149,7 +143,9 @@ class SubmissionController extends Controller
         $result->meta = [
             "start" => $start,
             "limit" => $limit,
-            "total_data" => $totalData
+            "total_data" => $totalData,
+            "current_page" => $page,
+            "total_pages" => ceil($totalData / $limit), 
         ];
 
         return response_json(200, 'success', $result);

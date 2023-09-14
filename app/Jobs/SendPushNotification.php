@@ -75,11 +75,5 @@ class SendPushNotification implements ShouldQueue
         ];
 
         $publishResponse = $beamsClient->publishToUsers([env('PUSHER_PREFIX') . '-' . $this->id_user], $pusherData);
-
-        if ($publishResponse->getStatusCode() === 200) {
-            dd("Published with Publish ID: " . $publishResponse->publishId);
-        } else {
-            dd("An error occurred while sending the notification: " . $publishResponse->getStatusCode());
-        }
     }
 }

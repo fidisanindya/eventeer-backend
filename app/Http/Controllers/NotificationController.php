@@ -12,6 +12,7 @@ use App\Models\CommunityManager;
 use App\Jobs\SendPushNotification;
 use Illuminate\Support\Facades\Validator;
 use Pusher\PushNotifications\PushNotifications; 
+use App\Jobs\ForgotQueue;
 
 class NotificationController extends Controller
 {
@@ -226,6 +227,7 @@ class NotificationController extends Controller
         return response_json(404, 'failed', 'Notif Not Found');
     }
 
+    
     public function post_read_all_notif(Request $request){
         $validator = Validator::make($request->all(), [
             'tab' => 'required',
@@ -534,5 +536,9 @@ class NotificationController extends Controller
                 return response_json(404, 'failed', 'User is not requested to join this community/User already joined this community');
             }
         }
+    }
+    public function send_notif(Request $request){
+        $send = SendPushNotification::dispatch($request->content, $request->id_user, $request->url_web, $request->url_mobile);
+        return response_json(200, 'success', $send);
     }
 }

@@ -186,5 +186,6 @@ Route::prefix('submission')->group(function () {
         Route::get('/upcoming_submission', [SubmissionController::class, 'get_upcoming_submission']);
         Route::get('/detail-submission/{id}', [SubmissionController::class, 'getDetailSubmission']);
         Route::post('/assign-submission/{id}', [SubmissionController::class, 'assignSubmission']);
+        Route::post('/update-submission', [SubmissionController::class, 'updateSubmission']);
     });
 });

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\UploadFileSubmission;
+use App\Jobs\UploadImageSubmission;
 use stdClass;
 use App\Models\Event;
 use App\Models\Submission;
@@ -11,6 +12,7 @@ use App\Models\LogEvent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Image;
 
 class SubmissionController extends Controller
 {
@@ -384,6 +386,60 @@ class SubmissionController extends Controller
         }
     }
 
+    public function updateSubmission(Request $request)
+    {
+        $event = Event::where('id_event', $request->id_event)->first();
+
+        if (!$event) {
+            return response()->json(['message' => 'Event not found'], 404);
+        }
+
+        $request_data = $request->all();
+        $additional_data = json_decode($event->additional_data, true);
+        $imageUrl = $request_data['image'];
+        if ($request->hasFile('image')) {
+            $imageUrl = $this->processImage($request_data['image'], $request_data['title']);
+        }
+
+        $event->update([
+            'title' => $request_data['title'],
+            'description' => $request_data['description'],
+            'date' => [
+                'start' => $request_data['start'],
+                'end' => $request_data['end']
+            ],
+            'image' => $imageUrl
+        ]);
+
+        $additional_data['submission_form'] = $request_data['submission_form'];
+        $event->additional_data = json_encode($additional_data, JSON_UNESCAPED_SLASHES);
+        $event->save();
+
+        return response()->json([
+            'code' => 200,
+            'status' => 'Event updated successfully'
+        ], 200);
+    }
+
+    private function processImage($imageData, $title)
+    {
+        if (!$imageData) {
+            return null;
+        }
+
+        $image = Image::make($imageData)->resize(400, null, function ($constraint) {
+            $constraint->aspectRatio();
+        });
+
+        $filename = $title . '_' . date('dmYhis') . '_submission.' . $imageData->getClientOriginalExtension();
+        $data = $image->encode($imageData->getClientOriginalExtension())->__toString();
+        Storage::put('public/picture_queue/' . $filename, $data);
+        UploadImageSubmission::dispatch($filename);
+        $key = "userfiles/images/event/" . $filename;
+        $imageUrl = config('filesystems.disks.s3.bucketurl') . "/" . $key;
+
+        return $imageUrl;
+    }
 }
 
     

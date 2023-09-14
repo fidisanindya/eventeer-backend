@@ -9,6 +9,7 @@ use App\Models\Notification;
 use Illuminate\Http\Request;
 use App\Models\CommunityUser;
 use App\Models\CommunityManager;
+use App\Jobs\SendPushNotification;
 use Illuminate\Support\Facades\Validator;
 use Pusher\PushNotifications\PushNotifications; 
 
@@ -297,6 +298,14 @@ class NotificationController extends Controller
                                 ],
                             ];
 
+                            //Publish Notification
+                            SendPushNotification::dispatch(
+                                '<b>' . $community_user->community->title . '</b> has some new members.', 
+                                $value,  
+                                null, 
+                                null
+                            );
+
                             send_notification('<b>' . $community_user->community->title . '</b> has some new members', $value, $community_user->community->id_community, null, null, 'Activity', 'new_member', null, json_encode($additional_data) );
                         } else {  
                             $new_additional_data = [
@@ -399,6 +408,14 @@ class NotificationController extends Controller
                             ]
                         ];
 
+                        //Publish Notification
+                        SendPushNotification::dispatch(
+                            'Your request to join a community has responded to. Check this out!', 
+                            $request->id_user,  
+                            null, 
+                            null
+                        );
+
                         send_notification('Your request to join a community has responded to. Check this out!', $request->id_user, null, null, null, 'Updates', 'invitation', null, json_encode($additional_data));
                     } else {
                         $new_additional_data = [
@@ -464,6 +481,14 @@ class NotificationController extends Controller
                             ]
                         ];
 
+                        //Publish Notification
+                        SendPushNotification::dispatch(
+                            'Your request to join a community has responded to. Check this out!', 
+                            $request->id_user,  
+                            null, 
+                            null
+                        );
+                        
                         send_notification('Your request to join a community has responded to. Check this out!', $request->id_user, null, null, null, 'Updates', 'invitation', null, json_encode($additional_data));
                     } else {
                         $new_additional_data = [

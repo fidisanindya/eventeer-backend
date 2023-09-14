@@ -27,6 +27,7 @@ use App\Models\CommunityUser;
 use App\Http\Controllers\Controller;
 use App\Models\Comment;
 use App\Models\Notification;
+use App\Jobs\SendPushNotification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
@@ -673,6 +674,14 @@ class ProfileController extends Controller
             $check_notif_exists = Notification::where('tab', 'Updates')->where('section', 'engagement')->where('notif_from', $userId)->where('id_user', $timeline->id_user)->where('content', '<b>' . $user_name . '</b> like your post.')->first();
 
             if($check_notif_exists == null) {
+                //Publish Notification
+                SendPushNotification::dispatch(
+                    '<b>' . $user_name . '</b> like your post.', 
+                    $timeline->id_user,  
+                    '/post/'. $timeline->id_timeline .'/detail', 
+                    null
+                );
+
                 send_notification('<b>' . $user_name . '</b> like your post.', $timeline->id_user, $userId, '/post/'. $timeline->id_timeline .'/detail', null, 'Updates', 'engagement', 'like', $additional_data);
             } else {
                 $check_notif_exists->update([
@@ -722,6 +731,14 @@ class ProfileController extends Controller
                 $check_notif_exists = Notification::where('tab', 'Updates')->where('section', 'engagement')->where('notif_from', $userId)->where('id_user', $request->follow_id_user)->where('content', '<b>' . $user_name . '</b> started following you.')->first();
 
                 if($check_notif_exists == null) {
+                    //Publish Notification
+                    SendPushNotification::dispatch(
+                        '<b>' . $user_name . '</b> started following you.', 
+                        $request->follow_id_user,  
+                        '/my-profile/', 
+                        null
+                    );
+
                     send_notification('<b>' . $user_name . '</b> started following you.', $request->follow_id_user, $userId, '/my-profile/', null, 'Updates', 'engagement', 'follow', $additional_data);
                 } else {
                     $check_notif_exists->update([

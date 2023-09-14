@@ -441,6 +441,7 @@ class SubmissionController extends Controller
         ]);
 
         $additional_data['submission_form'] = $request_data['submission_form'];
+        dd(json_encode($additional_data));
         $event->additional_data = json_encode($additional_data, JSON_UNESCAPED_SLASHES);
         $event->save();
 

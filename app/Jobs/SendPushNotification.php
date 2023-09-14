@@ -9,6 +9,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Pusher\PushNotifications\PushNotifications; 
+use Illuminate\Support\Facades\Log;
 
 class SendPushNotification implements ShouldQueue
 {
@@ -16,26 +17,18 @@ class SendPushNotification implements ShouldQueue
 
     protected $content;
     protected $id_user;
-    protected $notif_from;
     protected $url;
     protected $url_mobile;
-    protected $tab; 
-    protected $section; 
-    protected $additional_data;
 
     /**
      * Create a new job instance.
      */
-    public function __construct($content, $id_user, $notif_from, $url, $url_mobile, $tab, $section, $additional_data)
+    public function __construct($content, $id_user, $url, $url_mobile)
     {
         $this->content = $content;
         $this->id_user = $id_user;
-        $this->notif_from = $notif_from;
         $this->url = $url;
         $this->url_mobile = $url_mobile;
-        $this->tab = $tab;
-        $this->section = $section;
-        $this->additional_data = $additional_data;
     }
 
     /**
@@ -84,9 +77,9 @@ class SendPushNotification implements ShouldQueue
         $publishResponse = $beamsClient->publishToUsers([env('PUSHER_PREFIX') . '-' . $this->id_user], $pusherData);
 
         if ($publishResponse->getStatusCode() === 200) {
-            echo("Published with Publish ID: " . $publishResponse->publishId);
+            dd("Published with Publish ID: " . $publishResponse->publishId);
         } else {
-            echo("An error occurred while sending the notification: " . $publishResponse->getStatusCode());
+            dd("An error occurred while sending the notification: " . $publishResponse->getStatusCode());
         }
     }
 }

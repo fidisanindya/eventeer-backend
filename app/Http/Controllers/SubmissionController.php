@@ -396,7 +396,7 @@ class SubmissionController extends Controller
 
         $request_data = $request->all();
         $additional_data = json_decode($event->additional_data, true);
-        $imageUrl = $request_data['image'];
+        $imageUrl = $event->image;
         if ($request->hasFile('image')) {
             $imageUrl = $this->processImage($request_data['image'], $request_data['title']);
         }

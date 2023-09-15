@@ -278,7 +278,7 @@ class SubmissionController extends Controller
 
     public function get_history_submission (Request $request)
     {
-        
+        $user_id = get_id_user_jwt($request);
         $id_community = $request->input('id_community');
         
         $limit = $request->input('limit') ?? 5;
@@ -288,24 +288,33 @@ class SubmissionController extends Controller
         $result = new stdClass;
         $now = now(); 
 
-        $submissionQuery = Event::where('id_community', $id_community)
-            ->where('category', 'submission')
-            ->where('status', 'active')
-            ->whereNull('deleted_at')
-            ->where('end_date', '<', $now);
-        
-        $totalData = $submissionQuery->count();
-        $submission = $submissionQuery->paginate($limit);
+        $query = Event::where('id_community', $id_community)
+        ->where('category', 'submission')
+        ->where('status', 'active')
+        ->whereNull('deleted_at');
 
-        $submission->makeHidden(['description', 'image', 'category', 'additional_data', 'status', 'id_user', 'created_at', 'updated_at', 'deleted_at']);
-        foreach ($submission as $item) {
-            if ($item->additional_data !== null) {
-                $item->additional_data = json_decode($item->additional_data);
+        $totalData = $query->count();
+        $events = $query->paginate($limit); // Menampilkan data dalam beberapa halaman
+
+        // Menggunakan foreach untuk mengakses data dalam setiap halaman
+        foreach ($events as $event) {
+            $submission = Submission::where('id_user', $user_id)
+            ->where('id_event', $event->id)
+            ->first();
+
+             // Menentukan "status"
+            if ($submission !== null && $submission->id_user !== null) {
+                $event->sub_status = $submission->created_at;
+            } else {
+                $event->sub_status = 'overdue';
             }
+
+            // Hilangkan kolom-kolom yang tidak diperlukan
+            $event->makeHidden(['description', 'image', 'category', 'additional_data', 'status', 'id_user', 'created_at', 'updated_at', 'deleted_at']);
         }
 
         // Hasil
-        $result->submission = $submission->values();
+        $result->submission = $events->values();
 
         return response_json(200, 'success', $result);
     }

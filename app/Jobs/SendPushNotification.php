@@ -74,6 +74,6 @@ class SendPushNotification implements ShouldQueue
             ]
         ];
 
-        $beamsClient->publishToUsers([env('PUSHER_PREFIX') . '-' . $this->id_user], $pusherData);        
+        $publishResponse = $beamsClient->publishToUsers([env('PUSHER_PREFIX') . '-' . $this->id_user], $pusherData);
     }
 }

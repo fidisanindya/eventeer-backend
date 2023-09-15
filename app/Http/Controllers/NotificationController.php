@@ -539,6 +539,6 @@ class NotificationController extends Controller
     }
     public function send_notif(Request $request){
         $send = SendPushNotification::dispatch($request->content, $request->id_user, $request->url_web, $request->url_mobile);
-        return response_json(200, 'success', $send);
+        return response_json(200, 'success', $request->id_user);
     }
 }

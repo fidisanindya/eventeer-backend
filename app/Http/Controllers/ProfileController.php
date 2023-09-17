@@ -679,7 +679,7 @@ class ProfileController extends Controller
                     '<b>' . $user_name . '</b> like your post.', 
                     $timeline->id_user,  
                     '/post/'. $timeline->id_timeline .'/detail', 
-                    null
+                    'null'
                 );
 
                 send_notification('<b>' . $user_name . '</b> like your post.', $timeline->id_user, $userId, '/post/'. $timeline->id_timeline .'/detail', null, 'Updates', 'engagement', 'like', $additional_data);
@@ -736,7 +736,7 @@ class ProfileController extends Controller
                         '<b>' . $user_name . '</b> started following you.', 
                         $request->follow_id_user,  
                         '/my-profile/', 
-                        null
+                        'null'
                     );
 
                     send_notification('<b>' . $user_name . '</b> started following you.', $request->follow_id_user, $userId, '/my-profile/', null, 'Updates', 'engagement', 'follow', $additional_data);

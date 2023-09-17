@@ -473,7 +473,17 @@ class SubmissionController extends Controller
             'image' => $imageUrl
         ]);
 
-        $additional_data['submission_form'] = $request_data['submission_form'];
+        $submissionForm = [];
+        foreach ($request_data['submission_form'] as $item) {
+            $submissionFormItem = [];
+            foreach ($item as $key => $value) {
+                $submissionFormItem[$key] = $value;
+            }
+            $submissionForm[] = $submissionFormItem;
+        }
+
+        $additional_data['submission_form'] = $submissionForm;
+        // dd(json_encode($additional_data, JSON_UNESCAPED_SLASHES));
         $event->additional_data = json_encode($additional_data, JSON_UNESCAPED_SLASHES);
         $event->save();
 

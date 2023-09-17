@@ -12,6 +12,8 @@ use App\Models\LogEvent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Carbon;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Image;
 
 class SubmissionController extends Controller
@@ -22,12 +24,12 @@ class SubmissionController extends Controller
         $user_id = get_id_user_jwt($request);
 
         $id_community = $request->input('id_community');
-        $sort_by_status = $request->input('sort_by_status', 'all');
+        $filter_by_status = $request->input('filter_by_status', 'all');
         $sort_by_time = $request->input('sort_by_time', 'newest_assigned');
         
-        $limit = $request->input('limit') ?? 5;
-        $page = $request->input('page', 1); 
-        $start = ($page - 1) * $limit;
+        $limit = $request->input('limit', 5);
+        $start = $request->input('start', 0); 
+        $page = ceil(($start + 1) / $limit);
 
         $result = new stdClass;
 
@@ -44,77 +46,84 @@ class SubmissionController extends Controller
             ->where('category', 'submission')
             ->where('status', 'active')
             ->whereNull('deleted_at')
-            ->orderBy('created_at', 'DESC');
+            ->where(function ($query) {
+                $today = Carbon::now(); // Waktu dan tanggal saat ini
+                $query->orWhereNull('additional_data') // Tambahkan jika additional_data kosong
+                    ->orWhere(function ($innerQuery) use ($today) {
+                        $innerQuery->where('additional_data->date->end', '>=', $today->toDateTimeString());
+                    });
+            });
 
         $totalData = $submissionQuery->count();
-        $submission = $submissionQuery->paginate($limit);
+        $submission = $submissionQuery->get();
 
         $submission->makeHidden(['description', 'image', 'category', 'additional_data', 'status', 'id_user', 'deleted_at']);
         foreach ($submission as $item) {
-            if ($item->additional_data !== null) {
-                $item->additional_data = json_decode($item->additional_data);
-            }
+           
         }
 
         foreach ($submission as $item) {
-            if (isset($item->additional_data->date) && isset($item->additional_data->date->start) && isset($item->additional_data->date->end)) {
-                $startDate = strtotime($item->additional_data->date->start);
-                $endDate = strtotime($item->additional_data->date->end);
+            if ($item->additional_data !== null) {
+                $item->additional_data = json_decode($item->additional_data);
+                if (isset($item->additional_data->date) && isset($item->additional_data->date->start) && isset($item->additional_data->date->end)) {
+                    $startDate = strtotime($item->additional_data->date->start);
+                    $endDate = strtotime($item->additional_data->date->end);
 
-                $currentTime = time();
+                    $currentTime = time();
 
-                $startDay = date('d', $startDate);
-                $endDay = date('d', $endDate);
-                $startMonthYear = date('F Y', $startDate);
-                $endMonthYear = date('F Y', $endDate);
+                    $startDay = date('d', $startDate);
+                    $endDay = date('d', $endDate);
+                    $startMonthYear = date('F Y', $startDate);
+                    $endMonthYear = date('F Y', $endDate);
 
-                // Range Deadline
-                if ($startMonthYear === $endMonthYear) {
-                    $item->date = "$startDay - $endDay $startMonthYear";
-                } else {
-                    $item->date = "$startDay $startMonthYear - $endDay $endMonthYear";
-                }
-
-                // Sisa Waktu Deadline
-                $timeLeft = $endDate - $currentTime;
-
-                if ($timeLeft <= 0) {
-                    $item->duration = "Expired";
-                } else {
-                    $daysLeft = floor($timeLeft / (60 * 60 * 24));
-                    $hoursLeft = floor(($timeLeft % (60 * 60 * 24)) / (60 * 60));
-
-                    if ($daysLeft > 0) {
-                        $item->duration = "$daysLeft days left";
+                    // Range Deadline
+                    if ($startMonthYear === $endMonthYear) {
+                        $item->date = "$startDay - $endDay $startMonthYear";
                     } else {
-                        $item->duration = "$hoursLeft hours left";
+                        $item->date = "$startDay $startMonthYear - $endDay $endMonthYear";
                     }
-                }
 
-                // Status
-                $existingLog = LogEvent::where('id_event', $item->id_event)
-                ->where('id_user', $user_id)
-                ->first();
+                    // Sisa Waktu Deadline
+                    $timeLeft = $endDate - $currentTime;
 
-                if (!$existingLog) {
-                    $item->sub_status = "New";
-                } else {
-                    $submissionData = Submission::where('id_event', $item->id_event)
-                        ->where('id_user', $user_id)
-                        ->first();
-
-                    if (!$submissionData) {
-                        $item->sub_status = "Not Finished";
-                    } elseif ($submissionData->status === "confirmed") {
-                        $item->sub_status = "Submitted";
+                    if ($timeLeft <= 0) {
+                        $item->duration = "Expired";
                     } else {
-                        $item->sub_status = "Not Finished";
+                        $daysLeft = floor($timeLeft / (60 * 60 * 24));
+                        $hoursLeft = floor(($timeLeft % (60 * 60 * 24)) / (60 * 60));
+
+                        if ($daysLeft > 0) {
+                            $item->duration = "$daysLeft days left";
+                        } else {
+                            $item->duration = "$hoursLeft hours left";
+                        }
                     }
+
+                    // Status
+                    $existingLog = LogEvent::where('id_event', $item->id_event)
+                    ->where('id_user', $user_id)
+                    ->first();
+
+                    if (!$existingLog) {
+                        $item->sub_status = "New";
+                    } else {
+                        $submissionData = Submission::where('id_event', $item->id_event)
+                            ->where('id_user', $user_id)
+                            ->first();
+
+                        if (!$submissionData) {
+                            $item->sub_status = "Not Finished";
+                        } elseif ($submissionData->status === "confirmed") {
+                            $item->sub_status = "Submitted";
+                        } else {
+                            $item->sub_status = "Not Finished";
+                        }
+                    }
+                } else {
+                    $item->date = '';
+                    $item->duration = '';
+                    $item->sub_status = '';
                 }
-            } else {
-                $item->date = '';
-                $item->duration = '';
-                $item->sub_status = '';
             }
         }
 
@@ -129,45 +138,60 @@ class SubmissionController extends Controller
             return response_json(400, 'error', 'Invalid value for sort_by_time.');
         }
 
-        // sort_by_status
-        if ($sort_by_status === 'all') {
-            // Tidak ada sorting tambahan untuk "all"
-        } elseif ($sort_by_status === 'new') {
-            $submission = $this->sort_by_status_new($submission);
-        } elseif ($sort_by_status === 'submitted') {
-            $submission = $this->sort_by_status_submitted($submission);
-        } elseif ($sort_by_status === 'not_finished') {
-            $submission = $this->sort_by_status_not_finished($submission);
+        // filter_by_status
+        if ($filter_by_status === 'all') {
+            // Tidak ada filtering tambahan untuk "all"
+        } elseif ($filter_by_status === 'new') {
+            $submission = $this->filter_by_status_new($submission);
+        } elseif ($filter_by_status === 'submitted') {
+            $submission = $this->filter_by_status_submitted($submission);
+        } elseif ($filter_by_status === 'not_finished') {
+            $submission = $this->filter_by_status_not_finished($submission);
         } else {
-            return response_json(400, 'error', 'Invalid value for sort_by_status.');
+            return response_json(400, 'error', 'Invalid value for filter_by_status.');
         }
 
-        // Hasil
-        $result->submission = $submission->values();
+        $filteredData = $submission->values();
+
+        $totalData = $filteredData->count();
+
+        $startIndex = ($page - 1) * $limit;
+        $endIndex = min($startIndex + $limit - 1, $totalData - 1);
+
+        $submissionForPage = $filteredData->slice($startIndex, $endIndex - $startIndex + 1);
+
+        $paginator = new LengthAwarePaginator(
+            $submissionForPage,
+            $totalData,
+            $limit,
+            $page
+        );
+
+        $result->submission = $paginator->values();
 
         $result->meta = [
             "start" => $start,
             "limit" => $limit,
             "total_data" => $totalData,
             "current_page" => $page,
-            "total_pages" => ceil($totalData / $limit), 
+            "total_pages" =>  $paginator->lastPage()
         ];
 
         return response_json(200, 'success', $result);
     }
 
-    // Sort By Status
-    private function sort_by_status_new($submission)
+    // Filter By Status
+    private function filter_by_status_new($submission)
     {
         return $submission->where('sub_status', 'New');
     }
 
-    private function sort_by_status_submitted($submission)
+    private function filter_by_status_submitted($submission)
     {
         return $submission->where('sub_status', 'Submitted');
     }
 
-    private function sort_by_status_not_finished($submission)
+    private function filter_by_status_not_finished($submission)
     {
         return $submission->where('sub_status', 'Not Finished');
     }
@@ -210,8 +234,7 @@ class SubmissionController extends Controller
         $id_community = $request->input('id_community');
         
         $limit = $request->input('limit') ?? 5;
-        $page = $request->input('page', 1); 
-        $start = ($page - 1) * $limit;
+        $start = $request->input('start') ?? 0;
 
         $result = new stdClass;
 
@@ -262,14 +285,12 @@ class SubmissionController extends Controller
             }
         }
         
-        // Hasil
         $result->submission = $submission->values();
 
         $result->meta = [
             "start" => $start,
             "limit" => $limit,
             "total_data" => $totalData,
-            "current_page" => $page,
             "total_pages" => ceil($totalData / $limit), 
         ];
 
@@ -282,8 +303,7 @@ class SubmissionController extends Controller
         $id_community = $request->input('id_community');
         
         $limit = $request->input('limit') ?? 5;
-        $page = $request->input('page', 1); 
-        $start = ($page - 1) * $limit;
+        $start = $request->input('start') ?? 0;
 
         $result = new stdClass;
         $now = now(); 
@@ -294,27 +314,31 @@ class SubmissionController extends Controller
         ->whereNull('deleted_at');
 
         $totalData = $query->count();
-        $events = $query->paginate($limit); // Menampilkan data dalam beberapa halaman
+        $events = $query->paginate($limit);
 
-        // Menggunakan foreach untuk mengakses data dalam setiap halaman
         foreach ($events as $event) {
             $submission = Submission::where('id_user', $user_id)
             ->where('id_event', $event->id)
             ->first();
 
-             // Menentukan "status"
+            // Status
             if ($submission !== null && $submission->id_user !== null) {
                 $event->sub_status = $submission->created_at;
             } else {
                 $event->sub_status = 'overdue';
             }
 
-            // Hilangkan kolom-kolom yang tidak diperlukan
             $event->makeHidden(['description', 'image', 'category', 'additional_data', 'status', 'id_user', 'created_at', 'updated_at', 'deleted_at']);
         }
 
-        // Hasil
         $result->submission = $events->values();
+
+        $result->meta = [
+            "start" => $start,
+            "limit" => $limit,
+            "total_data" => $totalData,
+            "total_pages" => ceil($totalData / $limit), 
+        ];
 
         return response_json(200, 'success', $result);
     }
@@ -449,17 +473,7 @@ class SubmissionController extends Controller
             'image' => $imageUrl
         ]);
 
-        $submissionForm = [];
-        foreach ($request_data['submission_form'] as $item) {
-            $submissionFormItem = [];
-            foreach ($item as $key => $value) {
-                $submissionFormItem[$key] = $value;
-            }
-            $submissionForm[] = $submissionFormItem;
-        }
-
-        $additional_data['submission_form'] = $submissionForm;
-        dd(json_encode($additional_data, JSON_UNESCAPED_SLASHES));
+        $additional_data['submission_form'] = $request_data['submission_form'];
         $event->additional_data = json_encode($additional_data, JSON_UNESCAPED_SLASHES);
         $event->save();
 

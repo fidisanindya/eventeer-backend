@@ -50,6 +50,10 @@ class ForgotController extends Controller
                 ], 429);
             }
             
+            if ($lastAttempt == 0) {
+                ForgotActivity::where('email', $checkEmail->email)->delete();
+            }
+        
             ForgotActivity::create([
                 'id_user'   => $checkEmail->id_user,
                 'email'     => $checkEmail->email,

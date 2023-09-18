@@ -190,6 +190,7 @@ Route::prefix('submission')->group(function () {
         Route::get('/history_submission', [SubmissionController::class, 'get_history_submission']);
         Route::get('/detail-submission/{id}', [SubmissionController::class, 'getDetailSubmission']);
         Route::post('/assign-submission/{id}', [SubmissionController::class, 'assignSubmission']);
+        Route::post('/create-submission', [SubmissionController::class, 'createSubmission']);
         Route::post('/update-submission', [SubmissionController::class, 'updateSubmission']);
     });
 });

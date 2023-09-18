@@ -47,8 +47,8 @@ class SubmissionController extends Controller
             ->where('status', 'active')
             ->whereNull('deleted_at')
             ->where(function ($query) {
-                $today = Carbon::now(); // Waktu dan tanggal saat ini
-                $query->orWhereNull('additional_data') // Tambahkan jika additional_data kosong
+                $today = Carbon::now(); 
+                $query->orWhereNull('additional_data')
                     ->orWhere(function ($innerQuery) use ($today) {
                         $innerQuery->where('additional_data->date->end', '>=', $today->toDateTimeString());
                     });
@@ -58,9 +58,6 @@ class SubmissionController extends Controller
         $submission = $submissionQuery->get();
 
         $submission->makeHidden(['description', 'image', 'category', 'additional_data', 'status', 'id_user', 'deleted_at']);
-        foreach ($submission as $item) {
-           
-        }
 
         foreach ($submission as $item) {
             if ($item->additional_data !== null) {
@@ -235,63 +232,82 @@ class SubmissionController extends Controller
         
         $limit = $request->input('limit') ?? 5;
         $start = $request->input('start') ?? 0;
+        $page = ceil(($start + 1) / $limit);
 
         $result = new stdClass;
 
         $submissionQuery = Event::where('id_community', $id_community)
             ->where('category', 'submission')
             ->where('status', 'active')
-            ->whereNull('deleted_at');
+            ->whereNull('deleted_at')
+            ->where(function ($query) {
+                $today = Carbon::now(); 
+                $query->orWhereNull('additional_data')
+                    ->orWhere(function ($innerQuery) use ($today) {
+                        $innerQuery->where('additional_data->date->start', '>', $today->toDateTimeString());
+                    });
+            });
         
-        $submissionQuery->whereRaw("json_unquote(json_extract(`additional_data`, '$.date.start')) > NOW()");
-
         $submissionQuery->orderByRaw("TIMESTAMPDIFF(SECOND, NOW(), json_unquote(json_extract(`additional_data`, '$.date.start'))) ASC");
 
         $totalData = $submissionQuery->count();
-        $submission = $submissionQuery->paginate($limit);
+        $submission = $submissionQuery->get();
 
         $submission->makeHidden(['description', 'image', 'category', 'additional_data', 'status', 'id_user', 'created_at', 'updated_at', 'deleted_at']);
+
         foreach ($submission as $item) {
             if ($item->additional_data !== null) {
                 $item->additional_data = json_decode($item->additional_data);
-            }
-        }
+                if (isset($item->additional_data->date) && isset($item->additional_data->date->start) && isset($item->additional_data->date->end)) {
+                    $startDate = strtotime($item->additional_data->date->start);
+                    $endDate = strtotime($item->additional_data->date->end);
 
-        foreach ($submission as $item) {
-            if (isset($item->additional_data->date) && isset($item->additional_data->date->start) && isset($item->additional_data->date->end)) {
-                $startDate = strtotime($item->additional_data->date->start);
-                $endDate = strtotime($item->additional_data->date->end);
+                    if (date('H:i:s', $startDate) == '00:00:00') {
+                        $startDate = strtotime(date('Y-m-d 23:59:59', $startDate));
+                    }
 
-                if (date('H:i:s', $startDate) == '00:00:00') {
-                    $startDate = strtotime(date('Y-m-d 23:59:59', $startDate));
-                }
+                    $startDay = date('d', $startDate);
+                    $endDay = date('d', $endDate);
+                    $startMonthYear = date('F Y', $startDate);
+                    $endMonthYear = date('F Y', $endDate);
 
-                $startDay = date('d', $startDate);
-                $endDay = date('d', $endDate);
-                $startMonthYear = date('F Y', $startDate);
-                $endMonthYear = date('F Y', $endDate);
+                    $item->start = date('H.i', $startDate);
 
-                $item->start = date('H.i', $startDate);
-
-                // Range Deadline
-                if ($startMonthYear === $endMonthYear) {
-                    $item->date = "$startDay - $endDay $startMonthYear";
+                    // Range Deadline
+                    if ($startMonthYear === $endMonthYear) {
+                        $item->date = "$startDay - $endDay $startMonthYear";
+                    } else {
+                        $item->date = "$startDay $startMonthYear - $endDay $endMonthYear";
+                    }
                 } else {
-                    $item->date = "$startDay $startMonthYear - $endDay $endMonthYear";
+                    $item->date = '';
+                    $item->start = '23.59';
                 }
-            } else {
-                $item->date = '';
-                $item->start = '23.59';
             }
         }
-        
-        $result->submission = $submission->values();
+
+        $data = $submission->values();
+
+        $startIndex = $start;
+        $endIndex = min($startIndex + $limit - 1, $totalData - 1);
+
+        $submissionForPage = $data->slice($startIndex, $endIndex - $startIndex + 1);
+
+        $paginator = new LengthAwarePaginator(
+            $submissionForPage,
+            $totalData,
+            $limit,
+            $page
+        );
+
+        $result->submission = $paginator->values();
 
         $result->meta = [
             "start" => $start,
             "limit" => $limit,
             "total_data" => $totalData,
-            "total_pages" => ceil($totalData / $limit), 
+            "current_page" => $page,
+            "total_pages" =>  $paginator->lastPage()
         ];
 
         return response_json(200, 'success', $result);
@@ -304,26 +320,32 @@ class SubmissionController extends Controller
         
         $limit = $request->input('limit') ?? 5;
         $start = $request->input('start') ?? 0;
+        $page = ceil(($start + 1) / $limit);
 
         $result = new stdClass;
-        $now = now(); 
 
         $query = Event::where('id_community', $id_community)
         ->where('category', 'submission')
         ->where('status', 'active')
-        ->whereNull('deleted_at');
-
-        $totalData = $query->count();
+        ->whereNull('deleted_at')
+        ->where(function ($query) {
+            $today = Carbon::now(); 
+            $query->orWhereNull('additional_data')
+                ->orWhere(function ($innerQuery) use ($today) {
+                    $innerQuery->where('additional_data->date->end', '<=', $today->toDateTimeString());
+                });
+        });
+ 
         $events = $query->paginate($limit);
 
         foreach ($events as $event) {
             $submission = Submission::where('id_user', $user_id)
-            ->where('id_event', $event->id)
+            ->where('id_event', $event->id_event)
             ->first();
 
             // Status
             if ($submission !== null && $submission->id_user !== null) {
-                $event->sub_status = $submission->created_at;
+                $event->sub_status = date('d M Y, H:i', strtotime($submission->created_at));
             } else {
                 $event->sub_status = 'overdue';
             }
@@ -331,13 +353,30 @@ class SubmissionController extends Controller
             $event->makeHidden(['description', 'image', 'category', 'additional_data', 'status', 'id_user', 'created_at', 'updated_at', 'deleted_at']);
         }
 
-        $result->submission = $events->values();
+        $totalData = $events->count();
+
+        $data = $events->values();
+
+        $startIndex = $start;
+        $endIndex = min($startIndex + $limit - 1, $totalData - 1);
+
+        $submissionForPage = $data->slice($startIndex, $endIndex - $startIndex + 1);
+
+        $paginator = new LengthAwarePaginator(
+            $submissionForPage,
+            $totalData,
+            $limit,
+            $page
+        );
+
+        $result->submission = $paginator->values();
 
         $result->meta = [
             "start" => $start,
             "limit" => $limit,
             "total_data" => $totalData,
-            "total_pages" => ceil($totalData / $limit), 
+            "current_page" => $page,
+            "total_pages" => $paginator->lastPage(), 
         ];
 
         return response_json(200, 'success', $result);

@@ -487,6 +487,50 @@ class SubmissionController extends Controller
         }
     }
 
+    public function createSubmission(Request $request)
+    {
+        // Get user id from jwt
+        $user_id = get_id_user_jwt($request);
+
+        $request_data = $request->all();
+
+        $imageUrl = $this->processImage($request_data['image'], $request_data['title']);
+
+        $submissionForm = [];
+        foreach ($request_data['submission_form'] as $item) {
+            $submissionFormItem = [];
+            foreach ($item as $key => $value) {
+                $submissionFormItem[$key] = $value;
+            }
+            $submissionForm[] = $submissionFormItem;
+        }
+
+        $submission = new Event([
+            'id_community' => $request_data['id_community'],
+            'title' => $request_data['title'],
+            'description' => $request_data['description'],
+            'image' => $imageUrl,
+            'category' => 'submission',
+            'additional_data' => json_encode([
+                'date' => [
+                    'start' => $request_data['start'],
+                    'end' => $request_data['end']
+                ],
+                'submission_form' => $submissionForm
+            ], JSON_UNESCAPED_SLASHES),
+            'status' => 'active',
+            'id_user' => $user_id
+        ]);
+
+        $submission->save();
+
+        return response()->json([
+            'code' => 200,
+            'status' => 'Submission created successfully',
+            'submission' => $submission,
+        ], 200);
+    }
+
     public function updateSubmission(Request $request)
     {
         $event = Event::where('id_event', $request->id_event)->first();

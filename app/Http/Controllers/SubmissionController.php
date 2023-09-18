@@ -358,7 +358,7 @@ class SubmissionController extends Controller
             ->where('id_event', $data_event->id_event)
             ->first();
         
-        $data_event->my_submission =  json_decode($my_submission->additional_data) ?? null;
+        $data_event->my_submission =  $my_submission != null ? json_decode($my_submission->additional_data) : null;
         $data_event->total_submitted = Submission::where('id_event', $data_event->id_event)->count();
         $data_event->additional_data = json_decode($data_event->additional_data);
 

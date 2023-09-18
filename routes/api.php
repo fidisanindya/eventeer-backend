@@ -40,6 +40,8 @@ Route::prefix('auth')->group(function () {
     Route::get('/google', [GoogleController::class, 'redirectToGoogle']); 
     Route::get('/google/callback', [GoogleController::class, 'handleGoogleCallback']); 
     Route::post('/google/callback_client', [GoogleController::class, 'handleCallbackClient']); 
+    Route::post('/check_email', [AuthController::class, 'check_email']);
+
 });
 
 Route::prefix('settings')->group(function () {

@@ -195,4 +195,23 @@ class AuthController extends Controller
             ], 404);
         }
     }
+
+
+    public function check_email(Request $request){
+        $user = User::where('email', $request->email)->first();
+        if(!$user){
+            return response()->json([
+                'code'      => 404,
+                'status' => 'failed',
+                'message' => 'This email is not found'
+            ], 404);
+        }else{
+            return response()->json([
+                'code'      => 200,
+                'status'    => 'success',
+                'result'    =>  $request->email,
+            ], 200);
+        }
+
+    }
 }

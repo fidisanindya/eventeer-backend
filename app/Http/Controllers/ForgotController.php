@@ -40,7 +40,7 @@ class ForgotController extends Controller
 
         // Email Attempt
         if ($checkEmail){
-            $lastAttempt = ForgotActivity::where('email', $checkEmail->email)->where('created_at', '>', Carbon::now()->subMinutes(5))->count();
+            $lastAttempt = ForgotActivity::where('email', $checkEmail->email)->where('created_at', '>', Carbon::now()->subMinutes(2))->count();
 
             if ($lastAttempt >= env('EMAIL_ATTEMPT_TRY')) {
                 return response()->json([

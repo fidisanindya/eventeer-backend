@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Carbon\Carbon;
 use App\Models\User;
 use App\Jobs\ForgotQueue;
+use App\Jobs\ForgotQueueMobile;
 use App\Models\EmailQueue;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
@@ -83,13 +84,13 @@ class ForgotController extends Controller
                 ], 404);
             }
             
-            ForgotQueue::dispatch($details);
-            
             // Log the queue from helper
             if($request->hit_from == 'web') {
+                ForgotQueue::dispatch($details);
                 $html_web = (new ForgotPasswordMail($details))->render();
                 logQueue($checkEmail->email, $html_web, 'Reset Password');
             } else {
+                ForgotQueueMobile::dispatch($details);
                 $html_mobile = (new ForgotPasswordMailMobile($details))->render();
                 logQueue($checkEmail->email, $html_mobile, 'Reset Password');
             }

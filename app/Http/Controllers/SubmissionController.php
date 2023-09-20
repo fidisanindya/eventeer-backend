@@ -336,7 +336,7 @@ class SubmissionController extends Controller
                 });
         });
  
-        $events = $query->paginate($limit);
+        $events = $query->get();
 
         foreach ($events as $event) {
             $submission = Submission::where('id_user', $user_id)
@@ -353,9 +353,9 @@ class SubmissionController extends Controller
             $event->makeHidden(['description', 'image', 'category', 'additional_data', 'status', 'id_user', 'created_at', 'updated_at', 'deleted_at']);
         }
 
-        $totalData = $events->count();
-
         $data = $events->values();
+
+        $totalData = $events->count();
 
         $startIndex = $start;
         $endIndex = min($startIndex + $limit - 1, $totalData - 1);

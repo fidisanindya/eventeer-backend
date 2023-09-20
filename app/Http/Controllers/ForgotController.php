@@ -85,13 +85,12 @@ class ForgotController extends Controller
             
             ForgotQueue::dispatch($details);
             
-            $html_web = (new ForgotPasswordMail($details))->render();
-            $html_mobile = (new ForgotPasswordMailMobile($details))->render();
-            
             // Log the queue from helper
             if($request->hit_from == 'web') {
+                $html_web = (new ForgotPasswordMail($details))->render();
                 logQueue($checkEmail->email, $html_web, 'Reset Password');
             } else {
+                $html_mobile = (new ForgotPasswordMailMobile($details))->render();
                 logQueue($checkEmail->email, $html_mobile, 'Reset Password');
             }
             

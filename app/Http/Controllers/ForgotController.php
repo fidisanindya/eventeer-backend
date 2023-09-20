@@ -10,6 +10,7 @@ use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Mail\ForgotPasswordMail;
 use App\Http\Controllers\Controller;
+use App\Mail\ForgotPasswordMailMobile;
 use App\Models\ForgotActivity;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -73,7 +74,7 @@ class ForgotController extends Controller
             if($request->hit_from == 'web'){
                 $details['link_to'] = env('LINK_EMAIL_WEB').'/forgot-password/reset-password?token='.$token_web;
             } else if($request->hit_from == 'mobile') {
-                $details['link_to'] = $token_mobile;
+                $details['otp'] = $token_mobile;
             } else {
                 return response()->json([
                     'code'      => 404,
@@ -84,10 +85,16 @@ class ForgotController extends Controller
             
             ForgotQueue::dispatch($details);
             
-            $html = (new ForgotPasswordMail($details))->render();
+            $html_web = (new ForgotPasswordMail($details))->render();
+            $html_mobile = (new ForgotPasswordMailMobile($details))->render();
+            
             // Log the queue from helper
-            logQueue($checkEmail->email, $html, 'Reset Password');
-
+            if($request->hit_from == 'web') {
+                logQueue($checkEmail->email, $html_web, 'Reset Password');
+            } else {
+                logQueue($checkEmail->email, $html_mobile, 'Reset Password');
+            }
+            
             User::where('id_user', $checkEmail->id_user)
                 ->update([
                     'forgotten_password'        => ($request->hit_from == 'web') ? $token_web : $token_mobile,

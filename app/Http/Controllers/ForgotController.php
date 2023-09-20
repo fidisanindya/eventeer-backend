@@ -62,7 +62,8 @@ class ForgotController extends Controller
 
         // Send Email
         if($checkEmail != null){
-            $token = md5(Str::random(12));
+            $token_web = md5(Str::random(12));
+            $token_mobile = mt_rand(100000, 999999);
 
             $details = [
                 'email'     => $checkEmail->email,
@@ -70,9 +71,9 @@ class ForgotController extends Controller
             ];
 
             if($request->hit_from == 'web'){
-                $details['link_to'] = env('LINK_EMAIL_WEB').'/forgot-password/reset-password?token='.$token;
+                $details['link_to'] = env('LINK_EMAIL_WEB').'/forgot-password/reset-password?token='.$token_web;
             } else if($request->hit_from == 'mobile') {
-                $details['link_to'] = env('LINK_EMAIL_MOBILE').'/forgot-password/reset-password?token='.$token;
+                $details['link_to'] = $token_mobile;
             } else {
                 return response()->json([
                     'code'      => 404,
@@ -89,7 +90,7 @@ class ForgotController extends Controller
 
             User::where('id_user', $checkEmail->id_user)
                 ->update([
-                    'forgotten_password'        => $token,
+                    'forgotten_password'        => ($request->hit_from == 'web') ? $token_web : $token_mobile,
                     'forgotten_password_time'   => strtotime(Carbon::now()->toDateTimeString()),
                 ]);
 

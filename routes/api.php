@@ -52,6 +52,7 @@ Route::prefix('settings')->group(function () {
 Route::prefix('forgot')->group(function () {
     Route::post('/send_forgot_email', [ForgotController::class, 'post_send_forgot_email']);
     Route::post('/check_code', [ForgotController::class, 'post_check_code']);
+    Route::post('/check_otp_code', [ForgotController::class, 'checkOtpCode']);
     Route::post('/reset_password', [ForgotController::class, 'post_reset_password']);
 });
 

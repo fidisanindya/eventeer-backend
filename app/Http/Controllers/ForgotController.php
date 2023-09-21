@@ -207,4 +207,26 @@ class ForgotController extends Controller
             ], 404);
         }
     }
+
+    public function checkOtpCode(Request $request)
+    {
+        $user = User::where('email', $request->email)->first();
+        
+        if ($user) {
+            if ($request->code == $user->forgotten_password) {
+                $generated_time = $user->forgotten_password_time;
+                $check_time = strtotime(Carbon::now()->toDateTimeString()) - $generated_time;
+
+                if ($check_time <= 180) {
+                    return response()->json(['code' => 200, 'message' => 'Success'], 200);
+                } else {
+                    return response()->json(['code' => 403, 'message' => 'Code Expired'], 403);
+                }
+            } else {
+                return response()->json(['code' => 403, 'message' => 'Invalid Code'], 403);
+            }
+        } else {
+            return response()->json(['code' => 404, 'message' => 'User Not Found'], 404);
+        }
+    }
 }

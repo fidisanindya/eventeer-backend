@@ -412,9 +412,10 @@ class SubmissionController extends Controller
         $data_event->additional_data = json_decode($data_event->additional_data);
 
         // Add Log Event
+        $log_status = $my_submission ? "Submitted" : "Not Finished";
         $existingLog = LogEvent::where('id_event', $data_event->id_event)
-        ->where('id_user', $user_id)
-        ->first();
+            ->where('id_user', $user_id)
+            ->first();
 
         if (!$existingLog) {
             $log = new LogEvent();
@@ -423,6 +424,8 @@ class SubmissionController extends Controller
             $log->created_at = now();
             $log->save();
         }
+
+        $data_event->sub_status = $log_status;
     
         return response()->json([
             "code" => 200,

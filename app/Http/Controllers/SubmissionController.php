@@ -70,14 +70,20 @@ class SubmissionController extends Controller
 
                     $startDay = date('d', $startDate);
                     $endDay = date('d', $endDate);
-                    $startMonthYear = date('F Y', $startDate);
-                    $endMonthYear = date('F Y', $endDate);
-
+                    $startMonth = date('M', $startDate);
+                    $startYear = date('Y', $startDate);
+                    $endMonth = date('M', $endDate);
+                    $endYear = date('Y', $endDate);
+                    
+                    $item->start = date('H.i', $startDate);
+                    
                     // Range Deadline
-                    if ($startMonthYear === $endMonthYear) {
-                        $item->date = "$startDay - $endDay $startMonthYear";
+                    if ($startMonth === $endMonth && $startYear === $endYear) {
+                        $item->date = "$startDay - $endDay $startMonth $startYear";
+                    } elseif ($startYear === $endYear) {
+                        $item->date = "$startDay $startMonth - $endDay $endMonth $endYear";
                     } else {
-                        $item->date = "$startDay $startMonthYear - $endDay $endMonthYear";
+                        $item->date = "$startDay $startMonth $startYear - $endDay $endMonth $endYear";
                     }
 
                     // Sisa Waktu Deadline
@@ -268,16 +274,20 @@ class SubmissionController extends Controller
 
                     $startDay = date('d', $startDate);
                     $endDay = date('d', $endDate);
-                    $startMonthYear = date('F Y', $startDate);
-                    $endMonthYear = date('F Y', $endDate);
-
+                    $startMonth = date('M', $startDate);
+                    $startYear = date('Y', $startDate);
+                    $endMonth = date('M', $endDate);
+                    $endYear = date('Y', $endDate);
+                    
                     $item->start = date('H.i', $startDate);
-
+                    
                     // Range Deadline
-                    if ($startMonthYear === $endMonthYear) {
-                        $item->date = "$startDay - $endDay $startMonthYear";
+                    if ($startMonth === $endMonth && $startYear === $endYear) {
+                        $item->date = "$startDay - $endDay $startMonth $startYear";
+                    } elseif ($startYear === $endYear) {
+                        $item->date = "$startDay $startMonth - $endDay $endMonth $endYear";
                     } else {
-                        $item->date = "$startDay $startMonthYear - $endDay $endMonthYear";
+                        $item->date = "$startDay $startMonth $startYear - $endDay $endMonth $endYear";
                     }
                 } else {
                     $item->date = '';

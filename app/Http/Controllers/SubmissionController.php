@@ -575,17 +575,19 @@ class SubmissionController extends Controller
             foreach ($item as $key => $value) {
                 $submissionFormItem[$key] = $value;
             }
+            $placeholderPrefix = ($submissionFormItem['type'] == 'select') ? 'Select Your ' : (($submissionFormItem['type'] == 'file') ? 'Choose Your ' : 'Input Your ');
+            $submissionFormItem['placeholder'] = $placeholderPrefix . $submissionFormItem['title'];
             $submissionForm[] = $submissionFormItem;
         }
 
         $additional_data['submission_form'] = $submissionForm;
-        // dd(json_encode($additional_data, JSON_UNESCAPED_SLASHES));
         $event->additional_data = json_encode($additional_data, JSON_UNESCAPED_SLASHES);
         $event->save();
 
         return response()->json([
             'code' => 200,
-            'status' => 'Event updated successfully'
+            'status' => 'Event updated successfully',
+            'updated' => $event
         ], 200);
     }
 

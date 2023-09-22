@@ -50,7 +50,8 @@ class SubmissionController extends Controller
                 $today = Carbon::now(); 
                 $query->orWhereNull('additional_data')
                     ->orWhere(function ($innerQuery) use ($today) {
-                        $innerQuery->where('additional_data->date->end', '>=', $today->toDateTimeString());
+                        $innerQuery->where('additional_data->date->start', '<=', $today->toDateTimeString())
+                            ->where('additional_data->date->end', '>=', $today->toDateTimeString());
                     });
             });
 
@@ -74,8 +75,6 @@ class SubmissionController extends Controller
                     $startYear = date('Y', $startDate);
                     $endMonth = date('M', $endDate);
                     $endYear = date('Y', $endDate);
-                    
-                    $item->start = date('H.i', $startDate);
                     
                     // Range Deadline
                     if ($startMonth === $endMonth && $startYear === $endYear) {
@@ -515,6 +514,8 @@ class SubmissionController extends Controller
             foreach ($item as $key => $value) {
                 $submissionFormItem[$key] = $value;
             }
+            $placeholderPrefix = ($submissionFormItem['type'] == 'select') ? 'Select Your ' : (($submissionFormItem['type'] == 'file') ? 'Choose Your ' : 'Input Your ');
+            $submissionFormItem['placeholder'] = $placeholderPrefix . $submissionFormItem['title'];
             $submissionForm[] = $submissionFormItem;
         }
 

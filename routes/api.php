@@ -10,6 +10,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\HomepageController;
 use App\Http\Controllers\CommunityController;
+use App\Http\Controllers\MediaLearningController;
 use App\Http\Controllers\MigrationController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\RegistrationController;
@@ -193,5 +194,12 @@ Route::prefix('submission')->group(function () {
         Route::post('/assign-submission/{id}', [SubmissionController::class, 'assignSubmission']);
         Route::post('/create-submission', [SubmissionController::class, 'createSubmission']);
         Route::post('/update-submission', [SubmissionController::class, 'updateSubmission']);
+    });
+});
+
+//Media Learning
+Route::prefix('media_learning')->group(function () {
+    Route::middleware(['jwt.auth'])->group(function () {
+        Route::get('/list_media', [MediaLearningController::class, 'get_list_media']);
     });
 });

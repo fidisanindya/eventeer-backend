@@ -579,6 +579,9 @@ class SubmissionController extends Controller
             foreach ($item as $key => $value) {
                 $submissionFormItem[$key] = $value;
             }
+            if ($submissionFormItem['type'] == 'select' && isset($item['data'])) {
+                $submissionFormItem['data'] = json_decode($item['data']); 
+            }
             $placeholderPrefix = ($submissionFormItem['type'] == 'select') ? 'Select Your ' : (($submissionFormItem['type'] == 'file') ? 'Choose Your ' : 'Input Your ');
             $submissionFormItem['placeholder'] = $placeholderPrefix . $submissionFormItem['title'];
             $submissionForm[] = $submissionFormItem;

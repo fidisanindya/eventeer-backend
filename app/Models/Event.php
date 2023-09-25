@@ -36,4 +36,9 @@ class Event extends Model
     {
         return $this->hasMany(Comment::class, 'id_related_to', 'id_event');
     }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'id_user');
+    }
 }

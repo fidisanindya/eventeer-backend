@@ -201,5 +201,6 @@ Route::prefix('submission')->group(function () {
 Route::prefix('media_learning')->group(function () {
     Route::middleware(['jwt.auth'])->group(function () {
         Route::get('/list_media', [MediaLearningController::class, 'get_list_media']);
+        Route::get('/detail-media/{id}', [MediaLearningController::class, 'getDetailMedia']);
     });
 });

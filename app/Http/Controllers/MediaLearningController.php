@@ -47,13 +47,25 @@ class MediaLearningController extends Controller
                 if($video->additional_data != null) {
                     $video->additional_data = json_decode($video->additional_data);
                 }
+
+                $video_duration = $video->additional_data->video_duration;
+                list($hours, $minutes, $seconds) = explode(':', $video_duration);
+
+                $video_duration_formatted = "";
+                if ($hours > 0) {
+                    $video_duration_formatted .= $hours . 'h ';
+                }
+                if ($minutes > 0) {
+                    $video_duration_formatted .= $minutes . 'm';
+                }
+
                 $viewers = LogEvent::where('id_event', $video->id_event)->count();
 
                 $transformedVideos[] = [
                     'id_event' => $video->id_event,
                     'title' => $video->title,
                     'image' => $video->image,
-                    'video_duration' => $video->additional_data->video_duration,
+                    'video_duration' => $video_duration_formatted,
                     'full_name' => $video->user->full_name,
                     'profile_picture' => $video->user->profile_picture,
                     'viewers' => $viewers,

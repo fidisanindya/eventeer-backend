@@ -7,12 +7,6 @@ use FFMpeg\FFMpeg;
 use App\Models\Event;
 use App\Models\LogEvent;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\Paginator;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Carbon;
-use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\DB;
 
 class MediaLearningController extends Controller
 {
@@ -151,9 +145,50 @@ class MediaLearningController extends Controller
             $result->podcast = $transformedPodcasts;
 
         } else if($category == 'article') {
+            $query = Event::where('id_community', $id_community)
+            ->where('category', 'article')
+            ->where('status', 'active')
+            ->whereNull('deleted_at')
+            ->with('user');
+
+            $totalData = $query->count();
+
+            if ($limit !== null) {
+                $query->limit($limit);
+                if ($start !== null) {
+                    $query->offset($start);
+                }
+            }
+
+            $articles = $query->get();
+        
+            $article_duration = 0; 
+            $transformedArticles = [];
+            foreach ($articles as $article) {
+                if($article->additional_data != null) {
+                    $article->additional_data = json_decode($article->additional_data);                  
+                }
+
+                $article_duration = $this->estimateReadingTime($article->description)  . ' m read';
+                
+                $viewers = LogEvent::where('id_event', $article->id_event)->count();
+
+                $transformedArticles[] = [
+                    'id_event' => $article->id_event,
+                    'title' => $article->title,
+                    'image' => $article->image,
+                    'article_duration' => $article_duration,
+                    'full_name' => $article->user->full_name,
+                    'profile_picture' => $article->user->profile_picture,
+                    'viewers' => $viewers,
+                    'created_at' => date('F d', strtotime($article->created_at)),
+                ];
+            }
+
+            $result->article = $transformedArticles;
 
         } else {
-
+            return response()->json(["code" => 404, "status" => "Category doesn't match"], 404);
         }
 
         $result->meta = [
@@ -217,7 +252,7 @@ class MediaLearningController extends Controller
 
         $data_event->additional_data = json_decode($data_event->additional_data);
         if($data_event->category == 'article'){
-            $data_event->duration = $this->estimateReadingTime($data_event->description);
+            $data_event->duration = $this->estimateReadingTime($data_event->description) . ' min read';
 
         }
         $viewers = LogEvent::where('id_event', $id_event)->count();
@@ -233,7 +268,7 @@ class MediaLearningController extends Controller
     private function estimateReadingTime($articleContent)
     {
         $wordCount = str_word_count($articleContent);
-        return ceil($wordCount / 225) . ' min read';
+        return ceil($wordCount / 225);
     }
 
 }

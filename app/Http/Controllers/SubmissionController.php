@@ -38,9 +38,9 @@ class SubmissionController extends Controller
             ->where('id_user', $user_id)
             ->exists();
 
-        if (!$userIsMember) {
-            return response_json(403, 'error', 'This community is private. Join to see their activities and feeds.');
-        }
+        // if (!$userIsMember) {
+        //     return response_json(403, 'error', 'This community is private. Join to see their activities and feeds.');
+        // }
 
         $submissionQuery = Event::where('id_community', $id_community)
             ->where('category', 'submission')

@@ -63,6 +63,7 @@ class MediaLearningController extends Controller
 
                 $transformedVideos[] = [
                     'id_event' => $video->id_event,
+                    'id_community' => $video->id_community,
                     'title' => $video->title,
                     'image' => $video->image,
                     'video_duration' => $video_duration_formatted,
@@ -144,6 +145,7 @@ class MediaLearningController extends Controller
 
                 $transformedPodcasts[] = [
                     'id_event' => $podcast->id_event,
+                    'id_community' => $podcast->id_community,
                     'title' => $podcast->title,
                     'image' => $podcast->image,
                     'total_podcast' => $total_podcast,
@@ -187,6 +189,7 @@ class MediaLearningController extends Controller
 
                 $transformedArticles[] = [
                     'id_event' => $article->id_event,
+                    'id_community' => $article->id_community,
                     'title' => $article->title,
                     'image' => $article->image,
                     'article_duration' => $article_duration,

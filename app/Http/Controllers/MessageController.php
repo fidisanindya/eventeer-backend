@@ -23,6 +23,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Cache;
 
 class MessageController extends Controller
 {
@@ -105,6 +106,9 @@ class MessageController extends Controller
                 "status" => "failed create group message",
             ], 409);
         }
+
+        $cacheKey = "list_message_{$userId}";
+        Cache::forget($cacheKey);
 
         $result = [
             'message'       => 'Successfully create group message',
@@ -226,6 +230,9 @@ class MessageController extends Controller
 
                 $insertedRecord = Message::find($insertedId);
 
+                $cacheKey = "list_message_{$userId}";
+                Cache::forget($cacheKey);
+
                 return response()->json([
                     "code" => 200,
                     "status" => "success send new message",
@@ -283,6 +290,9 @@ class MessageController extends Controller
 
                 $insertedRecord = Message::find($insertedId);
 
+                $cacheKey = "list_message_{$userId}";
+                Cache::forget($cacheKey);
+
                 return response()->json([
                     "code" => 200,
                     "status" => "success send new message",
@@ -313,6 +323,9 @@ class MessageController extends Controller
         ]);
 
         $insertedRecord = Message::find($insertedId);
+
+        $cacheKey = "list_message_{$userId}";
+        Cache::forget($cacheKey);
 
          return response()->json([
              "code" => 200,
@@ -366,6 +379,8 @@ class MessageController extends Controller
                 'id_user' => $userId,
                 'id_message_room' => $request->id_message_room,
             ]);
+            $cacheKey = "list_message_{$userId}";
+            Cache::forget($cacheKey);
             return response()->json([
                 'code'  => 200,
                 'status'=> 'success',
@@ -377,6 +392,8 @@ class MessageController extends Controller
             ], 200);
         } else {
             $check_pinned_message->delete();
+            $cacheKey = "list_message_{$userId}";
+            Cache::forget($cacheKey);
             return response()->json([
                 'code'  => 200,
                 'status'=> 'success',
@@ -518,53 +535,58 @@ class MessageController extends Controller
             "status" => "no files"
         ], 404);
     }
-    
-    public function get_list_message_v2(Request $request){
-               // Get id_user from Bearer Token
-               $userId = get_id_user_jwt($request);
 
-               $room_user = MessageUser::select('id_message_room')->where('id_user', $userId)->whereNull('deleted_at')->get();
-       
-               $data = MessageRoom::select('id_message_room', 'title', 'image', 'type')->whereIn('id_message_room', $room_user)->whereNull('deleted_at')->get();
-       
-               // $data_personal = MessageRoom::select('id_message_room', 'title', 'image', 'type')->where('type', 'personal')->whereIn('id_message_room', $room_user)->whereNull('deleted_at')->get();
-       
-               foreach($data as $dt){
-                   if($dt->type == "personal"){
-                       $data_personal = MessageUser::select('id_user')->where([['id_user', '!=', $userId], ['id_message_room', $dt->id_message_room]])->first();
-                       $personal_user = User::select('id_user', 'full_name')->where('id_user', $data_personal->id_user)->first();
-                       $dt->id_user = $personal_user->id_user;
-                       $dt->title = $personal_user->full_name;
-                       $dt->image = $personal_user->profile_picture;
-                   }
-                   $last_chat = Message::select('id_user', 'text', 'date')->where('id_message_room', $dt->id_message_room)->orderBy('date', 'desc')->first();
-                   if($last_chat){
-                       $dt->time_last_chat = $last_chat->date;
-                       $dt->last_chat_user = $last_chat->id_user;
-                       $dt->last_chat = $last_chat->text;
-                   }else{
-                       $dt->time_last_chat = null;
-                       $dt->last_chat_user = null;
-                       $dt->last_chat = null;
-                   }
-       
-                   $pinned_message = MessagePin::where([['id_message_room', $dt->id_message_room], ['id_user', $userId], ['deleted_at', null]])->first();
-       
-                   if($pinned_message){
-                       $dt->pinned = true;
-                   }else{
-                       $dt->pinned = false;
-                   }
-                   
-                   $total_unread = Message::where('id_message_room', (int)$dt->id_message_room)->whereNotIn('read', [$userId])->count();
-                   $dt->total_unread = $total_unread;
-               }
-       
-               return response()->json([
-                   'code' => 200,
-                   'status' => 'success',
-                   'result' => $data
-               ], 200);       
+    public function get_list_message_v2(Request $request){
+        // Get id_user from Bearer Token
+        $userId = get_id_user_jwt($request);
+
+        $cacheKey = "list_message_{$userId}";
+
+        $data = Cache::remember($cacheKey, 300, function () use ($userId) {
+            $room_user = MessageUser::select('id_message_room')->where('id_user', $userId)->whereNull('deleted_at')->get();
+
+            $data = MessageRoom::select('id_message_room', 'title', 'image', 'type')->whereIn('id_message_room', $room_user)->whereNull('deleted_at')->get();
+
+            // $data_personal = MessageRoom::select('id_message_room', 'title', 'image', 'type')->where('type', 'personal')->whereIn('id_message_room', $room_user)->whereNull('deleted_at')->get();
+
+            foreach($data as $dt){
+                if($dt->type == "personal"){
+                    $data_personal = MessageUser::select('id_user')->where([['id_user', '!=', $userId], ['id_message_room', $dt->id_message_room]])->first();
+                    $personal_user = User::select('id_user', 'full_name')->where('id_user', $data_personal->id_user)->first();
+                    $dt->id_user = $personal_user->id_user;
+                    $dt->title = $personal_user->full_name;
+                    $dt->image = $personal_user->profile_picture;
+                }
+                $last_chat = Message::select('id_user', 'text', 'date')->where('id_message_room', $dt->id_message_room)->orderBy('date', 'desc')->first();
+                if($last_chat){
+                    $dt->time_last_chat = $last_chat->date;
+                    $dt->last_chat_user = $last_chat->id_user;
+                    $dt->last_chat = $last_chat->text;
+                }else{
+                    $dt->time_last_chat = null;
+                    $dt->last_chat_user = null;
+                    $dt->last_chat = null;
+                }
+
+                $pinned_message = MessagePin::where([['id_message_room', $dt->id_message_room], ['id_user', $userId], ['deleted_at', null]])->first();
+
+                if($pinned_message){
+                    $dt->pinned = true;
+                }else{
+                    $dt->pinned = false;
+                }
+                
+                $total_unread = Message::where('id_message_room', (int)$dt->id_message_room)->whereNotIn('read', [$userId])->count();
+                $dt->total_unread = $total_unread;
+            }
+            return $data;
+        });
+
+        return response()->json([
+            'code' => 200,
+            'status' => 'success',
+            'result' => $data
+        ], 200);       
     }   
 
     public function delete_chat(Request $request){
@@ -592,6 +614,9 @@ class MessageController extends Controller
             $check_room_chat->update([
                 'deleted_at' => Carbon::now()->format('Y-m-d H:i:s'),
             ]);
+
+            $cacheKey = "list_message_{$userId}";
+            Cache::forget($cacheKey);
 
             return response()->json([
                 'code'  => 200,
@@ -777,6 +802,9 @@ class MessageController extends Controller
                 'deleted_at' => Carbon::now()->format('Y-m-d H:i:s'),
             ]);
 
+            $cacheKey = "list_message_{$userId}";
+            Cache::forget($cacheKey);
+
             return response()->json([
                 'code'  => 200,
                 'status'=> 'success',
@@ -836,6 +864,9 @@ class MessageController extends Controller
             $groupRoom->update([
                 'deleted_at' => Carbon::now()->format('Y-m-d H:i:s'),
             ]);
+
+            $cacheKey = "list_message_{$userId}";
+            Cache::forget($cacheKey);
 
             return response()->json([
                 'code'  => 200,
@@ -1011,6 +1042,9 @@ class MessageController extends Controller
                 ]);
             }
         }
+
+        $cacheKey = "list_message_{$userId}";
+        Cache::forget($cacheKey);
 
         return response()->json([
             "code" =>  200,

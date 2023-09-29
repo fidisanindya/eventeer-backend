@@ -140,6 +140,7 @@ Route::prefix('chat')->group(function () {
         Route::get('/get_list_friend', [MessageController::class, 'get_list_friend']);
         Route::post('/read_message', [MessageController::class, 'read_message']);
         Route::get('/total_unread_message', [MessageController::class, 'total_unread_message']);
+        Route::get('/detail-personal-chat/{id}', [MessageController::class, 'getDetailPersonalChat']);
     });
 });
 

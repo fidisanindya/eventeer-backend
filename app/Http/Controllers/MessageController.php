@@ -1066,16 +1066,23 @@ class MessageController extends Controller
         ], 200);
     }
 
-    public function getDetailPersonalChat(Request $request, $id_message_room){
+    public function getDetailPersonalChat(Request $request, $id_user){
         $user_id = get_id_user_jwt($request); //user login
-        $id_user = MessageUser::where([['id_message_room', $id_message_room], ['id_user', '!=', $user_id]])->pluck('id_user')->first(); //other's
         $data_user = User::select('id_user', 'id_job', 'profile_picture', 'full_name', 'bio')->where('id_user', $id_user)->first();
         $data_user->job = optional($data_user->job)->job_title;
 
         $data_user->groups_in_commons = $this->getCommonGroups($id_user, $user_id);
 
-        $data_user->total_file = Message::where([['id_message_room', (int)$id_message_room], ['type', '!=', 'txt']])->count();
-        $data_user->images_files = Message::where([['id_message_room', (int)$id_message_room], ['type',  '!=', 'txt']])->orderBy('date', 'desc')->limit(2)->get();
+        $message_room = MessageRoom::where('type', 'personal')->pluck('id_message_room');
+        $id_message_room = MessageUser::whereIn('id_user', [$id_user, $user_id])
+            ->whereIn('id_message_room', $message_room) 
+            ->groupBy('id_message_room')
+            ->havingRaw('COUNT(DISTINCT id_user) = 2')
+            ->pluck('id_message_room')
+            ->first();
+
+        $data_user->total_file = Message::where([['id_message_room', $id_message_room], ['type', '!=', 'txt']])->count();
+        $data_user->images_files = Message::where([['id_message_room', $id_message_room], ['type',  '!=', 'txt']])->orderBy('date', 'desc')->limit(2)->get();
 
         return response()->json([
             "code" => 200,

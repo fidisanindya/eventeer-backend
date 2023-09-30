@@ -552,7 +552,7 @@ class MessageController extends Controller
             foreach($data as $dt){
                 if($dt->type == "personal"){
                     $data_personal = MessageUser::select('id_user')->where([['id_user', '!=', $userId], ['id_message_room', $dt->id_message_room]])->first();
-                    $personal_user = User::select('id_user', 'full_name')->where('id_user', $data_personal->id_user)->first();
+                    $personal_user = User::select('id_user', 'full_name', 'profile_picture')->where('id_user', $data_personal->id_user)->first();
                     $dt->id_user = $personal_user->id_user;
                     $dt->title = $personal_user->full_name;
                     $dt->image = $personal_user->profile_picture;

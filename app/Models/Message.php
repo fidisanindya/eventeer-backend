@@ -11,7 +11,7 @@ class Message extends Model
 
     public $incrementing = true;
     
-    protected $fillable = ['text', 'type', 'id_user', 'id_message_room']; 
+    protected $fillable = ['text', 'file', 'type', 'id_user', 'id_message_room']; 
 
     protected $primaryKey = '_id';
 

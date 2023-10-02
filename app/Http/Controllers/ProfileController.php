@@ -28,57 +28,64 @@ use App\Http\Controllers\Controller;
 use App\Models\Comment;
 use App\Models\Notification;
 use App\Jobs\SendPushNotification;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 class ProfileController extends Controller
 {
     public function get_profile($id){
-        $data = User::where('id_user', $id)->first();
-        $data->makeHidden('id_city', 'id_company', 'id_job');
-        if($data){
-            // City
-            $city = City::select('id_city', 'city_name')->where('id_city', $data->id_city)->first();
-            $data->city = $city;
+        $cacheKey = "get_profile_{$id}";
 
-            // Company
-            $company = Company::select('id_company', 'company_name')->where('id_company', $data->id_company)->first();
-            $data->company = $company;
+        $data = Cache::remember($cacheKey, 300, function () use ($id) {
+            $data = User::where('id_user', $id)->first();
+            $data->makeHidden('id_city', 'id_company', 'id_job');
+            if($data){
+                // City
+                $city = City::select('id_city', 'city_name')->where('id_city', $data->id_city)->first();
+                $data->city = $city;
 
-            // Profession
-            $profession = Profession::select('id_job', 'job_title')->where('id_job', $data->id_job)->first();
-            $data->profession = $profession;
+                // Company
+                $company = Company::select('id_company', 'company_name')->where('id_company', $data->id_company)->first();
+                $data->company = $company;
 
-            // Social Media
-            $socialMedia = UserProfile::select('key_name', 'value')->whereIn('key_name', ['instagram', 'twitter', 'youtube', 'github', 'linkedin', 'website'])->where('id_user', $data->id_user)->get();
-            foreach ($socialMedia as $sm){
-                $data->{$sm->key_name} = $sm->value;
+                // Profession
+                $profession = Profession::select('id_job', 'job_title')->where('id_job', $data->id_job)->first();
+                $data->profession = $profession;
+
+                // Social Media
+                $socialMedia = UserProfile::select('key_name', 'value')->whereIn('key_name', ['instagram', 'twitter', 'youtube', 'github', 'linkedin', 'website'])->where('id_user', $data->id_user)->get();
+                foreach ($socialMedia as $sm){
+                    $data->{$sm->key_name} = $sm->value;
+                }
+                
+                // Interest
+                $interestUser = UserProfile::select('value')->where([['id_user', '=', $data->id_user], ['key_name', '=', 'id_interest']])->get();
+                $interestData = Interest::select('id_interest', 'interest_name')->whereIn('id_interest', $interestUser)->get();
+
+                $data->tag = $interestData;
+
+                // Following and Followers
+                $data->follower = Follow::where('id_user', $data->id_user)->count();
+                $data->following = Follow::where('followed_by', $data->id_user)->count();
+
+                // Community 
+                $communityUser = CommunityUser::select('id_community')->where('id_user', $data->id_user)->get();
+                $data->community = Community::select('id_community', 'image', 'title', 'start_date', 'end_date')->whereIn('id_community', $communityUser)->get();
+
+                // Portofolio
+                $data->portofolio = Portofolio::select('id_portofolio', 'project_name', 'project_url', 'start_date', 'end_date')->where('id_user', $data->id_user)->get();
+
+                $submissionUser = Submission::select('id_submission')->where('id_user', $data->id_user)->get();
+                $data->certificate = Certificate::whereIn('id_submission', $submissionUser)->get();
+
+                return response_json(200, 'success', $data);
             }
-            
-             // Interest
-            $interestUser = UserProfile::select('value')->where([['id_user', '=', $data->id_user], ['key_name', '=', 'id_interest']])->get();
-            $interestData = Interest::select('id_interest', 'interest_name')->whereIn('id_interest', $interestUser)->get();
 
-            $data->tag = $interestData;
+            return response_json(404, 'failed', 'User not found');
+        });
 
-            // Following and Followers
-            $data->follower = Follow::where('id_user', $data->id_user)->count();
-            $data->following = Follow::where('followed_by', $data->id_user)->count();
-
-            // Community 
-            $communityUser = CommunityUser::select('id_community')->where('id_user', $data->id_user)->get();
-            $data->community = Community::select('id_community', 'image', 'title', 'start_date', 'end_date')->whereIn('id_community', $communityUser)->get();
-
-            // Portofolio
-            $data->portofolio = Portofolio::select('id_portofolio', 'project_name', 'project_url', 'start_date', 'end_date')->where('id_user', $data->id_user)->get();
-
-            $submissionUser = Submission::select('id_submission')->where('id_user', $data->id_user)->get();
-            $data->certificate = Certificate::whereIn('id_submission', $submissionUser)->get();
-
-            return response_json(200, 'success', $data);
-        }
-
-        return response_json(404, 'failed', 'User not found');
+        return $data;
     }
 
     public function edit_profile_picture(Request $request){
@@ -113,6 +120,9 @@ class ProfileController extends Controller
         $query = User::where('id_user', $request->id_user)->update([
             'profile_picture' => $imageUrl
         ]);
+
+        $cacheKey = "get_profile_{$request->id_user}";
+        Cache::forget($cacheKey);
 
         if($query){
             return response_json(200, 'success', 'Success edit profile picture');
@@ -151,6 +161,9 @@ class ProfileController extends Controller
         $query = User::where('id_user', $request->id_user)->update([
             'cover_image' => $imageUrl
         ]);
+
+        $cacheKey = "get_profile_{$request->id_user}";
+        Cache::forget($cacheKey);
 
         if($query){
             return response_json(200, 'success', 'Success edit banner picture');
@@ -337,6 +350,9 @@ class ProfileController extends Controller
             'id_company' => $company->id_company,
             'id_job' => $profession->id_job
         ]);
+
+        $cacheKey = "get_profile_{$user['id_user']}";
+        Cache::forget($cacheKey);
 
         return response_json(200, 'success', 'Success edit profile');
     }

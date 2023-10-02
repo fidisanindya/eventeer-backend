@@ -191,6 +191,7 @@ class MediaLearningController extends Controller
                     'id_event' => $article->id_event,
                     'id_community' => $article->id_community,
                     'title' => $article->title,
+                    'description' => $article->description,
                     'image' => $article->image,
                     'article_duration' => $article_duration,
                     'full_name' => $article->user->full_name,

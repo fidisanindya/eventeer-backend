@@ -1065,4 +1065,61 @@ class MessageController extends Controller
             "result" => $total_unread
         ], 200);
     }
+
+    public function getDetailPersonalChat(Request $request, $id_user){
+        $user_id = get_id_user_jwt($request); //user login
+        $data_user = User::select('id_user', 'id_job', 'profile_picture', 'full_name', 'bio')->where('id_user', $id_user)->first();
+        $data_user->job = optional($data_user->job)->job_title;
+
+        $data_user->groups_in_commons = $this->getCommonGroups($id_user, $user_id);
+
+        $message_room = MessageRoom::where('type', 'personal')->pluck('id_message_room');
+        $id_message_room = MessageUser::whereIn('id_user', [$id_user, $user_id])
+            ->whereIn('id_message_room', $message_room) 
+            ->groupBy('id_message_room')
+            ->havingRaw('COUNT(DISTINCT id_user) = 2')
+            ->pluck('id_message_room')
+            ->first();
+
+        $data_user->total_file = Message::where([['id_message_room', $id_message_room], ['type', '!=', 'txt']])->count();
+        $data_user->images_files = Message::where([['id_message_room', $id_message_room], ['type',  '!=', 'txt']])->orderBy('date', 'desc')->limit(2)->get();
+
+        return response()->json([
+            "code" => 200,
+            "status" => "success",
+            "result" => $data_user
+        ], 200);
+    }
+
+    private function getCommonGroups($id_user, $user_id)
+    {
+        $groupIds = MessageUser::select('id_message_room')
+            ->whereIn('id_message_room', function ($query) use ($id_user, $user_id) {
+                $query->select('id_message_room')
+                    ->from('module_message_user')
+                    ->whereIn('id_user', [$id_user, $user_id])
+                    ->groupBy('id_message_room')
+                    ->havingRaw('COUNT(DISTINCT id_user) = 2');
+            })
+            ->distinct()
+            ->get();
+        
+        $result = MessageRoom::select('id_message_room', 'title')->whereIn('id_message_room', $groupIds)->where('type', 'group')->get();
+        $finalResult = $result->map(function ($item) use ($user_id){
+            $membersData = MessageUser::select('system_users.full_name')
+                ->join('system_users', 'module_message_user.id_user', '=', 'system_users.id_user')
+                ->where('module_message_user.id_message_room', $item->id_message_room)
+                ->where('module_message_user.id_user', '!=', $user_id)
+                ->pluck('full_name')
+                ->toArray();
+
+            return [
+                "id_message_room" => $item->id_message_room,
+                "title" => $item->title,
+                "members" => $membersData,
+            ];
+        });
+
+        return $finalResult;
+    }
 }

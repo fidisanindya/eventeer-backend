@@ -336,6 +336,8 @@ class MessageController extends Controller
 
         $cacheKey = "list_message_{$userId}";
         Cache::forget($cacheKey);
+        $cacheKeyDetail = "detail_message_{$request->id_message_room}";
+        Cache::forget($cacheKeyDetail);
 
          return response()->json([
              "code" => 200,
@@ -614,37 +616,43 @@ class MessageController extends Controller
     }
 
     public function get_detail_message(Request $request){
-        $id_message_room = $request->input('id_message_room');
 
         $userId = get_id_user_jwt($request);
+        $cacheKey = "detail_message_{$request->id_message_room}";
 
-        $message_unread = Message::where("id_message_room", (int)$request->id_message_room)->whereNotIn('read', [$userId])->get();
+        $data = Cache::remember($cacheKey, 300, function () use ($userId, $request) {
+            $id_message_room = $request->input('id_message_room');
 
-        foreach($message_unread as $mu){
-            if($mu->id_user != $userId){
-                $data = $mu->read;
-                array_push($data, $userId);
-                
-                Message::where("id_message_room", (int)$request->id_message_room)->whereNotIn('read', [$userId])->update([
-                    'read' => $data
-                ]);
+            $message_unread = Message::where("id_message_room", (int)$request->id_message_room)->whereNotIn('read', [$userId])->get();
+    
+            foreach($message_unread as $mu){
+                if($mu->id_user != $userId){
+                    $data = $mu->read;
+                    array_push($data, $userId);
+                    
+                    Message::where("id_message_room", (int)$request->id_message_room)->whereNotIn('read', [$userId])->update([
+                        'read' => $data
+                    ]);
+                }
             }
-        }
-
-        $detail_message = Message::where('id_message_room', (int)$id_message_room)->get();
-
-        if($detail_message){    
+    
+            $detail_message = Message::where('id_message_room', (int)$id_message_room)->get();
+    
+            if($detail_message){    
+                return response()->json([
+                    "code" => 200,
+                    "status" => "success",
+                    "result" => $detail_message
+                ], 200);
+            }
+    
             return response()->json([
-                "code" => 200,
-                "status" => "success",
-                "result" => $detail_message
-            ], 200);
-        }
+                "code" => 404,
+                "status" => "no message"
+            ], 404);
+        });
 
-        return response()->json([
-            "code" => 404,
-            "status" => "no message"
-        ], 404);
+        return $data;
     }
 
     public function get_list_message(Request $request){

@@ -232,6 +232,7 @@ class MessageController extends Controller
                     "with_id_user" => $request->with_id_user ?? null,
                     "id_message_room" => (int)($request->id_message_room ?? $query->id_message_room),
                     "read" => [$userId],
+                    "updated_at" => null
                 ]);
 
                 $insertedRecord = Message::find($insertedId);
@@ -294,6 +295,7 @@ class MessageController extends Controller
                     "with_id_user" => $request->with_id_user ?? null,
                     "id_message_room" => (int)($request->id_message_room ?? $query->id_message_room),
                     "read" => [$userId],
+                    "updated_at" => null
                 ]);
 
                 $insertedRecord = Message::find($insertedId);
@@ -330,6 +332,7 @@ class MessageController extends Controller
             "with_id_user" => $request->with_id_user ?? null,
             "id_message_room" => (int)($request->id_message_room ?? $query->id_message_room),
             "read" => [$userId],
+            "updated_at" => null
         ]);
 
         $insertedRecord = Message::find($insertedId);

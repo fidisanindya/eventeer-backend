@@ -232,6 +232,7 @@ class MessageController extends Controller
                     "with_id_user" => $request->with_id_user ?? null,
                     "id_message_room" => (int)($request->id_message_room ?? $query->id_message_room),
                     "read" => [$userId],
+                    "updated_at" => null
                 ]);
 
                 $insertedRecord = Message::find($insertedId);
@@ -294,6 +295,7 @@ class MessageController extends Controller
                     "with_id_user" => $request->with_id_user ?? null,
                     "id_message_room" => (int)($request->id_message_room ?? $query->id_message_room),
                     "read" => [$userId],
+                    "updated_at" => null
                 ]);
 
                 $insertedRecord = Message::find($insertedId);
@@ -330,6 +332,7 @@ class MessageController extends Controller
             "with_id_user" => $request->with_id_user ?? null,
             "id_message_room" => (int)($request->id_message_room ?? $query->id_message_room),
             "read" => [$userId],
+            "updated_at" => null
         ]);
 
         $insertedRecord = Message::find($insertedId);
@@ -355,202 +358,6 @@ class MessageController extends Controller
              ]
          ], 200);
     }
-
-    // public function send_message(Request $request){
-    //     $request->validate([
-    //         "text" => "required",
-    //         "id_message_room" => "",
-    //         "with_id_user" => ""
-    //     ]);
-
-    //     date_default_timezone_set('Asia/Jakarta');
-
-    //      // Get id_user from Bearer Token
-    //      $userId = get_id_user_jwt($request);
- 
-    //      if(!$request->id_message_room){
-    //         $validator = Validator::make($request->all(), [
-    //             'with_id_user' => 'required|numeric',
-    //         ]);
-    
-    //         if ($validator->fails()) {
-    //             return response()->json([
-    //                 'code'      => 422,
-    //                 'status'    => 'failed',
-    //                 'result'    => $validator->messages(),
-    //             ], 422);
-    //         }
-
-    //         $query = MessageRoom::create([
-    //             'id_user' => $userId,
-    //             'title' => "",
-    //             'type' => 'personal'
-    //          ]);
-             
-    //          MessageUser::create([
-    //             'id_user' => $query->id_user,
-    //             'id_message_room' => $query->id_message_room,
-    //             'role' => 'member'
-    //          ]);
-    //          MessageUser::create([
-    //             'id_user' => $request->with_id_user,
-    //             'id_message_room' => $query->id_message_room,
-    //             'role' => 'member'
-    //          ]);
-             
-    //     }
-        
-    //     if($request->hasFile('text')) {
-    //         if($request->text->getClientOriginalExtension() == 'pdf'){
-    //             $maxSize = Validator::make($request->all(), [
-    //                 'text' => 'required|file|mimes:pdf|max:30000',
-    //             ]);
-        
-    //             if ($maxSize->fails()) {
-    //                 return response_json(422, 'failed', $maxSize->messages());
-    //             }
-
-    //             // size pdf in kb
-
-    //             $sizePDF = round($request->text->getSize() / 1024, 2);
-
-    //             $filename = date('dmYhis') . '_' . $request->text->getClientOriginalName();
-
-    //             Storage::put('public/pdf_queue/' . $filename, file_get_contents($request->text));
-
-    //             UploadPDF::dispatch($filename);
-
-    //             $key = "userfiles/chat/" . $filename;
-
-    //             $pdfUrl = config('filesystems.disks.s3.bucketurl') . "/" . $key;
-
-    //             $insertedId = Message::insertGetId([
-    //                 "text" => $pdfUrl,
-    //                 "type" => 'pdf',
-    //                 "name_file" => $filename,
-    //                 "size_file_kb" => $sizePDF,
-    //                 "date" => date('Y-m-d h:i:s'),
-    //                 "id_user" => $userId,
-    //                 "with_id_user" => $request->with_id_user ?? null,
-    //                 "id_message_room" => (int)($request->id_message_room ?? $query->id_message_room),
-    //                 "read" => [$userId],
-    //             ]);
-
-    //             $insertedRecord = Message::find($insertedId);
-
-    //             $cacheKey = "list_message_{$userId}";
-    //             Cache::forget($cacheKey);
-
-    //             return response()->json([
-    //                 "code" => 200,
-    //                 "status" => "success send new message",
-    //                 "result" => [
-    //                    "text" => $insertedRecord->text,
-    //                    "type" => $insertedRecord->type,
-    //                    "name_file" => $insertedRecord->name_file,
-    //                    "size_file_kb" => $insertedRecord->size_file_kb,
-    //                    "date" => $insertedRecord->date,
-    //                    "id_user" => $insertedRecord->id_user,
-    //                    "with_id_user" => $insertedRecord->with_id_user,
-    //                    "id_message_room" => $insertedRecord->id_message_room,
-    //                 ]
-    //             ], 200);
-    //         }else{
-    //             $maxSize = Validator::make($request->all(), [
-    //                 'text' => 'required|image|max:10000',
-    //             ]);
-        
-    //             if ($maxSize->fails()) {
-    //                 return response_json(422, 'failed', $maxSize->messages());
-    //             }
-
-    //             $image = Image::make($request->text)->resize(400, null, function ($constraint) {
-    //                 $constraint->aspectRatio();
-    //             });
-    
-    //             $filename = date('dmYhis') . '_picture.' . $request->text->getClientOriginalExtension();
-    
-    //             $data = $image->encode($request->text->getClientOriginalExtension())->__toString();
-    
-    //             Storage::put('public/picture_queue/' . $filename, $data);
-
-    //             // size image in kb
-
-    //             $sizeImg = round(Storage::size('public/picture_queue/' . $filename) / 1024 , 2);
-    
-    //             UploadImageChat::dispatch($filename);
-    
-    //             $key = "userfiles/chat/" . $filename;
-    
-    //             $imageUrl = config('filesystems.disks.s3.bucketurl') . "/" . $key;
-
-    //             $insertedId = Message::insertGetId([
-    //                 "text" => $imageUrl,
-    //                 "type" => 'photo',
-    //                 "name_file" => $filename,
-    //                 "size_file_kb" => $sizeImg,
-    //                 "date" => date('Y-m-d h:i:s'),
-    //                 "id_user" => $userId,
-    //                 "with_id_user" => $request->with_id_user ?? null,
-    //                 "id_message_room" => (int)($request->id_message_room ?? $query->id_message_room),
-    //                 "read" => [$userId],
-    //             ]);
-
-    //             $insertedRecord = Message::find($insertedId);
-
-    //             $cacheKey = "list_message_{$userId}";
-    //             Cache::forget($cacheKey);
-
-    //             return response()->json([
-    //                 "code" => 200,
-    //                 "status" => "success send new message",
-    //                 "result" => [
-    //                     "text" => $insertedRecord->text,
-    //                     "type" => $insertedRecord->type,
-    //                     "name_file" => $insertedRecord->name_file,
-    //                     "size_file_kb" => $insertedRecord->size_file_kb,
-    //                     "date" => $insertedRecord->date,
-    //                     "id_user" => $insertedRecord->id_user,
-    //                     "with_id_user" => $insertedRecord->with_id_user,
-    //                     "id_message_room" => $insertedRecord->id_message_room,
-    //                 ]
-    //             ], 200);
-    //         }
-    //     }
-
-    //     $insertedId = Message::insertGetId([
-    //         "text" => $request->text,
-    //         "type" => 'txt',
-    //         "name_file" => null,
-    //         "size_file_kb" => null,
-    //         "date" => date('Y-m-d h:i:s'),
-    //         "id_user" => $userId,
-    //         "with_id_user" => $request->with_id_user ?? null,
-    //         "id_message_room" => (int)($request->id_message_room ?? $query->id_message_room),
-    //         "read" => [$userId],
-    //     ]);
-
-    //     $insertedRecord = Message::find($insertedId);
-
-    //     $cacheKey = "list_message_{$userId}";
-    //     Cache::forget($cacheKey);
-
-    //      return response()->json([
-    //          "code" => 200,
-    //          "status" => "success send new message",
-    //          "result" => [
-    //             "text" => $insertedRecord->text,
-    //             "type" => $insertedRecord->type,
-    //             "name_file" => $insertedRecord->name_file,
-    //             "size_file_kb" => $insertedRecord->size_file_kb,
-    //             "date" => $insertedRecord->date,
-    //             "id_user" => $insertedRecord->id_user,
-    //             "with_id_user" => $insertedRecord->with_id_user,
-    //             "id_message_room" => $insertedRecord->id_message_room,
-    //          ]
-    //      ], 200);
-    // }
-
 
     public function post_pin_unpin_chat(Request $request){
         $validator = Validator::make($request->all(), [

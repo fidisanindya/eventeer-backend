@@ -30,6 +30,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Cache;
 use Image;
 
 class CommunityController extends Controller
@@ -602,6 +603,9 @@ class CommunityController extends Controller
                 ]);
             }
 
+            $cacheKey = "user_communities_{$userId}";
+            Cache::forget($cacheKey);
+
             return response()->json([
                 'code' => 200,
                 'status' => 'success request join community'
@@ -636,6 +640,9 @@ class CommunityController extends Controller
             $deleteQuery = CommunityUser::where([['id_community', $community->id_community], ['id_user', $userId]])->delete();
 
             if($deleteQuery){
+                $cacheKey = "user_communities_{$userId}";
+                Cache::forget($cacheKey);
+
                 return response()->json([
                     'code' => 200,
                     'status' => 'leave the community successfully'
@@ -1091,20 +1098,24 @@ class CommunityController extends Controller
     {
         $user_id = get_id_user_jwt($request);
 
-        $communities = CommunityUser::where('id_user', $user_id)->pluck('id_community');
+        $cacheKey = "user_communities_{$user_id}";
 
-        $query = Community::select('id_community', 'title', 'image', 'type', 'status')
-            ->whereIn('id_community', $communities)
-            ->withCount(['community_user' => function ($query) {
-                $query->where('status', 'active');
-            }])
-            ->where('status', 'active');
+        $result = Cache::remember($cacheKey, 600, function () use ($user_id, $request) {
+            $communities = CommunityUser::where('id_user', $user_id)->pluck('id_community');
 
-        if ($request->input('community') !== null) {
-            $query->where('title', 'like', '%' . $request->input('community') . '%');
-        }
+            $query = Community::select('id_community', 'title', 'image', 'type', 'status')
+                ->whereIn('id_community', $communities)
+                ->withCount(['community_user' => function ($query) {
+                    $query->where('status', 'active');
+                }])
+                ->where('status', 'active');
 
-        $result = $query->get();
+            if ($request->input('community') !== null) {
+                $query->where('title', 'like', '%' . $request->input('community') . '%');
+            }
+
+            return $query->get();
+        });
 
         return response_json(200, 'success', $result);
     }

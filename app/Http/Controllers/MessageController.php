@@ -239,6 +239,12 @@ class MessageController extends Controller
 
                 $cacheKey = "list_message_{$userId}";
                 Cache::forget($cacheKey);
+                
+                $cacheKey = "list_message_{$request->with_id_user}";
+                Cache::forget($cacheKey);
+
+                $cacheKeyDetail = "detail_message_{$request->id_message_room}";
+                Cache::forget($cacheKeyDetail);
 
                 return response()->json([
                     "code" => 200,
@@ -303,6 +309,12 @@ class MessageController extends Controller
                 $cacheKey = "list_message_{$userId}";
                 Cache::forget($cacheKey);
 
+                $cacheKey = "list_message_{$request->with_id_user}";
+                Cache::forget($cacheKey);
+
+                $cacheKeyDetail = "detail_message_{$request->id_message_room}";
+                Cache::forget($cacheKeyDetail);
+
                 return response()->json([
                     "code" => 200,
                     "status" => "success send new message",
@@ -339,6 +351,10 @@ class MessageController extends Controller
 
         $cacheKey = "list_message_{$userId}";
         Cache::forget($cacheKey);
+
+        $cacheKeyPersonal = "list_message_{$request->with_id_user}";
+        Cache::forget($cacheKeyPersonal);
+
         $cacheKeyDetail = "detail_message_{$request->id_message_room}";
         Cache::forget($cacheKeyDetail);
 
@@ -395,8 +411,10 @@ class MessageController extends Controller
                 'id_user' => $userId,
                 'id_message_room' => $request->id_message_room,
             ]);
+
             $cacheKey = "list_message_{$userId}";
             Cache::forget($cacheKey);
+
             return response()->json([
                 'code'  => 200,
                 'status'=> 'success',
@@ -466,6 +484,17 @@ class MessageController extends Controller
         // Get id_user from Bearer Token
         $userId = get_id_user_jwt($request);
 
+        // Check if cached data exists
+        $cacheKey = "list_message_{$userId}";
+        if (Cache::has($cacheKey)) {
+            $cachedData = Cache::get($cacheKey);
+            return response()->json([
+                'code' => 200,
+                'status' => 'success',
+                'result' => $cachedData,
+            ], 200);
+        }
+
         $message = MessageUser::leftJoin('module_message_room', 'module_message_user.id_message_room', '=', 'module_message_room.id_message_room')
         ->leftJoin('module_message_pin', function ($join) use ($userId) {
             $join->on('module_message_room.id_message_room', '=', 'module_message_pin.id_message_room')
@@ -528,6 +557,7 @@ class MessageController extends Controller
             $msg->total_unread = $total_unread;
         }
 
+        Cache::put($cacheKey, $message, 2880); 
         return response()->json([
             'code' => 200,
             'status' => 'success',
@@ -1068,6 +1098,12 @@ class MessageController extends Controller
 
         $cacheKey = "list_message_{$userId}";
         Cache::forget($cacheKey);
+
+        $cacheKeyPersonal = "list_message_{$request->with_id_user}";
+        Cache::forget($cacheKeyPersonal);
+
+        $cacheKeyDetail = "detail_message_{$request->id_message_room}";
+        Cache::forget($cacheKeyDetail);
 
         return response()->json([
             "code" =>  200,

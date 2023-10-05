@@ -354,6 +354,9 @@ class ProfileController extends Controller
         $cacheKey = "get_profile_{$user['id_user']}";
         Cache::forget($cacheKey);
 
+        $cacheKeyMessage = "list_message_{$user['id_user']}";
+        Cache::forget($cacheKeyMessage);
+
         return response_json(200, 'success', 'Success edit profile');
     }
 

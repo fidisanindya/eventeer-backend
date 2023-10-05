@@ -534,7 +534,7 @@ class MessageController extends Controller
                 $data_personal = MessageUser::select('id_user')->where([['id_user', '!=', $userId], ['id_message_room', $msg->id_message_room]])->first();
                 $personal_user = User::select('id_user', 'full_name', 'profile_picture')->where('id_user', $data_personal->id_user)->first();
                 $msg->id_user = $personal_user->id_user;
-                $msg->image = $personal_user->profie_picture;
+                $msg->image = $personal_user->profile_picture;
             }
             
             $last_chat = Message::select('id_user', 'text', 'date', 'type')->where('id_message_room', $msg->id_message_room)->orderBy('date', 'desc')->first();
@@ -565,7 +565,7 @@ class MessageController extends Controller
             $msg->total_unread = $total_unread;
         }
 
-        Cache::put($cacheKey, $message, 2880); 
+        Cache::put($cacheKey, $message, 2880);
         return response()->json([
             'code' => 200,
             'status' => 'success',
@@ -603,7 +603,7 @@ class MessageController extends Controller
 
         $cacheKey = "list_message_{$userId}";
 
-        $data = Cache::remember($cacheKey, 300, function () use ($userId) {
+        $data = Cache::remember($cacheKey, 172800, function () use ($userId) {
             $room_user = MessageUser::select('id_message_room')->where('id_user', $userId)->whereNull('deleted_at')->get();
 
             $data = MessageRoom::select('id_message_room', 'title', 'image', 'type')->whereIn('id_message_room', $room_user)->whereNull('deleted_at')->get();

@@ -1100,7 +1100,7 @@ class CommunityController extends Controller
 
         $cacheKey = "user_communities_{$user_id}";
 
-        $result = Cache::remember($cacheKey, 600, function () use ($user_id, $request) {
+        $result = Cache::remember($cacheKey, 172800, function () use ($user_id, $request) {
             $communities = CommunityUser::where('id_user', $user_id)->pluck('id_community');
 
             $query = Community::select('id_community', 'title', 'image', 'type', 'status')

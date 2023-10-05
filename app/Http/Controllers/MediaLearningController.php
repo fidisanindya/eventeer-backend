@@ -241,6 +241,7 @@ class MediaLearningController extends Controller
                     ->from('log_event')
                     ->whereColumn('log_event.id_event', 'module_event.id_event');
             })
+            ->limit(3)
             ->get();
 
         $data_event->related = $relatedEvents->map(function ($result) {

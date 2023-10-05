@@ -437,9 +437,9 @@ class MessageController extends Controller
                     $data = $mu->read;
                     array_push($data, $userId);
                     
-                    Message::where("id_message_room", (int)$request->id_message_room)->whereNotIn('read', [$userId])->update([
-                        'read' => $data
-                    ]);
+                    // Message::where("id_message_room", (int)$request->id_message_room)->whereNotIn('read', [$userId])->update([
+                    //     'read' => $data
+                    // ]);
                 }
             }
     
@@ -495,8 +495,9 @@ class MessageController extends Controller
         foreach($message as $msg){
             if($msg->type == "personal"){
                 $data_personal = MessageUser::select('id_user')->where([['id_user', '!=', $userId], ['id_message_room', $msg->id_message_room]])->first();
-                $personal_user = User::select('id_user', 'full_name')->where('id_user', $data_personal->id_user)->first();
+                $personal_user = User::select('id_user', 'full_name', 'profile_picture')->where('id_user', $data_personal->id_user)->first();
                 $msg->id_user = $personal_user->id_user;
+                $msg->image = $personal_user->profie_picture;
             }
             
             $last_chat = Message::select('id_user', 'text', 'date', 'type')->where('id_message_room', $msg->id_message_room)->orderBy('date', 'desc')->first();

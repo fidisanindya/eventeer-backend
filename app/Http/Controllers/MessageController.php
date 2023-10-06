@@ -445,11 +445,10 @@ class MessageController extends Controller
         $userId = get_id_user_jwt($request);
         $cacheKey = "detail_message_{$request->id_message_room}";
 
-        $data = Cache::remember($cacheKey, 300, function () use ($userId, $request) {
-            $limit = $request->input('limit', 30);
-            $offset = $request->input('offset', 0);
+        $limit = $request->input('limit', 30);
+        $offset = $request->input('offset', 0);
+        Cache::remember($cacheKey, 300, function () use ($userId, $request) {
             $id_message_room = $request->input('id_message_room');
-
             $message_unread = Message::where("id_message_room", (int)$request->id_message_room)->whereNotIn('read', [$userId])->get();
     
             foreach($message_unread as $mu){
@@ -463,29 +462,30 @@ class MessageController extends Controller
                 }
             }
     
-            $detail_message = Message::where('id_message_room', (int)$id_message_room)
-            ->orderBy('date', 'desc')
+            $detail_message = Message::where('id_message_room', (int)$id_message_room)->get();
+            return $detail_message;
+        });
+
+        $detail_message = Message::where('id_message_room', (int)$request->id_message_room)
+        ->orderBy('date', 'desc')
             ->when($limit !== null, function ($query) use ($limit, $offset) {
                 $query->skip($offset)->take($limit);
             })
-            ->get();
-            $detail_message = $detail_message->sortBy('date');
-    
-            if($detail_message){    
-                return response()->json([
-                    "code" => 200,
-                    "status" => "success",
-                    "result" => $detail_message->values()->all()
-                ], 200);
-            }
-    
-            return response()->json([
-                "code" => 404,
-                "status" => "no message"
-            ], 404);
-        });
+        ->get();
+        $detail_message = $detail_message->sortBy('date');
 
-        return $data;
+        if($detail_message){    
+            return response()->json([
+                "code" => 200,
+                "status" => "success",
+                "result" => $detail_message->values()->all()
+            ], 200);
+        }
+
+        return response()->json([
+            "code" => 404,
+            "status" => "no message"
+        ], 404);
     }
 
     public function get_list_message(Request $request){

@@ -160,6 +160,7 @@ class MessageController extends Controller
 
          // Get id_user from Bearer Token
          $userId = get_id_user_jwt($request);
+         $id_user = MessageUser::where([['id_message_room', $request->id_message_room], ['id_user', '!=', $userId]])->pluck('id_user')->first();
  
          if(!$request->id_message_room){
             $validator = Validator::make($request->all(), [
@@ -243,8 +244,11 @@ class MessageController extends Controller
                 $cacheKey = "list_message_{$request->with_id_user}";
                 Cache::forget($cacheKey);
 
-                $cacheKeyDetail = "detail_message_{$request->id_message_room}";
+                $cacheKeyDetail = "detail_message_{$userId}";
                 Cache::forget($cacheKeyDetail);
+
+                $cacheDetail = "detail_message_{$id_user}";
+                Cache::forget($cacheDetail);
 
                 return response()->json([
                     "code" => 200,
@@ -312,8 +316,11 @@ class MessageController extends Controller
                 $cacheKey = "list_message_{$request->with_id_user}";
                 Cache::forget($cacheKey);
 
-                $cacheKeyDetail = "detail_message_{$request->id_message_room}";
+                $cacheKeyDetail = "detail_message_{$userId}";
                 Cache::forget($cacheKeyDetail);
+
+                $cacheDetail = "detail_message_{$id_user}";
+                Cache::forget($cacheDetail);
 
                 return response()->json([
                     "code" => 200,
@@ -443,11 +450,11 @@ class MessageController extends Controller
     public function get_detail_message(Request $request){
 
         $userId = get_id_user_jwt($request);
-        $cacheKey = "detail_message_{$request->id_message_room}";
+        $cacheKey = "detail_message_{$userId}";
 
         $limit = $request->input('limit', 30);
         $offset = $request->input('offset', 0);
-        Cache::remember($cacheKey, 300, function () use ($userId, $request) {
+        Cache::remember($cacheKey, 172800, function () use ($userId, $request) {
             $id_message_room = $request->input('id_message_room');
             $message_unread = Message::where("id_message_room", (int)$request->id_message_room)->whereNotIn('read', [$userId])->get();
     
@@ -1110,8 +1117,12 @@ class MessageController extends Controller
         $cacheKeyPersonal = "list_message_{$request->with_id_user}";
         Cache::forget($cacheKeyPersonal);
 
-        $cacheKeyDetail = "detail_message_{$request->id_message_room}";
+        $cacheKeyDetail = "detail_message_{$userId}";
         Cache::forget($cacheKeyDetail);
+
+        $id_user = MessageUser::where([['id_message_room', $request->id_message_room], ['id_user', '!=', $userId]])->pluck('id_user')->first();
+        $cacheDetail = "detail_message_{$id_user}";
+        Cache::forget($cacheDetail);
 
         return response()->json([
             "code" =>  200,

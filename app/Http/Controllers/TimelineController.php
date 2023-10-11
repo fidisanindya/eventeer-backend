@@ -108,6 +108,22 @@ class TimelineController extends Controller
         return $videoUrl;
     }
 
+    public function list_feed(Request $request)
+    {
+        // Get user id from jwt
+        $user_id = get_id_user_jwt($request);
+
+        $result = new stdClass;
+
+        $id_community = $request->input('id_community');
+        
+        $limit = $request->input('limit', 10);
+        $start = $request->input('start', 0); 
+        $page = ceil(($start + 1) / $limit);
+
+        
+    }
+
 }
 
 ?>

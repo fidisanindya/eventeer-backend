@@ -407,7 +407,7 @@ class MessageController extends Controller
                     'result'=> 'Message room does not exist'
                 ], 404);
             }
-            if($check_max_pinned >= 4) {
+            if($check_max_pinned >= 3) {
                 return response()->json([
                     'code'  => 429,
                     'status'=> 'failed',

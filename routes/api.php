@@ -15,6 +15,7 @@ use App\Http\Controllers\MigrationController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\SubmissionController;
+use App\Http\Controllers\TimelineController;
 
 /*
 |--------------------------------------------------------------------------
@@ -204,5 +205,12 @@ Route::prefix('media_learning')->group(function () {
     Route::middleware(['jwt.auth'])->group(function () {
         Route::get('/list_media', [MediaLearningController::class, 'get_list_media']);
         Route::get('/detail-media/{id}', [MediaLearningController::class, 'getDetailMedia']);
+    });
+});
+
+//Timeline
+Route::prefix('feed')->group(function () {
+    Route::middleware(['jwt.auth'])->group(function () {
+        Route::post('/post_feed', [TimelineController::class, 'post_feed']);
     });
 });

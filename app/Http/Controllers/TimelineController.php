@@ -40,24 +40,30 @@ class TimelineController extends Controller
         if ($request->has('video')) {
             $additionalData['video'] = $this->processVideo($request->file('video'));
         }
-
         if ($request->has('picture')) {
             $imageUrls = [];
-            foreach ($request->file('picture') as $file) {
+            $uploadedPictures = $request->file('picture');
+            
+            if (count($uploadedPictures) > 10) {
+                return response_json(422, 'failed', 'Too many pictures. Maximum 10 pictures allowed.');
+            }
+    
+            foreach ($uploadedPictures as $file) {
                 $imageUrls[] = $this->processImage($file);
             }
+    
             $additionalData['picture'] = $imageUrls;
         }
 
         $additionalDataJson = json_encode($additionalData, JSON_UNESCAPED_SLASHES);
 
-        $timeline = new Timeline([
+        $timeline = Timeline::create([
             'id_user' => $userId,
             'id_community' => $request->id_community,
             'description' => $request->description,
             'additional_data' => $additionalDataJson,
             'created_at' => now()
-        ]);
+        ]);        
 
         return response()->json([
             'code' => 200,

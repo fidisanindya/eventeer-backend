@@ -482,7 +482,15 @@ class MessageController extends Controller
                 $query->skip($offset)->take($limit);
             })
         ->get();
+        $userIdList = $detail_message->pluck('id_user');
+        $users = User::whereIn('id_user', $userIdList)->get(['id_user', 'full_name']);
+        $detail_message = $detail_message->map(function ($message) use ($users) {
+            $user = $users->where('id_user', $message->id_user)->first();
+            $message->full_name = $user ? $user->full_name : null;
+            return $message;
+        });
         $detail_message = $detail_message->sortBy('date');
+        // dd($detail_message);
 
         if($detail_message){    
             return response()->json([

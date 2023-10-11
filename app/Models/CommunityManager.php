@@ -13,4 +13,8 @@ class CommunityManager extends Model
     protected $primaryKey = 'id_community_manager';
     protected $guarded = ['id_community_manager'];
 
+    public function user(){
+        return $this->belongsTo(User::class, 'id_user', 'id_user');
+    }
+
 }

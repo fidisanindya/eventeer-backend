@@ -1262,4 +1262,40 @@ class CommunityController extends Controller
             'status' => 'create community success'
         ], 200);
     }
+
+    public function listCommunityManager(Request $request){
+        $limit = $request->input('limit');
+        $start = $request->input('start');
+        $id_community = $request->input('id_community');
+
+        $query = CommunityManager::with(['user' => function($queryUser) {
+            $queryUser->with(['job' => function($queryJob) {
+                $queryJob->select('id_job', 'job_title');
+            }])->with(['company' => function($queryCompany){
+                $queryCompany->select('id_company', 'company_name');
+            }])->select('id_user', 'full_name', 'profile_picture', 'id_job', 'id_company');
+        }])->select('id_user')->where('id_community', $id_community);
+
+        if ($limit !== null) {
+            $query->limit($limit);
+            if ($start !== null) {
+                $query->offset($start);
+            }
+        }
+
+        $allUserCommunity = $query->get();
+
+        if($allUserCommunity->count() != 0){
+            return response()->json([
+                "code" => 200,
+                "status" => "success get all community manager",
+                "result" => $allUserCommunity
+            ], 200);
+        }
+
+        return response()->json([
+            "code" => 404,
+            "status" => "community has no manager",
+        ], 404);
+    }
 }

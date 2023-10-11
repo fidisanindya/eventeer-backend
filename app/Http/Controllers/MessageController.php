@@ -121,7 +121,7 @@ class MessageController extends Controller
     public function get_detail_group(Request $request){
         $id_group = $request->input('id_message_room');
 
-        $data = MessageRoom::where([['id_message_room', $id_group], ['type', 'group']])->first();
+        $data = MessageRoom::select('id_message_room', 'title', 'image', 'description')->where([['id_message_room', $id_group], ['type', 'group']])->first();
 
         if(!$data){
             return response()->json([
@@ -139,6 +139,9 @@ class MessageController extends Controller
 
         $message_user->makeHidden('id_user');
 
+        $data->total_file = Message::where([['id_message_room', (int)$id_group], ['type', '!=', 'txt']])->count();
+        $data->images_files = Message::where([['id_message_room', (int)$id_group], ['type',  '!=', 'txt']])->orderBy('date', 'desc')->limit(2)->get();
+        $data->total_members = $message_user->count();
         $data->list_member = $message_user;
 
         return response()->json([
@@ -479,7 +482,15 @@ class MessageController extends Controller
                 $query->skip($offset)->take($limit);
             })
         ->get();
+        $userIdList = $detail_message->pluck('id_user');
+        $users = User::whereIn('id_user', $userIdList)->get(['id_user', 'full_name']);
+        $detail_message = $detail_message->map(function ($message) use ($users) {
+            $user = $users->where('id_user', $message->id_user)->first();
+            $message->full_name = $user ? $user->full_name : null;
+            return $message;
+        });
         $detail_message = $detail_message->sortBy('date');
+        // dd($detail_message);
 
         if($detail_message){    
             return response()->json([

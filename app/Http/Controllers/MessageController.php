@@ -121,7 +121,7 @@ class MessageController extends Controller
     public function get_detail_group(Request $request){
         $id_group = $request->input('id_message_room');
 
-        $data = MessageRoom::where([['id_message_room', $id_group], ['type', 'group']])->first();
+        $data = MessageRoom::select('id_message_room', 'title', 'image', 'description')->where([['id_message_room', $id_group], ['type', 'group']])->first();
 
         if(!$data){
             return response()->json([
@@ -139,6 +139,9 @@ class MessageController extends Controller
 
         $message_user->makeHidden('id_user');
 
+        $data->total_file = Message::where([['id_message_room', (int)$id_group], ['type', '!=', 'txt']])->count();
+        $data->images_files = Message::where([['id_message_room', (int)$id_group], ['type',  '!=', 'txt']])->orderBy('date', 'desc')->limit(2)->get();
+        $data->total_members = $message_user->count();
         $data->list_member = $message_user;
 
         return response()->json([

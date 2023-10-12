@@ -108,7 +108,7 @@ class TimelineController extends Controller
         return $videoUrl;
     }
 
-    public function list_feed(Request $request)
+    public function get_list_feed(Request $request)
     {
         // Get user id from jwt
         $user_id = get_id_user_jwt($request);
@@ -121,9 +121,58 @@ class TimelineController extends Controller
         $start = $request->input('start', 0); 
         $page = ceil(($start + 1) / $limit);
 
-        
-    }
+        $query = Timeline::where('id_community', $id_community)
+        ->whereNull('deleted_at')
+        ->with(['user', 'user.job'])
+        ->orderBy('created_at', 'desc');
 
+        $totalData = $query->count();
+
+        if ($limit !== null) {
+            $query->limit($limit);
+            if ($start !== null) {
+                $query->offset($start);
+            }
+        }
+        
+        $timelines = $query->get();
+
+        $transformedTimeline = [];
+        foreach($timelines as $timeline) {
+            if($timeline->additional_data != null) {
+                $timeline->additional_data = json_decode($timeline->additional_data);                  
+            }
+           
+            $full_name = isset($timeline->user) ? $timeline->user->full_name : null;
+            $job_title = optional($timeline->user)->job->job_title;
+
+            $transformedTimeline[] = [
+                'id_user' => $timeline->id_user,
+                'full_name' => $full_name,
+                'job_title' => $job_title,
+                'description' => $timeline->description,
+                'additional_data' => $timeline->additional_data,
+                'created_at' => $timeline->created_at
+            ];
+        }
+
+        $result->timeline = $transformedTimeline;
+
+        $result->meta = [
+            "start" => $start,
+            "limit" => $limit,
+            "total_data" => $totalData,
+            "current_page" => $page,
+            "total_page" => ceil($totalData / $limit)
+        ];
+
+        return response()->json([
+            "code" => 200,
+            "status" => "success get feeds",
+            "result" => $result
+        ], 200);
+
+    }
 }
 
 ?>

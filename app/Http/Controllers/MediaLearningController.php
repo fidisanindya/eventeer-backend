@@ -244,8 +244,12 @@ class MediaLearningController extends Controller
             ->limit(3)
             ->get();
 
-        $data_event->related = $relatedEvents->map(function ($result) {
-            return $this->getData($result->id_event);
+        $data_event->related = $relatedEvents->map(function ($result) use ($data_event){
+            $eventData = $this->getData($result->id_event);
+            if ($data_event->category === "podcast") {
+                $eventData->makeHidden(['additional_data']);
+            }
+            return $eventData;
         });
 
         LogEvent::firstOrCreate(['id_event' => $data_event->id_event, 'id_user' => $user_id]);
@@ -271,6 +275,14 @@ class MediaLearningController extends Controller
         if($data_event->category == 'article'){
             $data_event->duration = $this->estimateReadingTime($data_event->description) . ' min read';
 
+        }else if($data_event->category == 'podcast'){
+            if (isset($data_event->additional_data->episodeList) && is_array($data_event->additional_data->episodeList)) {
+                $data_event->total_podcast = count($data_event->additional_data->episodeList);
+                $data_event->total_duration = $this->countTotalDuration($data_event);
+            } else {
+                $data_event->total_podcast = 0;
+                $data_event->total_duration = 0;
+            }
         }
         $viewers = LogEvent::where('id_event', $id_event)->count();
         $data_event->viewers = $viewers;
@@ -288,6 +300,25 @@ class MediaLearningController extends Controller
         return ceil($wordCount / 225);
     }
 
+    private function countTotalDuration($data_event)
+    {
+        $total_duration_seconds = 0;
+
+        foreach ($data_event->additional_data->episodeList as $episode) {
+            if (isset($episode->duration)) {
+                $durationParts = explode(':', $episode->duration);
+                if (count($durationParts) === 3) {
+                    list($hours, $minutes, $seconds) = $durationParts;
+                    $total_duration_seconds += ($hours * 3600) + ($minutes * 60) + $seconds;
+                }
+            }
+        }
+
+        $formatted_duration = gmdate("H:i:s", $total_duration_seconds);
+        $data_event->total_duration = $formatted_duration;
+
+        return $formatted_duration;
+    }
 }
 
 ?>

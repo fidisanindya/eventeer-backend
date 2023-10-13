@@ -143,13 +143,18 @@ class TimelineController extends Controller
                 $timeline->additional_data = json_decode($timeline->additional_data);                  
             }
            
+            
             $full_name = isset($timeline->user) ? $timeline->user->full_name : null;
-            $job_title = optional($timeline->user)->job->job_title;
+            $profile_picture = isset($timeline->user) ? $timeline->user->profile_picture : null;
+            $job_title = isset($timeline->user) ? ($timeline->user)->job->job_title : null;
+            $company = isset($timeline->user) ? ($timeline->user)->company->company_name : null;
 
             $transformedTimeline[] = [
                 'id_user' => $timeline->id_user,
                 'full_name' => $full_name,
+                'profile_picture' => $profile_picture,
                 'job_title' => $job_title,
+                'company' => $company,
                 'description' => $timeline->description,
                 'additional_data' => $timeline->additional_data,
                 'created_at' => $timeline->created_at

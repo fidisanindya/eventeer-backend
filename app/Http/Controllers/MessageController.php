@@ -554,6 +554,9 @@ class MessageController extends Controller
                 $msg->id_user = $personal_user->id_user;
                 $msg->image = $personal_user->profile_picture;
             }
+            if($msg->type == "group"){
+                $msg->total_member = MessageUser::where('id_message_room', $msg->id_message_room)->count();
+            }
             
             $last_chat = Message::select('id_user', 'text', 'date', 'type')->where('id_message_room', $msg->id_message_room)->orderBy('date', 'desc')->first();
             $jobUser = JobUser::with('job')->where('id_user', $userId)->first();

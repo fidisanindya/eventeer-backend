@@ -112,6 +112,7 @@ class MessageController extends Controller
 
         $result = [
             'message'       => 'Successfully create group message',
+            'id_message_room' => $query->id_message_room,
             'id_user_joined'=> $request->id_user_joined,
         ];
 

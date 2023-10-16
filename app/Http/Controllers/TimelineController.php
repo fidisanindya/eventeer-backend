@@ -11,6 +11,10 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use App\Jobs\UploadImageFeeds;
 use App\Jobs\UploadVideoFeeds;
+use App\Models\Comment;
+use App\Models\Follow;
+use App\Models\Interest;
+use App\Models\UserProfile;
 
 class TimelineController extends Controller
 {
@@ -143,7 +147,6 @@ class TimelineController extends Controller
                 $timeline->additional_data = json_decode($timeline->additional_data);                  
             }
            
-            
             $full_name = isset($timeline->user) ? $timeline->user->full_name : null;
             $profile_picture = isset($timeline->user) ? $timeline->user->profile_picture : null;
             $job_title = isset($timeline->user) ? ($timeline->user)->job->job_title : null;
@@ -177,6 +180,128 @@ class TimelineController extends Controller
             "result" => $result
         ], 200);
 
+    }
+
+    public function detail_feed(Request $request)
+    {
+        $id_timeline = $request->input('id_timeline');
+
+        $result = new stdClass;
+
+        $data = Timeline::where('id_timeline', $id_timeline)
+        ->whereNull('deleted_at')
+        ->with(['user', 'user.job', 'user.company'])
+        ->first();
+
+        if($data->additional_data != null) {
+            $data->additional_data = json_decode($data->additional_data);                  
+        }
+
+        $full_name = isset($data->user) ? $data->user->full_name : null;
+        $profile_picture = isset($data->user) ? $data->user->profile_picture : null;
+        $job_title = isset($data->user) ? ($data->user)->job->job_title : null;
+        $company = isset($data->user) ? ($data->user)->company->company_name : null;
+        $comment = Comment::select('id_comment', 'comment', 'id_user', 'created_at')
+        ->where('related_to', 'id_timeline')
+        ->where('id_related_to', $id_timeline)
+        ->with(['user', 'user.job', 'user.company']) 
+        ->get();
+       
+        $transformedComments = [];
+        if (!$comment->isEmpty()) {
+            foreach ($comment as $commentItem) {
+                $commentUser = $commentItem->user;
+        
+                $commentFullName = isset($commentUser) ? $commentUser->full_name : null;
+                $commentProfilePicture = isset($commentUser) ? $commentUser->profile_picture : null;
+                $commentJobTitle = isset($commentUser) ? $commentUser->job->job_title : null;
+                $commentCompany = isset($commentUser) ? $commentUser->company->company_name : null;
+                $reply = Comment::select('id_comment', 'comment', 'id_user', 'created_at')
+                ->where('related_to', 'id_comment')
+                ->where('id_related_to', $commentItem->id_comment)
+                ->with(['user', 'user.job', 'user.company']) 
+                ->get();
+
+                $transformedReplies = [];
+                if (!$reply->isEmpty()) {
+                    foreach ($reply as $replyItem) {
+                        $replyUser = $replyItem->user;
+                
+                        $replyFullName = isset($replyUser) ? $replyUser->full_name : null;
+                        $replyProfilePicture = isset($replyUser) ? $replyUser->profile_picture : null;
+                        $replyJobTitle = isset($replyUser) ? $replyUser->job->job_title : null;
+                        $replyCompany = isset($replyUser) ? $replyUser->company->company_name : null;
+                
+                        $transformedReplies[] = [
+                            'id_comment' => $replyItem->id_comment,
+                            'comment' => $replyItem->comment,
+                            'id_user' => $replyItem->id_user,
+                            'full_name' => $replyFullName,
+                            'profile_picture' => $replyProfilePicture,
+                            'job_title' => $replyJobTitle,
+                            'company' => $replyCompany,
+                            'created_at' => $replyItem->created_at,
+                        ];
+                    }
+                }     
+        
+                $transformedComments[] = [
+                    'id_comment' => $commentItem->id_comment,
+                    'comment' => $commentItem->comment,
+                    'id_user' => $commentItem->id_user,
+                    'full_name' => $commentFullName,
+                    'profile_picture' => $commentProfilePicture,
+                    'job_title' => $commentJobTitle,
+                    'company' => $commentCompany,
+                    'created_at' => $commentItem->created_at,
+                    'reply' => $transformedReplies
+                ];
+            }
+        }
+
+        $timeline = [
+            'id_user' => $data->id_user,
+            'full_name' => $full_name,
+            'profile_picture' => $profile_picture,
+            'job_title' => $job_title,
+            'company' => $company,
+            'description' => $data->description,
+            'additional_data' => $data->additional_data,
+            'created_at' => $data->created_at,
+            'comment' => $transformedComments
+        ];
+
+        $interestUser = UserProfile::select('value')
+            ->where([['id_user', '=', $data->id_user], ['key_name', '=', 'id_interest']])
+            ->get();
+
+        $interestData = Interest::select('interest_name')
+            ->whereIn('id_interest', $interestUser)
+            ->pluck('interest_name')
+            ->toArray();
+
+        $follower = Follow::where('id_user', $data->id_user)->count();
+        $following = Follow::where('followed_by', $data->id_user)->count();
+
+        $profile = [
+            'full_name' => $full_name,
+            'profile_picture' => $profile_picture,
+            'job_title' => $job_title,
+            'company' => $company,
+            'interest' => $interestData,
+            'follower' => $follower,
+            'following' => $following
+        ];
+
+        $result->timeline = $timeline;
+
+        $result->profile = $profile;
+
+        return response()->json([
+            "code" => 200,
+            "status" => "success get detail feed",
+            "result" => $result
+        ], 200);
     }
 }
 

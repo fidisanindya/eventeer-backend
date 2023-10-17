@@ -307,14 +307,17 @@ class MediaLearningController extends Controller
         foreach ($data_event->additional_data->episodeList as $episode) {
             if (isset($episode->duration)) {
                 $durationParts = explode(':', $episode->duration);
-                if (count($durationParts) === 3) {
-                    list($hours, $minutes, $seconds) = $durationParts;
-                    $total_duration_seconds += ($hours * 3600) + ($minutes * 60) + $seconds;
+                if (count($durationParts) === 2) { // Format 15:00 (menit:detik)
+                    list($minutes, $seconds) = $durationParts;
+                    $total_duration_seconds += ($minutes * 60) + $seconds;
                 }
             }
         }
 
-        $formatted_duration = gmdate("H:i:s", $total_duration_seconds);
+        $total_minutes = floor($total_duration_seconds / 60);
+        $total_seconds = $total_duration_seconds % 60;
+
+        $formatted_duration = $total_minutes . ':' . str_pad($total_seconds, 2, '0', STR_PAD_LEFT);
         $data_event->total_duration = $formatted_duration;
 
         return $formatted_duration;

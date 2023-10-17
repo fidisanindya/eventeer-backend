@@ -113,7 +113,11 @@ class MessageController extends Controller
         $result = [
             'message'       => 'Successfully create group message',
             'id_message_room' => $query->id_message_room,
+            'title' => $request->title,
+            'image' => $imageUrl ?? null,
+            'total_member' => MessageUser::where('id_message_room', $query->id_message_room)->count(),
             'id_user_joined'=> $request->id_user_joined,
+            'type' => $query->type
         ];
 
         return response_json(200, 'success', $result);

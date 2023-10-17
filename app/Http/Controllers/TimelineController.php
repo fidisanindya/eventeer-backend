@@ -22,7 +22,7 @@ class TimelineController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'id_community' => 'required|numeric',
-            'description' => 'required|string',
+            'description' => 'string',
             'single_link' => 'string',
             'video' => 'file|mimes:mp4,avi',
             'picture.*' => 'image|mimes:jpeg,jpg,png,gif',
@@ -35,37 +35,42 @@ class TimelineController extends Controller
         // Get id_user from Bearer Token
         $userId = get_id_user_jwt($request);
 
-        $additionalData = [];
+        $additionalData = null;
 
-        if ($request->has('single_link')) {
-            $additionalData['single_link'] = $request->single_link;
-        }
+        if ($request->has('single_link') || $request->has('video') || $request->has('picture')) {
+            $additionalData = [];
 
-        if ($request->has('video')) {
-            $additionalData['video'] = $this->processVideo($request->file('video'));
-        }
-        if ($request->has('picture')) {
-            $imageUrls = [];
-            $uploadedPictures = $request->file('picture');
+            if ($request->has('single_link')) {
+                $additionalData['single_link'] = $request->single_link;
+            }
+
+            if ($request->has('video')) {
+                $additionalData['video'] = $this->processVideo($request->file('video'));
+            }
+
+            if ($request->has('picture')) {
+                $imageUrls = [];
+                $uploadedPictures = $request->file('picture');
+                
+                if (count($uploadedPictures) > 10) {
+                    return response_json(422, 'failed', 'Too many pictures. Maximum 10 pictures allowed.');
+                }
             
-            if (count($uploadedPictures) > 10) {
-                return response_json(422, 'failed', 'Too many pictures. Maximum 10 pictures allowed.');
+                foreach ($uploadedPictures as $file) {
+                    $imageUrls[] = $this->processImage($file);
+                }
+            
+                $additionalData['picture'] = $imageUrls;
             }
-    
-            foreach ($uploadedPictures as $file) {
-                $imageUrls[] = $this->processImage($file);
-            }
-    
-            $additionalData['picture'] = $imageUrls;
-        }
 
-        $additionalDataJson = json_encode($additionalData, JSON_UNESCAPED_SLASHES);
+            $additionalData = json_encode($additionalData, JSON_UNESCAPED_SLASHES);
+        }
 
         $timeline = Timeline::create([
             'id_user' => $userId,
             'id_community' => $request->id_community,
-            'description' => $request->description,
-            'additional_data' => $additionalDataJson,
+            'description' => $request->description ?: null,
+            'additional_data' => $additionalData,
             'created_at' => now()
         ]);        
 
@@ -82,11 +87,11 @@ class TimelineController extends Controller
             return null;
         }
 
-        $image = Image::make($imageData)->resize(400, null, function ($constraint) {
+        $image = Image::make($imageData)->resize(1000, null, function ($constraint) {
             $constraint->aspectRatio();
         });
 
-        $filename = date('dmYhis') . '_feeds.' . $imageData->getClientOriginalExtension();
+        $filename = date('dmYhis') . uniqid() .'_feeds.' . $imageData->getClientOriginalExtension();
         $data = $image->encode($imageData->getClientOriginalExtension())->__toString();
         Storage::put('public/picture_queue/' . $filename, $data);
         UploadImageFeeds::dispatch($filename);

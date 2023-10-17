@@ -1187,7 +1187,7 @@ class CommunityController extends Controller
             $constraint->aspectRatio();
         });
 
-        $filename = date('dmYhis') . '_feeds.' . $imageData->getClientOriginalExtension();
+        $filename = date('dmYhis') . uniqid() . '_feeds.' . $imageData->getClientOriginalExtension();
         $data = $image->encode($imageData->getClientOriginalExtension())->__toString();
         Storage::put('public/picture_queue/' . $filename, $data);
         UploadImageFeeds::dispatch($filename);

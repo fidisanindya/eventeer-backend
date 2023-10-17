@@ -160,7 +160,9 @@ class TimelineController extends Controller
             $company = isset($timeline->user) ? ($timeline->user)->company->company_name : null;
             $count_like = React::where('related_to', 'id_timeline')->where('id_related_to', $timeline->id_timeline)->count();
             $count_comment = Comment::where('related_to', 'id_timeline')->where('id_related_to', $timeline->id_timeline)->count();
-
+            $count_reply = Comment::where('related_to', 'id_comment')->where('id_related_to', $timeline->id_timeline)->count();
+            $count_comment += $count_reply;
+            
             $transformedTimeline[] = [
                 'id_timeline' => $timeline->id_timeline,
                 'id_user' => $timeline->id_user,

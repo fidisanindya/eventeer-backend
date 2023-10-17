@@ -314,7 +314,10 @@ class MediaLearningController extends Controller
             }
         }
 
-        $formatted_duration = gmdate("H:i:s", $total_duration_seconds);
+        $total_minutes = floor($total_duration_seconds / 60);
+        $total_seconds = $total_duration_seconds % 60;
+
+        $formatted_duration = $total_minutes . ':' . $total_seconds;
         $data_event->total_duration = $formatted_duration;
 
         return $formatted_duration;

@@ -262,6 +262,8 @@ class TimelineController extends Controller
                         ];
                     }
                 }     
+
+                $count_comment += $comment_count_comment;
         
                 $transformedComments[] = [
                     'id_comment' => $commentItem->id_comment,

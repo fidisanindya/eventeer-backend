@@ -14,7 +14,9 @@ use App\Jobs\UploadVideoFeeds;
 use App\Models\Comment;
 use App\Models\Follow;
 use App\Models\Interest;
+use App\Models\React;
 use App\Models\UserProfile;
+use Carbon\Carbon;
 
 class TimelineController extends Controller
 {
@@ -156,8 +158,11 @@ class TimelineController extends Controller
             $profile_picture = isset($timeline->user) ? $timeline->user->profile_picture : null;
             $job_title = isset($timeline->user) ? ($timeline->user)->job->job_title : null;
             $company = isset($timeline->user) ? ($timeline->user)->company->company_name : null;
+            $count_like = React::where('related_to', 'id_timeline')->where('id_related_to', $timeline->id_timeline)->count();
+            $count_comment = Comment::where('related_to', 'id_timeline')->where('id_related_to', $timeline->id_timeline)->count();
 
             $transformedTimeline[] = [
+                'id_timeline' => $timeline->id_timeline,
                 'id_user' => $timeline->id_user,
                 'full_name' => $full_name,
                 'profile_picture' => $profile_picture,
@@ -165,7 +170,9 @@ class TimelineController extends Controller
                 'company' => $company,
                 'description' => $timeline->description,
                 'additional_data' => $timeline->additional_data,
-                'created_at' => $timeline->created_at
+                'created_at' => $timeline->created_at,
+                'like' => $count_like,
+                'comment' => $count_comment
             ];
         }
 
@@ -187,7 +194,7 @@ class TimelineController extends Controller
 
     }
 
-    public function detail_feed(Request $request)
+    public function get_detail_feed(Request $request)
     {
         $id_timeline = $request->input('id_timeline');
 
@@ -211,6 +218,8 @@ class TimelineController extends Controller
         ->where('id_related_to', $id_timeline)
         ->with(['user', 'user.job', 'user.company']) 
         ->get();
+        $count_like = React::where('related_to', 'id_timeline')->where('id_related_to', $data->id_timeline)->count();
+        $count_comment = Comment::where('related_to', 'id_timeline')->where('id_related_to', $data->id_timeline)->count();
        
         $transformedComments = [];
         if (!$comment->isEmpty()) {
@@ -226,6 +235,8 @@ class TimelineController extends Controller
                 ->where('id_related_to', $commentItem->id_comment)
                 ->with(['user', 'user.job', 'user.company']) 
                 ->get();
+                $comment_count_like = React::where('related_to', 'id_comment')->where('id_related_to', $commentItem->id_comment)->count();
+                $comment_count_comment = Comment::where('related_to', 'id_comment')->where('id_related_to', $commentItem->id_comment)->count();
 
                 $transformedReplies = [];
                 if (!$reply->isEmpty()) {
@@ -236,6 +247,7 @@ class TimelineController extends Controller
                         $replyProfilePicture = isset($replyUser) ? $replyUser->profile_picture : null;
                         $replyJobTitle = isset($replyUser) ? $replyUser->job->job_title : null;
                         $replyCompany = isset($replyUser) ? $replyUser->company->company_name : null;
+                        $reply_count_like = React::where('related_to', 'id_comment')->where('id_related_to', $replyItem->id_comment)->count();
                 
                         $transformedReplies[] = [
                             'id_comment' => $replyItem->id_comment,
@@ -246,6 +258,7 @@ class TimelineController extends Controller
                             'job_title' => $replyJobTitle,
                             'company' => $replyCompany,
                             'created_at' => $replyItem->created_at,
+                            'count_like' => $reply_count_like,
                         ];
                     }
                 }     
@@ -259,12 +272,15 @@ class TimelineController extends Controller
                     'job_title' => $commentJobTitle,
                     'company' => $commentCompany,
                     'created_at' => $commentItem->created_at,
+                    'count_like' => $comment_count_like,
+                    'count_comment' => $comment_count_comment,
                     'reply' => $transformedReplies
                 ];
             }
         }
 
         $timeline = [
+            'id_timeline' => $data->id_timeline,
             'id_user' => $data->id_user,
             'full_name' => $full_name,
             'profile_picture' => $profile_picture,
@@ -273,6 +289,8 @@ class TimelineController extends Controller
             'description' => $data->description,
             'additional_data' => $data->additional_data,
             'created_at' => $data->created_at,
+            'count_like' => $count_like,
+            'count_comment' => $count_comment,
             'comment' => $transformedComments
         ];
 
@@ -307,6 +325,66 @@ class TimelineController extends Controller
             "status" => "success get detail feed",
             "result" => $result
         ], 200);
+    }
+
+    public function send_like_unlike_feed(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'related_to' => 'required',
+            'id_related_to' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            return response_json(422, 'failed', $validator->messages());
+        }
+
+        $userId = get_id_user_jwt($request);
+
+        if($request->related_to == 'id_timeline') {
+            $check_feed = Timeline::where('id_timeline', $request->id_related_to)->first();
+
+            if($check_feed){
+                $check_liked_feed = React::where('related_to', 'id_timeline')->where('id_related_to', $request->id_related_to)->where('id_user', $userId)->first();
+
+                if($check_liked_feed){
+                    $check_liked_feed->delete();
+                    return response_json(200, 'success', 'Post unliked successfully');
+                } 
+
+                React::create([
+                    'related_to' => 'id_timeline',
+                    'id_related_to' => $request->id_related_to,
+                    'id_user' => $userId,
+                    'created_at' => Carbon::now()->toDateTimeString()
+                ]);
+
+                return response_json(200, 'success','Post liked successfully');
+            }
+            return response_json(404, 'failed','Feed not found');
+        } else if ($request->related_to == 'id_comment') {
+            $check_comment = Comment::where('id_comment', $request->id_related_to)->first();
+
+            if($check_comment){
+                $reaction = React::where([['related_to', 'id_comment'], ['id_related_to', $request->id_related_to], ['id_user', $userId]])->first();
+
+                if($reaction){
+                    $reaction->delete();
+                    return response_json(200, 'success','Comment unliked successfully');
+                }
+    
+                React::create([
+                    'related_to' => 'id_comment',
+                    'id_related_to' => $request->id_related_to,
+                    'id_user' => $userId
+                ]);
+    
+                return response_json(200, 'success','Comment liked successfully');
+            }
+
+            return response_json(404, 'failed','Comment not found');
+        } else {
+            return response_json(404, 'failed','Related to not suitable');
+        }
     }
 }
 

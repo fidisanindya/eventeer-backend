@@ -213,6 +213,7 @@ Route::prefix('feed')->group(function () {
     Route::middleware(['jwt.auth'])->group(function () {
         Route::post('/post_feed', [TimelineController::class, 'post_feed']);
         Route::get('/list_feed', [TimelineController::class, 'get_list_feed']);
-        Route::get('/detail_feed', [TimelineController::class, 'detail_feed']);
+        Route::get('/detail_feed', [TimelineController::class, 'get_detail_feed']);
+        Route::post('/like_unlike_feed',[TimelineController::class, 'send_like_unlike_feed']);
     });
 });

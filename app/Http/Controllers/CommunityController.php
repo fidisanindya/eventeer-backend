@@ -1234,6 +1234,14 @@ class CommunityController extends Controller
         $user_id = get_id_user_jwt($request);
         $current_time = now();
         
+        $same_title = Community::where('title', $request->title)->count();
+        if($same_title > 0){
+            return response()->json([
+                'code' => 403,
+                'status' => 'The title already used'
+            ], 403);
+        }
+        
         $community_id = Community::insertGetId([
             'title' => $request->title,
             'description' => $request->description,
@@ -1242,6 +1250,12 @@ class CommunityController extends Controller
             'created_at' => $current_time,
             'updated_at' => $current_time   
         ]);
+
+        if($request->type == 'private_code'){
+            Community::where('id_community', $community_id)->update([
+                'referral_code' => $request->referral_code
+            ]);
+        }
         
         $interest = $request->id_interest;
         foreach($interest as $result){

@@ -166,15 +166,16 @@ class MessageController extends Controller
 
         date_default_timezone_set('Asia/Jakarta');
 
-         // Get id_user from Bearer Token
-         $userId = get_id_user_jwt($request);
-         $id_user = MessageUser::where([['id_message_room', $request->id_message_room], ['id_user', '!=', $userId]])->pluck('id_user')->first();
- 
-         if(!$request->id_message_room){
+        // Get id_user from Bearer Token
+        $userId = get_id_user_jwt($request);
+
+        $id_user = MessageUser::where([['id_message_room', $request->id_message_room], ['id_user', '!=', $userId]])->where('deleted_at', '=', null)->pluck('id_user')->first();
+
+        if(!$request->id_message_room){
             $validator = Validator::make($request->all(), [
                 'with_id_user' => 'required|numeric',
             ]);
-    
+
             if ($validator->fails()) {
                 return response()->json([
                     'code'      => 422,
@@ -187,19 +188,20 @@ class MessageController extends Controller
                 'id_user' => $userId,
                 'title' => "",
                 'type' => 'personal'
-             ]);
-             
-             MessageUser::create([
+                ]);
+                
+            MessageUser::create([
                 'id_user' => $query->id_user,
                 'id_message_room' => $query->id_message_room,
                 'role' => 'member'
-             ]);
-             MessageUser::create([
+            ]);
+
+            MessageUser::create([
                 'id_user' => $request->with_id_user,
                 'id_message_room' => $query->id_message_room,
                 'role' => 'member'
-             ]);
-             
+            ]);
+            
         }
 
         // Menginisialisasi nilai default untuk text dan file

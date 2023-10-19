@@ -580,12 +580,13 @@ class MessageController extends Controller
                     "time" => $last_chat->date,
                 ];
             }else{
+                $created_at = MessageUser::where('id_message_room', $msg->id_message_room)->value('created_at');
                 $msg->last_chat = [
                     "id_user" => null,
                     "full_name" => null,
                     "text" => null,
                     "message_type" => null,
-                    "time" => null,
+                    "time" => $created_at,
                 ];
             }
 

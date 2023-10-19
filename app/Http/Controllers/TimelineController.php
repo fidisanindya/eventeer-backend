@@ -204,7 +204,7 @@ class TimelineController extends Controller
 
         $data = Timeline::where('id_timeline', $id_timeline)
         ->whereNull('deleted_at')
-        ->with(['user', 'user.job', 'user.company'])
+        ->with(['user', 'user.job', 'user.company', 'user.city'])
         ->first();
 
         if($data->additional_data != null) {
@@ -309,15 +309,31 @@ class TimelineController extends Controller
 
         $follower = Follow::where('id_user', $data->id_user)->count();
         $following = Follow::where('followed_by', $data->id_user)->count();
+        $coverImage =  isset($data->user) ? $data->user->cover_image : null;
+        $city = isset($data->user) ? ($data->user)->city->city_name : null;
+        $province = isset($data->user) ? ($data->user)->city->province->province_name : null;
 
+        $socialMedia = UserProfile::select('key_name', 'value')
+        ->whereIn('key_name', ['instagram', 'twitter', 'youtube', 'github', 'linkedin', 'website'])
+        ->where('id_user', $data->id_user)
+        ->get();
+        $socialMediaArray = [];
+        foreach ($socialMedia as $sm) {
+            $socialMediaArray[$sm->key_name] = $sm->value;
+        };
+            
         $profile = [
             'full_name' => $full_name,
             'profile_picture' => $profile_picture,
+            'cover_image' => $coverImage,
             'job_title' => $job_title,
             'company' => $company,
+            'city' => $city,
+            'province' => $province,
             'interest' => $interestData,
             'follower' => $follower,
-            'following' => $following
+            'following' => $following,
+            'social_media' => $socialMediaArray
         ];
 
         $result->timeline = $timeline;

@@ -67,4 +67,8 @@ class User extends Authenticatable
     public function company(){
         return $this->belongsTo(Company::class, 'id_company', 'id_company');
     }
+
+    public function city(){
+        return $this->belongsTo(City::class, 'id_city', 'id_city');
+    }
 }

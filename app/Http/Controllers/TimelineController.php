@@ -322,8 +322,15 @@ class TimelineController extends Controller
         $follower = Follow::where('id_user', $data->id_user)->count();
         $following = Follow::where('followed_by', $data->id_user)->count();
         $coverImage =  isset($data->user) ? $data->user->cover_image : null;
-        $city = isset($data->user) ? ($data->user)->city->city_name : null;
-        $province = isset($data->user) ? ($data->user)->city->province->province_name : null;
+        
+        $city = null;
+        $province = null;
+        if (isset($data->user) && $data->user->city) {
+            $city = $data->user->city->city_name;
+            if ($data->user->city->province) {
+                $province = $data->user->city->province->province_name;
+            }
+        }
 
         $socialMedia = UserProfile::select('key_name', 'value')
         ->whereIn('key_name', ['instagram', 'twitter', 'youtube', 'github', 'linkedin', 'website'])

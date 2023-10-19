@@ -17,6 +17,7 @@ use App\Models\Interest;
 use App\Models\React;
 use App\Models\UserProfile;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 
 class TimelineController extends Controller
 {
@@ -76,6 +77,15 @@ class TimelineController extends Controller
             'created_at' => now()
         ]);        
 
+        //Hapus cache
+        $highestStartValue = Timeline::where('id_community', $request->id_community)
+        ->whereNull('deleted_at')
+        ->count();
+
+        for ($start = 0; $start <= $highestStartValue; $start += 10) {
+            Cache::forget("list_feed_{$start}");
+        }
+  
         return response()->json([
             'code' => 200,
             'status' => 'post feed success',
@@ -120,74 +130,76 @@ class TimelineController extends Controller
     }
 
     public function get_list_feed(Request $request)
-    {
-        // Get user id from jwt
-        $user_id = get_id_user_jwt($request);
-
-        $result = new stdClass;
-
-        $id_community = $request->input('id_community');
-        
-        $limit = $request->input('limit', 10);
+    {    
         $start = $request->input('start', 0); 
-        $page = ceil(($start + 1) / $limit);
 
-        $query = Timeline::where('id_community', $id_community)
-        ->whereNull('deleted_at')
-        ->with(['user', 'user.job'])
-        ->orderBy('created_at', 'desc');
+        $cacheKey = "list_feed_{$start}";
 
-        $totalData = $query->count();
+        $result = Cache::remember($cacheKey, now()->addMinutes(10), function () use ($request, $start) {
+            $id_community = $request->input('id_community');
+            $limit = $request->input('limit', 10);
+            $page = ceil(($start + 1) / $limit);
 
-        if ($limit !== null) {
-            $query->limit($limit);
-            if ($start !== null) {
-                $query->offset($start);
+            $query = Timeline::where('id_community', $id_community)
+                ->whereNull('deleted_at')
+                ->with(['user', 'user.job'])
+                ->orderBy('created_at', 'desc');
+    
+            $totalData = $query->count();
+    
+            if ($limit !== null) {
+                $query->limit($limit);
+                if ($start !== null) {
+                    $query->offset($start);
+                }
             }
-        }
-        
-        $timelines = $query->get();
-
-        $transformedTimeline = [];
-        foreach($timelines as $timeline) {
-            if($timeline->additional_data != null) {
-                $timeline->additional_data = json_decode($timeline->additional_data);                  
-            }
-           
-            $full_name = isset($timeline->user) ? $timeline->user->full_name : null;
-            $profile_picture = isset($timeline->user) ? $timeline->user->profile_picture : null;
-            $job_title = isset($timeline->user) ? ($timeline->user)->job->job_title : null;
-            $company = isset($timeline->user) ? ($timeline->user)->company->company_name : null;
-            $count_like = React::where('related_to', 'id_timeline')->where('id_related_to', $timeline->id_timeline)->count();
-            $count_comment = Comment::where('related_to', 'id_timeline')->where('id_related_to', $timeline->id_timeline)->count();
-            $count_reply = Comment::where('related_to', 'id_comment')->where('id_related_to', $timeline->id_timeline)->count();
-            $count_comment += $count_reply;
             
-            $transformedTimeline[] = [
-                'id_timeline' => $timeline->id_timeline,
-                'id_user' => $timeline->id_user,
-                'full_name' => $full_name,
-                'profile_picture' => $profile_picture,
-                'job_title' => $job_title,
-                'company' => $company,
-                'description' => $timeline->description,
-                'additional_data' => $timeline->additional_data,
-                'created_at' => $timeline->created_at,
-                'like' => $count_like,
-                'comment' => $count_comment
-            ];
-        }
+            $timelines = $query->get();
+    
+            $transformedTimeline = [];
+            foreach($timelines as $timeline) {
+                if($timeline->additional_data != null) {
+                    $timeline->additional_data = json_decode($timeline->additional_data);                  
+                }
+               
+                $full_name = isset($timeline->user) ? $timeline->user->full_name : null;
+                $profile_picture = isset($timeline->user) ? $timeline->user->profile_picture : null;
+                $job_title = isset($timeline->user) ? ($timeline->user)->job->job_title : null;
+                $company = isset($timeline->user) ? ($timeline->user)->company->company_name : null;
+                $count_like = React::where('related_to', 'id_timeline')->where('id_related_to', $timeline->id_timeline)->count();
+                $count_comment = Comment::where('related_to', 'id_timeline')->where('id_related_to', $timeline->id_timeline)->count();
+                $count_reply = Comment::where('related_to', 'id_comment')->where('id_related_to', $timeline->id_timeline)->count();
+                $count_comment += $count_reply;
+                
+                $transformedTimeline[] = [
+                    'id_timeline' => $timeline->id_timeline,
+                    'id_user' => $timeline->id_user,
+                    'full_name' => $full_name,
+                    'profile_picture' => $profile_picture,
+                    'job_title' => $job_title,
+                    'company' => $company,
+                    'description' => $timeline->description,
+                    'additional_data' => $timeline->additional_data,
+                    'created_at' => $timeline->created_at,
+                    'like' => $count_like,
+                    'comment' => $count_comment
+                ];
+            }
 
-        $result->timeline = $transformedTimeline;
+            $result = new stdClass;
+            $result->timeline = $transformedTimeline;
+            $result->meta = [
+                "start" => $start,
+                "limit" => $limit,
+                "total_data" => $totalData,
+                "current_page" => $page,
+                "total_page" => ceil($totalData / $limit)
+            ];    
 
-        $result->meta = [
-            "start" => $start,
-            "limit" => $limit,
-            "total_data" => $totalData,
-            "current_page" => $page,
-            "total_page" => ceil($totalData / $limit)
-        ];
+            return $result;
+        });
 
+       
         return response()->json([
             "code" => 200,
             "status" => "success get feeds",

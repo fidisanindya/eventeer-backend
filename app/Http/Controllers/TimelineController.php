@@ -210,6 +210,7 @@ class TimelineController extends Controller
 
     public function get_detail_feed(Request $request)
     {
+        $user_id = get_id_user_jwt($request);
         $id_timeline = $request->input('id_timeline');
 
         $result = new stdClass;
@@ -232,6 +233,13 @@ class TimelineController extends Controller
         ->where('id_related_to', $id_timeline)
         ->with(['user', 'user.job', 'user.company']) 
         ->get();
+
+        $isUserLiked = React::where('related_to', 'id_timeline')
+            ->where('id_related_to', $data->id_timeline)
+            ->where('id_user', $user_id)
+            ->count();
+        $isLiked = ($isUserLiked > 0);
+
         $count_like = React::where('related_to', 'id_timeline')->where('id_related_to', $data->id_timeline)->count();
         $count_comment = Comment::where('related_to', 'id_timeline')->where('id_related_to', $data->id_timeline)->count();
        
@@ -305,6 +313,7 @@ class TimelineController extends Controller
             'description' => $data->description,
             'additional_data' => $data->additional_data,
             'created_at' => $data->created_at,
+            'liked' => $isLiked,
             'count_like' => $count_like,
             'count_comment' => $count_comment,
             'comment' => $transformedComments
@@ -322,7 +331,7 @@ class TimelineController extends Controller
         $follower = Follow::where('id_user', $data->id_user)->count();
         $following = Follow::where('followed_by', $data->id_user)->count();
         $coverImage =  isset($data->user) ? $data->user->cover_image : null;
-        
+
         $city = null;
         $province = null;
         if (isset($data->user) && $data->user->city) {

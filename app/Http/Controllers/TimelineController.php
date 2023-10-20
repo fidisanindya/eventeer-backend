@@ -426,6 +426,13 @@ class TimelineController extends Controller
                     'created_at' => Carbon::now()->toDateTimeString()
                 ]);
 
+                //Hapus cache
+                $id_community = Timeline::where('id_timeline', $request->id_related_to)->value('id_community');
+                $totalTimeline = Timeline::where('id_community', $id_community)->count();
+                for ($start = 0; $start <= $totalTimeline; $start += 10) {
+                    Cache::forget("list_feed_{$start}");
+                }
+
                 return response_json(200, 'success','Post liked successfully');
             }
             return response_json(404, 'failed','Feed not found');
@@ -445,7 +452,7 @@ class TimelineController extends Controller
                     'id_related_to' => $request->id_related_to,
                     'id_user' => $userId
                 ]);
-    
+            
                 return response_json(200, 'success','Comment liked successfully');
             }
 

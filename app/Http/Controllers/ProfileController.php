@@ -124,6 +124,10 @@ class ProfileController extends Controller
         $cacheKey = "get_profile_{$request->id_user}";
         Cache::forget($cacheKey);
 
+        for ($start = 0; $start <= 100; $start += 10) {
+            Cache::forget("list_feed_{$start}");
+        }
+
         if($query){
             return response_json(200, 'success', 'Success edit profile picture');
         }
@@ -164,6 +168,10 @@ class ProfileController extends Controller
 
         $cacheKey = "get_profile_{$request->id_user}";
         Cache::forget($cacheKey);
+
+        for ($start = 0; $start <= 100; $start += 10) {
+            Cache::forget("list_feed_{$start}");
+        }
 
         if($query){
             return response_json(200, 'success', 'Success edit banner picture');
@@ -356,6 +364,10 @@ class ProfileController extends Controller
 
         $cacheKeyMessage = "list_message_{$user['id_user']}";
         Cache::forget($cacheKeyMessage);
+
+        for ($start = 0; $start <= 100; $start += 10) {
+            Cache::forget("list_feed_{$start}");
+        }
 
         return response_json(200, 'success', 'Success edit profile');
     }

@@ -216,9 +216,9 @@ class TimelineController extends Controller
         $result = new stdClass;
 
         $data = Timeline::where('id_timeline', $id_timeline)
-        ->whereNull('deleted_at')
-        ->with(['user', 'user.job', 'user.company', 'user.city'])
-        ->first();
+            ->whereNull('deleted_at')
+            ->with(['user', 'user.job', 'user.company', 'user.city'])
+            ->first();
 
         if($data->additional_data != null) {
             $data->additional_data = json_decode($data->additional_data);                  
@@ -229,19 +229,21 @@ class TimelineController extends Controller
         $job_title = isset($data->user) ? ($data->user)->job->job_title : null;
         $company = isset($data->user) ? ($data->user)->company->company_name : null;
         $comment = Comment::select('id_comment', 'comment', 'id_user', 'created_at')
-        ->where('related_to', 'id_timeline')
-        ->where('id_related_to', $id_timeline)
-        ->with(['user', 'user.job', 'user.company']) 
-        ->get();
-
+            ->where('related_to', 'id_timeline')
+            ->where('id_related_to', $id_timeline)
+            ->with(['user', 'user.job', 'user.company']) 
+            ->get();
         $isUserLiked = React::where('related_to', 'id_timeline')
             ->where('id_related_to', $data->id_timeline)
             ->where('id_user', $user_id)
             ->count();
         $isLiked = ($isUserLiked > 0);
-
-        $count_like = React::where('related_to', 'id_timeline')->where('id_related_to', $data->id_timeline)->count();
-        $count_comment = Comment::where('related_to', 'id_timeline')->where('id_related_to', $data->id_timeline)->count();
+        $count_like = React::where('related_to', 'id_timeline')
+            ->where('id_related_to', $data->id_timeline)
+            ->count();
+        $count_comment = Comment::where('related_to', 'id_timeline')
+            ->where('id_related_to', $data->id_timeline)
+            ->count();
        
         $transformedComments = [];
         if (!$comment->isEmpty()) {
@@ -253,12 +255,21 @@ class TimelineController extends Controller
                 $commentJobTitle = isset($commentUser) ? $commentUser->job->job_title : null;
                 $commentCompany = isset($commentUser) ? $commentUser->company->company_name : null;
                 $reply = Comment::select('id_comment', 'comment', 'id_user', 'created_at')
-                ->where('related_to', 'id_comment')
-                ->where('id_related_to', $commentItem->id_comment)
-                ->with(['user', 'user.job', 'user.company']) 
-                ->get();
-                $comment_count_like = React::where('related_to', 'id_comment')->where('id_related_to', $commentItem->id_comment)->count();
-                $comment_count_comment = Comment::where('related_to', 'id_comment')->where('id_related_to', $commentItem->id_comment)->count();
+                    ->where('related_to', 'id_comment')
+                    ->where('id_related_to', $commentItem->id_comment)
+                    ->with(['user', 'user.job', 'user.company']) 
+                    ->get();
+                $isUserLikedComment = React::where('related_to', 'id_comment')
+                    ->where('id_related_to', $commentItem->id_comment)
+                    ->where('id_user', $user_id)
+                    ->count();
+                $isCommentLiked = ($isUserLikedComment > 0);
+                $comment_count_like = React::where('related_to', 'id_comment')
+                    ->where('id_related_to', $commentItem->id_comment)
+                    ->count();
+                $comment_count_comment = Comment::where('related_to', 'id_comment')
+                    ->where('id_related_to', $commentItem->id_comment)
+                    ->count();
 
                 $transformedReplies = [];
                 if (!$reply->isEmpty()) {
@@ -269,7 +280,14 @@ class TimelineController extends Controller
                         $replyProfilePicture = isset($replyUser) ? $replyUser->profile_picture : null;
                         $replyJobTitle = isset($replyUser) ? $replyUser->job->job_title : null;
                         $replyCompany = isset($replyUser) ? $replyUser->company->company_name : null;
-                        $reply_count_like = React::where('related_to', 'id_comment')->where('id_related_to', $replyItem->id_comment)->count();
+                        $isUserLikedReply = React::where('related_to', 'id_comment')
+                            ->where('id_related_to', $replyItem->id_comment)
+                            ->where('id_user', $user_id)
+                            ->count();
+                        $isReplyLiked = ($isUserLikedReply > 0);
+                        $reply_count_like = React::where('related_to', 'id_comment')
+                            ->where('id_related_to', $replyItem->id_comment)
+                            ->count();
                 
                         $transformedReplies[] = [
                             'id_comment' => $replyItem->id_comment,
@@ -280,6 +298,7 @@ class TimelineController extends Controller
                             'job_title' => $replyJobTitle,
                             'company' => $replyCompany,
                             'created_at' => $replyItem->created_at,
+                            'liked'=> $isReplyLiked,
                             'count_like' => $reply_count_like,
                         ];
                     }
@@ -296,6 +315,7 @@ class TimelineController extends Controller
                     'job_title' => $commentJobTitle,
                     'company' => $commentCompany,
                     'created_at' => $commentItem->created_at,
+                    'liked' => $isCommentLiked,
                     'count_like' => $comment_count_like,
                     'count_comment' => $comment_count_comment,
                     'reply' => $transformedReplies
@@ -342,9 +362,9 @@ class TimelineController extends Controller
         }
 
         $socialMedia = UserProfile::select('key_name', 'value')
-        ->whereIn('key_name', ['instagram', 'twitter', 'youtube', 'github', 'linkedin', 'website'])
-        ->where('id_user', $data->id_user)
-        ->get();
+            ->whereIn('key_name', ['instagram', 'twitter', 'youtube', 'github', 'linkedin', 'website'])
+            ->where('id_user', $data->id_user)
+            ->get();
         $socialMediaArray = [];
         foreach ($socialMedia as $sm) {
             $socialMediaArray[$sm->key_name] = $sm->value;
